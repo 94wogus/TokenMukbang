@@ -84,9 +84,14 @@ public enum MukbangFace {
         }
     }
 
-    /// Menu-bar headline: face + percent, e.g. `( ˘▽˘)っ 42%`.
-    public static func menuBarText(utilization: Double) -> String {
-        let zone = MukbangZone.forUtilization(utilization)
-        return "\(zone.restingFace) \(Formatting.percent(utilization))"
+    /// Menu-bar headline: face + percent, e.g. `( ˘▽˘)っ 42%`. Pass a `chewFrame`
+    /// to show a chewing frame instead of the resting face. Padded to a fixed
+    /// width so the menu bar doesn't jitter while chewing (ADR-0009 기술 메모).
+    public static func menuBarText(utilization: Double, chewFrame: String? = nil) -> String {
+        let face = chewFrame ?? MukbangZone.forUtilization(utilization).restingFace
+        let padded = face.count < 9
+            ? face.padding(toLength: 9, withPad: " ", startingAt: 0)
+            : face
+        return "\(padded) \(Formatting.percent(utilization))"
     }
 }

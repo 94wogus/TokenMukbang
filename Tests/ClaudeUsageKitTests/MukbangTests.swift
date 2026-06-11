@@ -40,6 +40,15 @@ final class MukbangTests: XCTestCase {
         XCTAssertTrue(text.contains(MukbangZone.cruising.restingFace))
     }
 
+    func testMenuBarTextUsesChewFrameAndPadsFixedWidth() {
+        let frame = "( o⊂●"
+        let text = MukbangFace.menuBarText(utilization: 42, chewFrame: frame)
+        XCTAssertTrue(text.contains(frame))
+        XCTAssertTrue(text.contains("42%"))
+        // Short faces are padded so the menu bar keeps a stable width.
+        XCTAssertTrue(text.hasPrefix(frame.padding(toLength: 9, withPad: " ", startingAt: 0)))
+    }
+
     // MARK: MukbangCopy (T1.2) — POV must not break
 
     func testHeadlineUsesWansik() {

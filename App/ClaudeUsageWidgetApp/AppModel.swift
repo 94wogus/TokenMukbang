@@ -73,15 +73,12 @@ final class AppModel: ObservableObject {
     /// face for the headline zone.
     var menuBarMascot: String { chewFrame ?? headlineZone.restingFace }
 
-    /// Menu-bar string: mascot + percent, padded to a fixed width so the bar
-    /// doesn't jitter while chewing (ADR-0009 기술 메모).
+    /// Menu-bar string. Delegates composition (face + percent + fixed-width
+    /// padding) to `ClaudeUsageKit` so the logic lives in one place (ADR-0001);
+    /// the app only supplies the transient chew frame.
     var menuBarText: String {
         guard let w = snapshot?.headlineWindow else { return "( ﹃ )  —" }
-        let mascot = menuBarMascot
-        let padded = mascot.count < 9
-            ? mascot.padding(toLength: 9, withPad: " ", startingAt: 0)
-            : mascot
-        return "\(padded) \(Formatting.percent(w.utilization))"
+        return MukbangFace.menuBarText(utilization: w.utilization, chewFrame: chewFrame)
     }
 
     var menuBarColor: Color {
