@@ -114,6 +114,9 @@ substitute a fake:
   ADR-0012).
 - **`Settings/`** — `AppSettings` (Codable: `Theme` 4 presets + custom `ThemePalette`,
   `RiskThresholds`, `NotificationSettings`) + `SettingsStore` (JSON persistence, injectable dir).
+- **`Notifications/`** — `NotificationDecider` (edge-triggered: compares previous vs current
+  snapshot → escalation/recovery/pacing/reset/expiry alerts, gated by per-surface + per-event
+  settings; pure & tested). The app delivers them via `UNUserNotificationCenter`.
 - **`Support/`** — `ProcessRunner`, `Formatting` (bars, percents, countdowns).
 
 > Decision: [ADR-0011 — local history persistence](docs/adr/0011-local-history-persistence.md)

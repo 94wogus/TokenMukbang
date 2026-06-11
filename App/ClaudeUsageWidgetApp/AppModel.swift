@@ -61,9 +61,13 @@ final class AppModel: ObservableObject {
         self.settingsStore = settingsStore
         self.settings = settingsStore.load()
         self.historySamples = history.load()
+        NotificationService.requestAuthorization()
         start()
         Task { [weak self] in await self?.loadTokenHistory() }
     }
+
+    /// Snapshot from the previous poll — for edge-triggered notifications.
+    private var previousSnapshot: UsageSnapshot?
 
     deinit {
         loop?.cancel()
@@ -89,6 +93,13 @@ final class AppModel: ObservableObject {
         if let kind = snap.headlineWindow?.kind {
             snap.headlineSparkline = sparkline(forKind: kind, buckets: 24).map(\.value)
         }
+        // Edge-triggered notifications (E1/E2): compare against the previous poll.
+        let alerts = NotificationDecider.alerts(
+            previous: previousSnapshot, current: snap,
+            settings: settings.notifications, thresholds: settings.thresholds)
+        for alert in alerts { NotificationService.deliver(alert) }
+        previousSnapshot = snap
+
         snapshot = snap
         try? store.write(snap)
         WidgetCenter.shared.reloadAllTimelines()

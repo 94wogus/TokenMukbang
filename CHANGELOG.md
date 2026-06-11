@@ -20,6 +20,9 @@ All notable changes to this project are documented here.
   (per-surface + per-event), `SettingsStore` (JSON persistence, injectable dir). App `SettingsView`
   (theme picker + custom hex colors + threshold sliders + notification toggles) as a 5th layout;
   theme accent applied to the popover.
+- **Notifications (Area E)**: Kit `NotificationDecider` (edge-triggered alerts — escalation /
+  recovery / pacing / reset / token-expiry — gated by per-surface + per-event settings, 먹방 copy);
+  App `NotificationService` delivers via `UNUserNotificationCenter`, driven from each poll.
 
 ### Added — TokenEater feature parity + 먹방 personality
 - **먹방 personality (ADR-0009)**: `MukbangZone`/`MukbangFace` (pacing zones, faces, chew
