@@ -28,6 +28,32 @@ public enum RiskLevel: String, Sendable, CaseIterable {
     }
 }
 
+/// How much the risk score trusts pacing/projection vs current absolute usage
+/// (TokenEater "temperament": Confident trusts now, Suspicious leans on projection).
+public enum Temperament: String, Sendable, CaseIterable, Identifiable, Codable {
+    case confident
+    case balanced
+    case suspicious
+
+    public var id: String { rawValue }
+    public var label: String {
+        switch self {
+        case .confident: return "Confident"
+        case .balanced: return "Balanced"
+        case .suspicious: return "Suspicious"
+        }
+    }
+
+    /// Weight on the projection term. Suspicious projects harder; confident less.
+    public var projectionWeight: Double {
+        switch self {
+        case .confident: return 0.25
+        case .balanced: return 0.40
+        case .suspicious: return 0.60
+        }
+    }
+}
+
 public enum RiskScorer {
     /// Map a continuous 0...1 score to a discrete level.
     public static func level(forScore score: Double) -> RiskLevel {
@@ -85,6 +111,44 @@ public enum RiskScorer {
         now: Date
     ) -> RiskLevel {
         level(forScore: score(utilization: utilization, windowStart: windowStart, resetsAt: resetsAt, now: now))
+    }
+
+    /// Temperament-aware score with early-window confidence damping.
+    /// Early in a window the projection is unreliable, so its weight ramps up as
+    /// the window progresses (full confidence after ~25% elapsed). Confident
+    /// temperament leans on current usage; Suspicious leans on projection.
+    public static func score(
+        utilization: Double,
+        windowStart: Date,
+        resetsAt: Date,
+        now: Date,
+        temperament: Temperament
+    ) -> Double {
+        let used = max(0, min(1, utilization / 100.0))
+        guard resetsAt > windowStart else { return used }
+
+        let total = resetsAt.timeIntervalSince(windowStart)
+        let elapsed = max(0, min(total, now.timeIntervalSince(windowStart)))
+        let timeFraction = total > 0 ? elapsed / total : 1.0
+
+        let projected = timeFraction > 0.01 ? min(1.0, used / timeFraction) : used
+
+        // Early-window damping: confidence in the projection ramps 0→1 over the
+        // first quarter of the window.
+        let confidence = min(1.0, timeFraction / 0.25)
+        let weight = temperament.projectionWeight * confidence
+        return max(used, (1 - weight) * used + weight * projected)
+    }
+
+    public static func level(
+        utilization: Double,
+        windowStart: Date,
+        resetsAt: Date,
+        now: Date,
+        temperament: Temperament
+    ) -> RiskLevel {
+        level(forScore: score(utilization: utilization, windowStart: windowStart,
+                              resetsAt: resetsAt, now: now, temperament: temperament))
     }
 
     /// Discrete level from an absolute utilization % using the user's custom

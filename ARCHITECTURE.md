@@ -110,7 +110,8 @@ substitute a fake:
 - **`Mukbang/`** — `MukbangZone`/`MukbangFace` (pacing zones, faces, chew frames),
   `MukbangCopy` (완식 POV copy + event lines), `ModelCast` (대식가/평균인/소식좌). See ADR-0009.
 - **`Risk/`** — `RiskScorer` (absolute + pacing → color), `PaceForecast` ("N시간 뒤 완식"),
-  `PacingCalculator` (equilibrium line = elapsed%, delta = actual − equilibrium, isAheadOfPace).
+  `PacingCalculator` (equilibrium line = elapsed%, delta = actual − equilibrium, isAheadOfPace),
+  `Temperament` (Confident/Balanced/Suspicious — projection weight + early-window damping).
 - **`History/`** — `HistoryStore` (`HistorySample` append/prune/load, 7-day rolling JSON,
   injectable dir; ADR-0011) + `HistoryAnalytics` (`Sparkline.series` bucketing, `HistoryFilter`
   by ModelCast + timeframe; `Timeframe` 24h/7d/30d/90d + `HistoryFilter.tokenEvents`)
@@ -122,7 +123,10 @@ substitute a fake:
 - **`Notifications/`** — `NotificationDecider` (edge-triggered: compares previous vs current
   snapshot → escalation/recovery/pacing/reset/expiry alerts, gated by per-surface + per-event
   settings; pure & tested). The app delivers them via `UNUserNotificationCenter`.
-- **`Support/`** — `ProcessRunner`, `Formatting` (bars, percents, countdowns).
+- **`Update/`** — `UpdateChecker` (parse GitHub `/releases/latest` tag + semver compare;
+  delivery is ADR-0010). The `Casks/token-mukbang.rb` Homebrew cask ships the release.
+- **`Support/`** — `ProcessRunner`, `Formatting` (bars/percents/countdowns), `FileWatcher`
+  (`DispatchSource` reactive refresh when the credential file changes).
 
 > Decision: [ADR-0011 — local history persistence](docs/adr/0011-local-history-persistence.md)
 > The app calls `history.record(snap)` each poll, then attaches the headline window's

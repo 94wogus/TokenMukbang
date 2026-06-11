@@ -65,11 +65,22 @@ final class AppModel: ObservableObject {
         self.historySamples = history.load()
         NotificationService.requestAuthorization()
         start()
+        startCredentialWatch()
         Task { [weak self] in await self?.loadTokenHistory() }
     }
 
     /// Snapshot from the previous poll — for edge-triggered notifications.
     private var previousSnapshot: UsageSnapshot?
+
+    /// Reactively refresh when Claude Code rewrites its credential file (H1).
+    private var credentialWatcher: FileWatcher?
+    private func startCredentialWatch() {
+        let path = (NSHomeDirectory() as NSString).appendingPathComponent(".claude/.credentials.json")
+        credentialWatcher = FileWatcher(path: path) { [weak self] in
+            Task { @MainActor in await self?.refresh() }
+        }
+        credentialWatcher?.start()
+    }
 
     deinit {
         loop?.cancel()

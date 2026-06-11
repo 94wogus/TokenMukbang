@@ -95,12 +95,15 @@ public struct AppSettings: Codable, Sendable, Equatable {
     public var customPalette: ThemePalette
     public var thresholds: RiskThresholds
     public var notifications: NotificationSettings
+    public var temperament: Temperament
 
-    public init(theme: Theme, customPalette: ThemePalette, thresholds: RiskThresholds, notifications: NotificationSettings) {
+    public init(theme: Theme, customPalette: ThemePalette, thresholds: RiskThresholds,
+                notifications: NotificationSettings, temperament: Temperament = .balanced) {
         self.theme = theme
         self.customPalette = customPalette
         self.thresholds = thresholds
         self.notifications = notifications
+        self.temperament = temperament
     }
 
     /// The active palette (preset, or custom colors when theme == .custom).

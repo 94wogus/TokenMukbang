@@ -38,6 +38,14 @@ struct SettingsView: View {
                 threshold("Critical", value: $model.settings.thresholds.critical, color: Color(hex: model.settings.palette.criticalHex))
             }
 
+            // G1 — Temperament (smart color)
+            section("기질 (위험도 성향)") {
+                Picker("", selection: $model.settings.temperament) {
+                    ForEach(Temperament.allCases) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.segmented).labelsHidden()
+            }
+
             // D3 — Notifications
             section("알림") {
                 Text("서피스").font(.caption2).foregroundStyle(.tertiary)

@@ -27,6 +27,12 @@ All notable changes to this project are documented here.
   `SupportedTerminal` (Terminal/iTerm2/tmux/kitty/WezTerm) + WezTerm pane matching by tty; App
   `OverlayController`/`AgentWatcherOverlay` — floating `NSPanel` with dock-like hover, Frost/Neon
   styles, 2-second session scan, click-to-focus-terminal. Toggle from the popover footer.
+- **Smart-color temperament (Area G)**: `Temperament` (Confident/Balanced/Suspicious) +
+  `RiskScorer.score(…, temperament:)` with early-window confidence damping; Settings picker.
+- **Reactive refresh (Area H)**: `FileWatcher` (`DispatchSource`) refreshes immediately when
+  Claude Code rewrites its credential file, complementing the 60s poll.
+- **Update check + cask (Area I)**: `UpdateChecker` (GitHub `/releases/latest` parse + semver
+  compare); `Casks/token-mukbang.rb` Homebrew cask (signed/notarized DMG release is ADR-0010).
 
 ### Added — TokenEater feature parity + 먹방 personality
 - **먹방 personality (ADR-0009)**: `MukbangZone`/`MukbangFace` (pacing zones, faces, chew
