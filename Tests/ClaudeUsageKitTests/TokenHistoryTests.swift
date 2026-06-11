@@ -29,26 +29,27 @@ final class TokenHistoryTests: XCTestCase {
         let events = try fixtureEvents()
         let days = TokenHistory.byDay(events)
         XCTAssertEqual(days.count, 2)              // 2026-06-10 and 06-11
-        // Day 1: 1350 (opus) + 130 (sonnet) = 1480; Day 2: 50.
-        XCTAssertEqual(days[0].tokens, 1480)
-        XCTAssertEqual(days[1].tokens, 50)
+        // consumed = input+output+cacheCreation (cache reads excluded).
+        // Day 1: opus 350 + sonnet 30 = 380; Day 2: 10.
+        XCTAssertEqual(days[0].tokens, 380)
+        XCTAssertEqual(days[1].tokens, 10)
     }
 
     func testByModelAndProject() throws {
         let events = try fixtureEvents()
         let byModel = TokenHistory.byModel(events)
-        XCTAssertEqual(byModel["claude-opus-4-8"], 1400)   // 1350 + 50
-        XCTAssertEqual(byModel["claude-sonnet-4-6"], 130)
+        XCTAssertEqual(byModel["claude-opus-4-8"], 360)    // 350 + 10
+        XCTAssertEqual(byModel["claude-sonnet-4-6"], 30)
         let byProject = TokenHistory.byProject(events)
-        XCTAssertEqual(byProject["alpha"], 1480)
-        XCTAssertEqual(byProject["beta"], 50)
+        XCTAssertEqual(byProject["alpha"], 380)
+        XCTAssertEqual(byProject["beta"], 10)
     }
 
     func testHeaviestDayAndTopProject() throws {
         let events = try fixtureEvents()
-        XCTAssertEqual(TokenHistory.heaviestDay(events)?.tokens, 1480)
+        XCTAssertEqual(TokenHistory.heaviestDay(events)?.tokens, 380)
         XCTAssertEqual(TokenHistory.topProject(events)?.project, "alpha")
-        XCTAssertEqual(TokenHistory.total(events), 1530)
+        XCTAssertEqual(TokenHistory.total(events), 390)
     }
 
     // MARK: Timeframe + token filter (C1/C3)

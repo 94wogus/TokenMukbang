@@ -13,17 +13,21 @@ struct FlipTile: View {
                 MiniSparkline(values: model.sparkline(forKind: window.kind).map(\.value), color: window.riskColor)
                     .padding(6)
             } else {
-                VStack(spacing: 2) {
-                    Text(window.label).font(.caption2).foregroundStyle(.secondary)
-                    Text(MukbangCopy.headline(utilization: window.utilization))
-                        .font(.system(.callout, design: .rounded).weight(.bold))
+                VStack(spacing: 0) {
+                    Text(window.label)
+                        .font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                    Text(Formatting.percent(window.utilization))
+                        .font(.system(size: 23, weight: .bold, design: .rounded))
                         .foregroundStyle(window.riskColor)
+                        .monospacedDigit()
+                    Text("완식").font(.caption2).foregroundStyle(.tertiary)
                 }
             }
         }
-        .frame(height: 52)
+        .frame(height: 58)
         .frame(maxWidth: .infinity)
-        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
+        .background(window.riskColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 11))
+        .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(window.riskColor.opacity(0.28), lineWidth: 1))
         .contentShape(Rectangle())
         .onTapGesture { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { flipped.toggle() } }
         .help("탭하면 7일 추세로 뒤집힙니다")
@@ -83,9 +87,7 @@ struct MonitoringView: View {
     private static let dayFmt: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "M/d"; return f
     }()
-    private static func tokens(_ n: Int) -> String {
-        n >= 1000 ? String(format: "%.1fk", Double(n) / 1000) : "\(n)"
-    }
+    private static func tokens(_ n: Int) -> String { Formatting.tokenCount(n) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {

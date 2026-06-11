@@ -171,8 +171,17 @@ final class AppModel: ObservableObject {
         return MukbangZone.forUtilization(w.utilization)
     }
 
-    /// Face shown in the menu bar: a chew frame while chewing, else the resting
-    /// face for the headline zone.
+    /// Windows to show in the menu bar as clean colored numbers (5h + 7d).
+    var menuBarWindows: [UsageSnapshot.Window] {
+        guard let windows = snapshot?.windows else { return [] }
+        let wanted = ["five_hour", "seven_day"]
+        let picked = windows.filter { wanted.contains($0.kind) }
+        return picked.isEmpty ? Array(windows.prefix(2)) : picked
+    }
+
+    /// Face shown in the popover header: a chew frame while chewing, else the
+    /// resting face for the headline zone. (The menu bar shows numbers, not the
+    /// mascot — the mascot lives in the popover + widget.)
     var menuBarMascot: String { chewFrame ?? headlineZone.restingFace }
 
     /// Menu-bar string. Delegates composition (face + percent + fixed-width

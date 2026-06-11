@@ -22,7 +22,7 @@ public enum TokenHistory {
         var totals: [Date: Int] = [:]
         for e in events {
             let day = calendar.startOfDay(for: e.timestamp)
-            totals[day, default: 0] += e.totalTokens
+            totals[day, default: 0] += e.consumedTokens
         }
         return totals.map { DayBucket(day: $0.key, tokens: $0.value) }
             .sorted { $0.day < $1.day }
@@ -31,19 +31,19 @@ public enum TokenHistory {
     /// Total tokens per model id.
     public static func byModel(_ events: [TokenEvent]) -> [String: Int] {
         var totals: [String: Int] = [:]
-        for e in events { totals[e.model, default: 0] += e.totalTokens }
+        for e in events { totals[e.model, default: 0] += e.consumedTokens }
         return totals
     }
 
     /// Total tokens per project.
     public static func byProject(_ events: [TokenEvent]) -> [String: Int] {
         var totals: [String: Int] = [:]
-        for e in events { totals[e.project, default: 0] += e.totalTokens }
+        for e in events { totals[e.project, default: 0] += e.consumedTokens }
         return totals
     }
 
     public static func total(_ events: [TokenEvent]) -> Int {
-        events.reduce(0) { $0 + $1.totalTokens }
+        events.reduce(0) { $0 + $1.consumedTokens }
     }
 
     /// The day with the most tokens consumed.

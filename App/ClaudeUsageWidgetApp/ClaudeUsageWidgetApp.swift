@@ -1,4 +1,5 @@
 import SwiftUI
+import ClaudeUsageKit
 
 @main
 struct ClaudeUsageWidgetApp: App {
@@ -8,11 +9,19 @@ struct ClaudeUsageWidgetApp: App {
         MenuBarExtra {
             MenuContentView(model: model)
         } label: {
-            // The terminal-born mascot lives here: SF Mono kaomoji + percent,
-            // chewing on each refresh, tinted by risk (ADR-0009).
-            Text(model.menuBarText)
-                .font(.system(.body, design: .monospaced))
-                .foregroundStyle(model.menuBarColor)
+            // Menu bar = clean per-window numbers (5h 85% · 7d 47%), each tinted by
+            // risk. The 먹방 mascot lives in the popover header + widget, not here.
+            if model.menuBarWindows.isEmpty {
+                Text("( ﹃ )").font(.system(.body, design: .monospaced)).foregroundStyle(.secondary)
+            } else {
+                HStack(spacing: 6) {
+                    ForEach(model.menuBarWindows, id: \.kind) { w in
+                        Text("\(w.label) \(Formatting.percent(w.utilization))")
+                            .foregroundStyle(w.riskColor)
+                    }
+                }
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+            }
         }
         .menuBarExtraStyle(.window)
     }

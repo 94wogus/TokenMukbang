@@ -21,9 +21,16 @@ public struct TokenEvent: Sendable, Equatable {
         self.project = project
     }
 
-    /// All tokens that passed through the model this turn.
+    /// All tokens that passed through the model this turn (incl. cache reads).
     public var totalTokens: Int {
         inputTokens + outputTokens + cacheReadTokens + cacheCreationTokens
+    }
+
+    /// Tokens actually "eaten fresh" this turn — input + output + cache creation.
+    /// Excludes cache reads (cheap reheated leftovers) so History totals stay
+    /// meaningful instead of ballooning into the billions.
+    public var consumedTokens: Int {
+        inputTokens + outputTokens + cacheCreationTokens
     }
 
     /// Which 먹방 cast member ate this turn.

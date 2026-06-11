@@ -1,11 +1,8 @@
 import SwiftUI
 import ClaudeUsageKit
 
-/// Compact token count, e.g. 1.2k / 3.4M. Shared by the History views.
-private func fmtTokens(_ n: Int) -> String {
-    n >= 1_000_000 ? String(format: "%.1fM", Double(n) / 1_000_000)
-        : n >= 1000 ? String(format: "%.1fk", Double(n) / 1000) : "\(n)"
-}
+/// Compact token count (k/M/B). Shared by the History views.
+private func fmtTokens(_ n: Int) -> String { Formatting.tokenCount(n) }
 /// "M/d" day formatter shared by the History views.
 private let historyDayFmt: DateFormatter = {
     let f = DateFormatter(); f.dateFormat = "M/d"; return f
