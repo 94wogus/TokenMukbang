@@ -93,6 +93,11 @@ public enum NotificationDecider {
             }
         }
 
+        // NOTE: `extraCredit` is a reserved surface for TokenEater parity. It fires
+        // once a snapshot exposes extra-usage credit signals; the usage API's
+        // `extra_usage` field is not yet decoded into `UsageSnapshot`, so no alert is
+        // emitted today and the Settings toggle for it is disabled accordingly.
+
         return out
     }
 }

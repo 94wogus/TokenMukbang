@@ -67,6 +67,15 @@ final class NotificationDeciderTests: XCTestCase {
         XCTAssertEqual(alerts.filter { $0.event == .tokenExpiry }.count, 1)
     }
 
+    func testEventToggleGatesEscalation() {
+        var settings = allOn
+        settings.escalation = false   // event type off
+        let alerts = NotificationDecider.alerts(previous: snap([window("five_hour", 60)]),
+                                                current: snap([window("five_hour", 75)]),
+                                                settings: settings, thresholds: thresholds)
+        XCTAssertTrue(alerts.filter { $0.event == .escalation }.isEmpty)
+    }
+
     func testSurfaceToggleGates() {
         var settings = allOn
         settings.fiveHour = false   // 5h surface off

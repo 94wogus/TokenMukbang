@@ -49,7 +49,8 @@ struct SettingsView: View {
                 Toggle("소화 완료 (recovery)", isOn: $model.settings.notifications.recovery)
                 Toggle("페이스 경고", isOn: $model.settings.notifications.pacing)
                 Toggle("새 상 차림 (reset)", isOn: $model.settings.notifications.reset)
-                Toggle("추가 크레딧", isOn: $model.settings.notifications.extraCredit)
+                Toggle("추가 크레딧 (준비 중)", isOn: $model.settings.notifications.extraCredit)
+                    .disabled(true)   // reserved — no extra-usage data source yet
                 Toggle("토큰 만료", isOn: $model.settings.notifications.tokenExpiry)
             }
             .toggleStyle(.switch)
