@@ -46,8 +46,9 @@ final class AppModel: ObservableObject {
     var historyHeaviestDay: TokenHistory.DayBucket? { TokenHistory.heaviestDay(filteredTokenEvents) }
     var historyTopProject: (project: String, tokens: Int)? { TokenHistory.topProject(filteredTokenEvents) }
 
-    /// How often to re-poll usage (seconds).
-    private let interval: UInt64 = 60
+    /// How often to re-poll the usage API (seconds). 5 min to stay well under
+    /// the OAuth rate limit (60s was hitting 429s).
+    private let interval: UInt64 = 300
 
     init(
         service: UsageService = UsageService(),
