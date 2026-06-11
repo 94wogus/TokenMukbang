@@ -46,8 +46,9 @@ final class AppModel: ObservableObject {
     var historyHeaviestDay: TokenHistory.DayBucket? { TokenHistory.heaviestDay(filteredTokenEvents) }
     var historyTopProject: (project: String, tokens: Int)? { TokenHistory.topProject(filteredTokenEvents) }
 
-    /// How often to re-poll usage (seconds).
-    private let interval: UInt64 = 60
+    /// How often to re-poll the usage API (seconds). 5 min to stay well under
+    /// the OAuth rate limit (60s was hitting 429s).
+    private let interval: UInt64 = 300
 
     init(
         service: UsageService = UsageService(),
@@ -67,6 +68,19 @@ final class AppModel: ObservableObject {
         start()
         startCredentialWatch()
         Task { [weak self] in await self?.loadTokenHistory() }
+    }
+
+    /// Preview/render model: a fixed snapshot, no polling, no side effects — used by
+    /// the headless ImageRenderer design-iteration path.
+    init(previewSnapshot: UsageSnapshot, settings: AppSettings = .default, tokenEvents: [TokenEvent] = []) {
+        self.service = UsageService()
+        self.store = SharedStore()
+        self.focus = TerminalFocus()
+        self.history = HistoryStore()
+        self.settingsStore = SettingsStore()
+        self.settings = settings
+        self.snapshot = previewSnapshot
+        self.tokenEvents = tokenEvents
     }
 
     /// Snapshot from the previous poll — for edge-triggered notifications.
@@ -171,22 +185,18 @@ final class AppModel: ObservableObject {
         return MukbangZone.forUtilization(w.utilization)
     }
 
-    /// Face shown in the menu bar: a chew frame while chewing, else the resting
-    /// face for the headline zone.
+    /// Windows to show in the menu bar as clean colored numbers (5h + 7d).
+    var menuBarWindows: [UsageSnapshot.Window] {
+        guard let windows = snapshot?.windows else { return [] }
+        let wanted = ["five_hour", "seven_day"]
+        let picked = windows.filter { wanted.contains($0.kind) }
+        return picked.isEmpty ? Array(windows.prefix(2)) : picked
+    }
+
+    /// Face shown in the popover header: a chew frame while chewing, else the
+    /// resting face for the headline zone. (The menu bar shows numbers, not the
+    /// mascot — the mascot lives in the popover + widget.)
     var menuBarMascot: String { chewFrame ?? headlineZone.restingFace }
-
-    /// Menu-bar string. Delegates composition (face + percent + fixed-width
-    /// padding) to `ClaudeUsageKit` so the logic lives in one place (ADR-0001);
-    /// the app only supplies the transient chew frame.
-    var menuBarText: String {
-        guard let w = snapshot?.headlineWindow else { return "( ﹃ )  —" }
-        return MukbangFace.menuBarText(utilization: w.utilization, chewFrame: chewFrame)
-    }
-
-    var menuBarColor: Color {
-        guard let w = snapshot?.headlineWindow else { return .secondary }
-        return w.riskColor
-    }
 
     /// One bite cycle through the headline zone's chew frames.
     private func playChew() async {

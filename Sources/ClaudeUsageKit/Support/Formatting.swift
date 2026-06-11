@@ -26,6 +26,15 @@ public enum Formatting {
         "\(Int((fraction * 100).rounded()))%"
     }
 
+    /// Compact token count: 1.2k / 3.4M / 1.9B.
+    public static func tokenCount(_ n: Int) -> String {
+        let d = Double(n)
+        if n >= 1_000_000_000 { return String(format: "%.1fB", d / 1_000_000_000) }
+        if n >= 1_000_000 { return String(format: "%.1fM", d / 1_000_000) }
+        if n >= 1000 { return String(format: "%.1fk", d / 1000) }
+        return "\(n)"
+    }
+
     /// A small unicode bar, e.g. ▓▓▓▓░ for ~72%.
     public static func bar(fraction: Double, width: Int = 5) -> String {
         let clamped = max(0, min(1, fraction))

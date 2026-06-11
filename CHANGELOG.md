@@ -4,6 +4,22 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed — UI redesign ("Liquid Vitals, Instrument-Grade" design system)
+- **Design system** (`docs/design/DESIGN_RESEARCH.md` + `docs/design/DESIGN_SYSTEM.md`):
+  scheme-branched risk palette resolved app-side (`RiskTone` in `App/Shared/DesignSystem.swift`);
+  Kit stays color-free, emitting only `Window.riskLevel` (rawValue) + `isOver`. 6-rung type scale,
+  8pt spacing grid, demoted 6pt `GaugeBar`, single eyebrow + single hairline seam, reusable
+  `DSSegmented` control (replaces `Picker(.segmented)`, which mis-renders and reads non-native).
+- **Menu bar — typography carries the signal**: one `Text(AttributedString)` with per-run styling —
+  `5h`/`7d` unit labels 10pt @ 50% opacity (context), value+% 13pt **bold, risk-tinted** by state.
+  Removed the ▲/✕ glyph (color is the cue). Shows **5h + 7d** both, `.monospacedDigit` (no jitter).
+  Mascot no longer in the menu bar (popover header chip + widget only).
+- **Popover redesign**: hero 28pt % top-right + demoted bar; compact `WindowRow`s on a shared
+  right value-column; sessions show a risk-colored dot (the meaning channel) with **neutral** ctx%
+  + aligned tty columns; custom footer tab bar; pacing graph hides until ≥2 trend points.
+- Dark-mode `watch` toned from neon `#FFD60A` → `#D9B225` (it out-shouted critical red).
+- Poll interval 60s → **300s** (was hitting OAuth 429s).
+
 ### Added — full TokenEater parity (in progress)
 - **Token-consumption data (ADR-0012)**: `JSONLParser` reads real token counts from
   `~/.claude/projects/*.jsonl` (TokenEvent); `TokenHistory` aggregates by day/model/project +

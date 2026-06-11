@@ -1,11 +1,8 @@
 import SwiftUI
 import ClaudeUsageKit
 
-/// Compact token count, e.g. 1.2k / 3.4M. Shared by the History views.
-private func fmtTokens(_ n: Int) -> String {
-    n >= 1_000_000 ? String(format: "%.1fM", Double(n) / 1_000_000)
-        : n >= 1000 ? String(format: "%.1fk", Double(n) / 1000) : "\(n)"
-}
+/// Compact token count (k/M/B). Shared by the History views.
+private func fmtTokens(_ n: Int) -> String { Formatting.tokenCount(n) }
 /// "M/d" day formatter shared by the History views.
 private let historyDayFmt: DateFormatter = {
     let f = DateFormatter(); f.dateFormat = "M/d"; return f
@@ -43,46 +40,42 @@ struct UsageGraphView: View {
 struct HistoryBrowserView: View {
     @ObservedObject var model: AppModel
 
+    /// Model-filter options as optionals (nil = 전체) for the segmented control.
+    private var castOptions: [ModelCast?] { [ModelCast?.none] + ModelCast.allCases.map { $0 } }
+
     var body: some View {
         let buckets = model.historyTokenBuckets
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("식단 기록")
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Picker("", selection: $model.historyModelFilter) {
-                    Text("전체").tag(ModelCast?.none)
-                    ForEach(ModelCast.allCases, id: \.self) { cast in
-                        Text(cast.modelName).tag(ModelCast?.some(cast))
-                    }
-                }
-                .pickerStyle(.menu).labelsHidden().fixedSize()
-            }
-
-            // Timeframe: 24h / 7d / 30d / 90d (C1).
-            Picker("", selection: $model.historyTimeframe) {
-                ForEach(Timeframe.allCases) { Text($0.label).tag($0) }
-            }
-            .pickerStyle(.segmented).labelsHidden()
+        VStack(alignment: .leading, spacing: DS.row) {
+            // Eyebrow seam + timeframe segmented (24h / 7d / 30d / 90d — C1).
+            Text("식단 기록").dsEyebrow()
+            DSSegmented(selection: $model.historyTimeframe,
+                        options: Timeframe.allCases) { $0.label }
+            // Model cast filter (전체 / Opus / Sonnet / …).
+            DSSegmented(selection: $model.historyModelFilter,
+                        options: castOptions) { $0?.modelName ?? "전체" }
 
             if buckets.isEmpty {
                 Text(model.tokenEvents.isEmpty
                      ? "아직 식사 기록이 없습니다. 잠시 후 다시 보세요."
                      : "이 기간/출연진의 기록이 없습니다.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(DS.bodyFont).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 8)
             } else {
                 // Daily token bar chart with hover detail (C2).
                 TokenBarChart(buckets: buckets, color: .accentColor)
                 // heaviest day + top project (C4).
-                if let peak = model.historyHeaviestDay {
-                    Label("최다 먹방: \(historyDayFmt.string(from: peak.day)) · \(fmtTokens(peak.tokens)) 토큰",
-                          systemImage: "flame.fill")
-                        .font(.caption2).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    if let peak = model.historyHeaviestDay {
+                        Label("최다 먹방 \(historyDayFmt.string(from: peak.day)) · \(fmtTokens(peak.tokens)) 토큰",
+                              systemImage: "flame")
+                    }
+                    if let tp = model.historyTopProject {
+                        Label("대식 프로젝트 \(tp.project) · \(fmtTokens(tp.tokens)) 토큰", systemImage: "trophy")
+                    }
                 }
-                if let tp = model.historyTopProject {
-                    Label("대식 프로젝트: \(tp.project) · \(fmtTokens(tp.tokens)) 토큰", systemImage: "trophy")
-                        .font(.caption2).foregroundStyle(.secondary)
-                }
+                .font(DS.captionFont).foregroundStyle(.tertiary)
+                .labelStyle(.titleAndIcon)
             }
         }
     }

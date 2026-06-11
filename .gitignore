@@ -9,8 +9,9 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 
-# Ralph Loop run artifacts
+# Ralph Loop run artifacts + local-only scratch files (never commit)
 .ralph/
+*.local.md
 
 # Cached usage payloads (may embed account data; never commit)
 *.usage-cache.json
