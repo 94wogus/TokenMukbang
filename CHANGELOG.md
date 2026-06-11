@@ -4,6 +4,11 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added — full TokenEater parity (in progress)
+- **Token-consumption data (ADR-0012)**: `JSONLParser` reads real token counts from
+  `~/.claude/projects/*.jsonl` (TokenEvent); `TokenHistory` aggregates by day/model/project +
+  heaviest-day + top-project — the data behind TokenEater's token History browser.
+
 ### Added — TokenEater feature parity + 먹방 personality
 - **먹방 personality (ADR-0009)**: `MukbangZone`/`MukbangFace` (pacing zones, faces, chew
   frames), `MukbangCopy` (완식 POV copy + event lines), `ModelCast` (대식가/평균인/소식좌);

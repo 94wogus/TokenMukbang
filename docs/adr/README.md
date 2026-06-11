@@ -23,6 +23,7 @@
 | [0009](0009-mukbang-product-concept.md) | TokenMukbang 먹방 제품 컨셉 | Accepted | 2026-06-11 | 시청자/BJ POV + 터미널 출신 마스코트 + "완식" 카피 규칙 (컨셉 정본) |
 | [0010](0010-sign-notarize-homebrew-cask-distribution.md) | 서명+공증 .dmg를 Homebrew Cask로 | Accepted | 2026-06-11 | Developer ID 서명·공증→GitHub Release→brew cask 한 줄 설치 (런북 포함) |
 | [0011](0011-local-history-persistence.md) | 로컬 히스토리 영속화 (7일 롤링) | Accepted | 2026-06-11 | 사용량 샘플을 JSON에 append+prune → 스파크라인/그래프/히스토리 브라우저 |
+| [0012](0012-jsonl-transcript-as-token-source.md) | 토큰 소비량은 JSONL 트랜스크립트에서 | Accepted | 2026-06-11 | 절대 토큰 수를 `~/.claude/projects/*.jsonl`에서 파싱·집계 (API는 %만) |
 
 > 위 표의 "한 줄 요약"만 훑어도 어떤 결정이 어디 있는지 보이게 유지한다 — 결정이 바뀌면 해당 행의
 > ADR을 찾아 supersede/수정하고 이 표를 갱신한다.

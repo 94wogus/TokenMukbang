@@ -106,8 +106,10 @@ substitute a fake:
   `MukbangCopy` (완식 POV copy + event lines), `ModelCast` (대식가/평균인/소식좌). See ADR-0009.
 - **`Risk/`** — `RiskScorer` (absolute + pacing → color), `PaceForecast` ("N시간 뒤 완식").
 - **`History/`** — `HistoryStore` (`HistorySample` append/prune/load, 7-day rolling JSON,
-  injectable dir) + `HistoryAnalytics` (`Sparkline.series` bucketing, `HistoryFilter` by
-  ModelCast + timeframe). See ADR-0011.
+  injectable dir; ADR-0011) + `HistoryAnalytics` (`Sparkline.series` bucketing, `HistoryFilter`
+  by ModelCast + timeframe) + `JSONLParser`/`TokenHistory` (절대 토큰 소비량을
+  `~/.claude/projects/*.jsonl`에서 파싱·집계 — by day/model/project, heaviest day, top project;
+  ADR-0012).
 - **`Support/`** — `ProcessRunner`, `Formatting` (bars, percents, countdowns).
 
 > Decision: [ADR-0011 — local history persistence](docs/adr/0011-local-history-persistence.md)
