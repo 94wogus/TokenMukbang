@@ -1,0 +1,91 @@
+name: ClaudeUsageWidget
+options:
+  bundleIdPrefix: com.claudeusagewidget
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+packages:
+  ClaudeUsageKit:
+    # The shared core lives in the SPM package at the repo root.
+    path: ..
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Local/dev build: no team, ad-hoc signing. Headless verification passes
+    # CODE_SIGNING_ALLOWED=NO so entitlements aren't validated against a profile.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+
+targets:
+  ClaudeUsageWidgetApp:
+    type: application
+    platform: macOS
+    sources:
+      - path: ClaudeUsageWidgetApp
+      - path: Shared
+    dependencies:
+      - package: ClaudeUsageKit
+        product: ClaudeUsageKit
+      - target: UsageWidgetExtension
+        embed: true
+    info:
+      path: ClaudeUsageWidgetApp/Info.plist
+      properties:
+        CFBundleDisplayName: Claude Usage Widget
+        # Menu-bar accessory app: no Dock icon, no main window.
+        LSUIElement: true
+        LSMinimumSystemVersion: "14.0"
+    entitlements:
+      path: ClaudeUsageWidgetApp/App.entitlements
+      properties:
+        # NOT sandboxed: shells out to security/ps/lsof/osascript. Shares the
+        # cached snapshot with the widget via this App Group.
+        com.apple.security.application-groups:
+          - group.com.claudeusagewidget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.claudeusagewidget.app
+        PRODUCT_NAME: ClaudeUsageWidget
+        ENABLE_HARDENED_RUNTIME: "YES"
+
+  UsageWidgetExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: UsageWidgetExtension
+      - path: Shared
+    dependencies:
+      - package: ClaudeUsageKit
+        product: ClaudeUsageKit
+    info:
+      path: UsageWidgetExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Claude Usage
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: UsageWidgetExtension/Widget.entitlements
+      properties:
+        # Widget runs sandboxed; the App Group lets it read the app's snapshot.
+        com.apple.security.app-sandbox: true
+        com.apple.security.application-groups:
+          - group.com.claudeusagewidget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.claudeusagewidget.app.widget
+        PRODUCT_NAME: UsageWidgetExtension
+        ENABLE_HARDENED_RUNTIME: "YES"
+
+schemes:
+  ClaudeUsageWidgetApp:
+    build:
+      targets:
+        ClaudeUsageWidgetApp: all
+        UsageWidgetExtension: all
+    run:
+      config: Debug

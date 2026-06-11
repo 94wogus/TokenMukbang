@@ -22,12 +22,14 @@ public struct UsageSnapshot: Codable, Sendable, Equatable {
         }
     }
 
-    public struct Session: Codable, Sendable, Equatable {
+    public struct Session: Codable, Sendable, Equatable, Identifiable {
         public let pid: Int32
         public let projectName: String
         public let cwd: String
         public let tty: String?
         public let contextFraction: Double?
+
+        public var id: Int32 { pid }
 
         public init(pid: Int32, projectName: String, cwd: String, tty: String?, contextFraction: Double?) {
             self.pid = pid
