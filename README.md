@@ -24,35 +24,14 @@
 
 ## Architecture
 
-```
-claude-usage-widget/
-├── Package.swift                 # SPM: ClaudeUsageKit (lib) + usage-cli (exec)
-├── Sources/
-│   ├── ClaudeUsageKit/           # PURE LOGIC — no AppKit/SwiftUI/WidgetKit
-│   │   ├── Keychain/             # read "Claude Code-credentials" via `security`
-│   │   ├── API/                  # OAuth client: /api/oauth/usage, /api/oauth/profile
-│   │   ├── Models/               # Codable Usage, Profile, RateLimitWindow + ISO8601 JSON
-│   │   ├── Sessions/             # active-session detection + context fraction
-│   │   ├── Risk/                 # risk score (absolute + pacing) → color
-│   │   ├── Focus/                # TTY → terminal-tab AppleScript focus
-│   │   ├── SharedStore.swift     # App Group cached-snapshot bridge (app→widget)
-│   │   └── UsageService.swift    # orchestrator → UsageSnapshot
-│   └── usage-cli/                # headless `--print` full-pipeline runner
-├── Tests/ClaudeUsageKitTests/    # 21 unit tests (run under the Xcode toolchain)
-└── App/
-    ├── project.yml               # XcodeGen spec → ClaudeUsageWidget.xcodeproj
-    ├── ClaudeUsageWidgetApp/     # SwiftUI MenuBarExtra app
-    ├── UsageWidgetExtension/     # WidgetKit widget
-    └── Shared/                   # UI-only helpers (hex→Color) used by both targets
-```
+A UI-free Swift package (`ClaudeUsageKit`, `import Foundation` only) holds all logic, so
+the data/logic layer is fully unit-testable; the SwiftUI app and WidgetKit widget both
+depend on that one package (no duplicated logic), and the widget only ever reads a cached
+`UsageSnapshot` the app writes to a shared App Group container.
 
-`ClaudeUsageKit` imports **only Foundation**, so the entire data/logic layer is unit-
-testable with the Command Line Tools toolchain. The app and widget both depend on that
-one package — no usage/session/risk logic is duplicated in the UI.
-
-The widget never touches the Keychain or the network. The app runs the live pipeline and
-writes a `UsageSnapshot` to the shared App Group container
-(`group.com.claudeusagewidget`); the widget only reads it.
+- **큰 그림·다이어그램** → [`ARCHITECTURE.md`](ARCHITECTURE.md)
+- **왜 그렇게 했나 (결정 기록)** → [`docs/adr/`](docs/adr/README.md)
+- **개발 규칙·명령어** → [`CLAUDE.md`](CLAUDE.md)
 
 ## Requirements
 
