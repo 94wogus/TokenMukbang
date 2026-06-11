@@ -102,7 +102,18 @@ substitute a fake:
 - **`UsageSnapshot.swift`** — the Codable DTO the UI renders; `headlineWindow` (max
   utilization) drives the menu-bar/widget headline.
 - **`UsageService.swift`** — the orchestrator above.
+- **`Mukbang/`** — `MukbangZone`/`MukbangFace` (pacing zones, faces, chew frames),
+  `MukbangCopy` (완식 POV copy + event lines), `ModelCast` (대식가/평균인/소식좌). See ADR-0009.
+- **`Risk/`** — `RiskScorer` (absolute + pacing → color), `PaceForecast` ("N시간 뒤 완식").
+- **`History/`** — `HistoryStore` (`HistorySample` append/prune/load, 7-day rolling JSON,
+  injectable dir) + `HistoryAnalytics` (`Sparkline.series` bucketing, `HistoryFilter` by
+  ModelCast + timeframe). See ADR-0011.
 - **`Support/`** — `ProcessRunner`, `Formatting` (bars, percents, countdowns).
+
+> Decision: [ADR-0011 — local history persistence](docs/adr/0011-local-history-persistence.md)
+> The app calls `history.record(snap)` each poll, then attaches the headline window's
+> 7-day sparkline to `UsageSnapshot.headlineSparkline` before caching so the widget can
+> draw it without history access.
 
 ## 4. App ↔ widget data flow
 

@@ -89,6 +89,8 @@ is sent anywhere else.
 
 ## Scope (v1)
 
-**In:** menu bar, dropdown panel, WidgetKit widget, active-session detection with context
-fraction, click-to-focus. **Not yet:** history browser, 7-day sparklines, multiple
-dashboard layouts, notifications, preferences, code-signed distribution.
+**In:** 먹방 mascot personality (menu-bar kaomoji + chew, 완식 copy, model cast), menu bar,
+dropdown panel with 4 dashboard layouts (Classic/Compact/Focus/History), WidgetKit widget
+with sparkline, active-session detection with context fraction, click-to-focus, smart
+(pacing-aware) coloring + pace warning, and a 7-day history browser with usage graphs.
+**Not yet:** notifications, preferences, auto-launch, code-signed/notarized distribution.

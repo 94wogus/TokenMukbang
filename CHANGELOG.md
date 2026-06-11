@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Added — TokenEater feature parity + 먹방 personality
+- **먹방 personality (ADR-0009)**: `MukbangZone`/`MukbangFace` (pacing zones, faces, chew
+  frames), `MukbangCopy` (완식 POV copy + event lines), `ModelCast` (대식가/평균인/소식좌);
+  menu-bar SF Mono mascot that chews on each refresh; popover mascot + status line;
+  widget "NN% 완식" framing; `usage-cli --print` 먹방 voice.
+- **Smart coloring**: pacing-aware risk (windowStart = resetsAt − window duration) +
+  `PaceForecast` "이 속도면 N시간 뒤 완식" warning.
+- **Dashboard**: 4 layouts (Classic / Compact / Focus / History) with a segmented picker.
+- **History (ADR-0011)**: `HistoryStore` (7-day rolling JSON), `Sparkline.series` bucketing,
+  `HistoryFilter` (by ModelCast + timeframe), `HistoryBrowserView`, dashboard usage graphs,
+  and a widget sparkline via `UsageSnapshot.headlineSparkline`.
+- 19 new unit tests (40 total). All `swift build` / `swift test` / `xcodebuild` green.
+
 ## [0.1.0] — 2026-06-11
 
 First working version — a native macOS menu-bar app + WidgetKit widget that monitors
@@ -37,6 +52,5 @@ Claude usage, inspired by [TokenEater](https://github.com/AThevon/TokenEater).
 - `swift build`, `swift test` (21 pass), `swift run usage-cli --print` (live, no token
   leak), `xcodegen generate`, and `xcodebuild ... BUILD SUCCEEDED` (app + widget) all green.
 
-### Not yet (planned)
-- History browser, 7-day sparklines, multiple dashboard layouts, notifications,
-  preferences UI, code-signed/notarized distribution.
+### Not yet (planned at 0.1.0 — history/sparklines/layouts since landed, see [Unreleased])
+- Notifications, preferences UI, auto-launch, code-signed/notarized distribution.
