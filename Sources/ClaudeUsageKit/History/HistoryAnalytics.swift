@@ -43,8 +43,38 @@ public enum Sparkline {
     }
 }
 
+/// Time ranges for the token History browser (TokenEater parity: 24h/7d/30d/90d).
+public enum Timeframe: String, Sendable, CaseIterable, Identifiable {
+    case day = "24h"
+    case week = "7d"
+    case month = "30d"
+    case quarter = "90d"
+
+    public var id: String { rawValue }
+    public var label: String { rawValue }
+
+    public var span: TimeInterval {
+        switch self {
+        case .day: return 24 * 60 * 60
+        case .week: return 7 * 24 * 60 * 60
+        case .month: return 30 * 24 * 60 * 60
+        case .quarter: return 90 * 24 * 60 * 60
+        }
+    }
+}
+
 /// Filters history for the browser — by model cast (Opus/Sonnet/Haiku) and timeframe.
 public enum HistoryFilter {
+    /// Token events within a timeframe, optionally restricted to one model cast.
+    public static func tokenEvents(
+        _ events: [TokenEvent], timeframe: Timeframe, cast: ModelCast?, now: Date
+    ) -> [TokenEvent] {
+        let start = now.addingTimeInterval(-timeframe.span)
+        return events.filter { e in
+            e.timestamp >= start && e.timestamp <= now && (cast == nil || e.cast == cast)
+        }
+    }
+
     /// Window kinds belonging to a model cast; nil cast → all windows.
     public static func windowKinds(for cast: ModelCast?) -> [String] {
         let all = UsageWindowKind.allCases.map(\.rawValue)

@@ -50,4 +50,29 @@ final class TokenHistoryTests: XCTestCase {
         XCTAssertEqual(TokenHistory.topProject(events)?.project, "alpha")
         XCTAssertEqual(TokenHistory.total(events), 1530)
     }
+
+    // MARK: Timeframe + token filter (C1/C3)
+
+    func testTimeframeSpansAndCases() {
+        XCTAssertEqual(Timeframe.allCases.count, 4)
+        XCTAssertEqual(Timeframe.day.span, 24 * 3600)
+        XCTAssertEqual(Timeframe.week.span, 7 * 24 * 3600)
+        XCTAssertEqual(Timeframe.month.span, 30 * 24 * 3600)
+        XCTAssertEqual(Timeframe.quarter.span, 90 * 24 * 3600)
+    }
+
+    func testTokenEventTimeframeAndModelFilter() {
+        let now = Date(timeIntervalSince1970: 100 * 24 * 3600)   // day 100
+        func ev(_ daysAgo: Double, _ model: String) -> TokenEvent {
+            TokenEvent(timestamp: now.addingTimeInterval(-daysAgo * 24 * 3600), model: model,
+                       inputTokens: 1, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0, project: "p")
+        }
+        let events = [ev(0.04, "claude-opus-4-8"), ev(10, "claude-sonnet-4-6"), ev(60, "claude-opus-4-8")]
+        // 24h: only the ~1h-ago opus event.
+        XCTAssertEqual(HistoryFilter.tokenEvents(events, timeframe: .day, cast: nil, now: now).count, 1)
+        // 30d: the 1h + 10d events (60d excluded).
+        XCTAssertEqual(HistoryFilter.tokenEvents(events, timeframe: .month, cast: nil, now: now).count, 2)
+        // 90d + opus only: the 1h and 60d opus events.
+        XCTAssertEqual(HistoryFilter.tokenEvents(events, timeframe: .quarter, cast: .opus, now: now).count, 2)
+    }
 }

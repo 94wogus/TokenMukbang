@@ -21,6 +21,27 @@ final class AppModel: ObservableObject {
     @Published private(set) var historySamples: [HistorySample] = []
     /// History-browser filter: which model's windows to show (nil = all).
     @Published var historyModelFilter: ModelCast?
+    /// History-browser timeframe (24h / 7d / 30d / 90d).
+    @Published var historyTimeframe: Timeframe = .week
+
+    /// Daily token-consumption buckets for the History browser, filtered by the
+    /// current timeframe + model.
+    var historyTokenBuckets: [TokenHistory.DayBucket] {
+        let filtered = HistoryFilter.tokenEvents(
+            tokenEvents, timeframe: historyTimeframe, cast: historyModelFilter, now: Date()
+        )
+        return TokenHistory.byDay(filtered)
+    }
+
+    /// Heaviest day / top project within the current History filter.
+    var historyHeaviestDay: TokenHistory.DayBucket? {
+        TokenHistory.heaviestDay(HistoryFilter.tokenEvents(
+            tokenEvents, timeframe: historyTimeframe, cast: historyModelFilter, now: Date()))
+    }
+    var historyTopProject: (project: String, tokens: Int)? {
+        TokenHistory.topProject(HistoryFilter.tokenEvents(
+            tokenEvents, timeframe: historyTimeframe, cast: historyModelFilter, now: Date()))
+    }
 
     /// How often to re-poll usage (seconds).
     private let interval: UInt64 = 60

@@ -12,6 +12,9 @@ All notable changes to this project are documented here.
   isAheadOfPace) in Kit `Risk/`; `MonitoringView` with flippable `FlipTile` (front %완식 /
   back sparkline), `PacingEquilibriumView` (sparkline + dashed equilibrium line + delta),
   peak-day + top-project callouts. Classic layout = Monitoring space.
+- **Token History browser (Area C)**: `Timeframe` (24h/7d/30d/90d) + `HistoryFilter.tokenEvents`
+  (by timeframe + model) in Kit; `HistoryBrowserView` now shows a `TokenBarChart` of daily token
+  consumption with hover detail + timeframe/model pickers + heaviest-day/top-project.
 
 ### Added — TokenEater feature parity + 먹방 personality
 - **먹방 personality (ADR-0009)**: `MukbangZone`/`MukbangFace` (pacing zones, faces, chew

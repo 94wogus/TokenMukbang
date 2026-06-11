@@ -108,7 +108,8 @@ substitute a fake:
   `PacingCalculator` (equilibrium line = elapsed%, delta = actual − equilibrium, isAheadOfPace).
 - **`History/`** — `HistoryStore` (`HistorySample` append/prune/load, 7-day rolling JSON,
   injectable dir; ADR-0011) + `HistoryAnalytics` (`Sparkline.series` bucketing, `HistoryFilter`
-  by ModelCast + timeframe) + `JSONLParser`/`TokenHistory` (절대 토큰 소비량을
+  by ModelCast + timeframe; `Timeframe` 24h/7d/30d/90d + `HistoryFilter.tokenEvents`)
+  + `JSONLParser`/`TokenHistory` (절대 토큰 소비량을
   `~/.claude/projects/*.jsonl`에서 파싱·집계 — by day/model/project, heaviest day, top project;
   ADR-0012).
 - **`Support/`** — `ProcessRunner`, `Formatting` (bars, percents, countdowns).
