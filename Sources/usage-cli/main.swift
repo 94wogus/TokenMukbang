@@ -33,14 +33,15 @@ if let error = snapshot.error {
 } else {
     for w in snapshot.windows {
         let frac = w.utilization / 100.0
-        let reset = Formatting.countdown(to: w.resetsAt, from: now)
+        let zone = MukbangZone.forUtilization(w.utilization)
         let line = String(
-            format: "%-10@ %@ %4@  resets in %@  [%@]",
+            format: "%@ %-10@ %@ %5@  %@  [%@]",
+            zone.restingFace as NSString,
             w.label as NSString,
             Formatting.bar(fraction: frac) as NSString,
-            Formatting.percent(w.utilization) as NSString,
-            reset as NSString,
-            w.riskLabel as NSString
+            MukbangCopy.headline(utilization: w.utilization) as NSString,
+            MukbangCopy.reset(to: w.resetsAt, from: now) as NSString,
+            zone.label as NSString
         )
         print(line)
     }
