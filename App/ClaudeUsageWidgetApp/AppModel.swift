@@ -37,6 +37,7 @@ final class AppModel: ObservableObject {
         self.history = history
         self.historySamples = history.load()
         start()
+        Task { [weak self] in await self?.loadTokenHistory() }
     }
 
     deinit {
@@ -81,6 +82,28 @@ final class AppModel: ObservableObject {
     var filteredHistoryKinds: [String] {
         HistoryFilter.windowKinds(for: historyModelFilter)
     }
+
+    // MARK: - Token consumption history (ADR-0012)
+
+    @Published private(set) var tokenEvents: [TokenEvent] = []
+
+    /// Parse all transcripts off the main actor (potentially many MB of JSONL).
+    func loadTokenHistory() async {
+        let events = await Task.detached(priority: .utility) { JSONLParser.allEvents() }.value
+        tokenEvents = events
+    }
+
+    /// Estimated window-open time for a window kind (for pacing/equilibrium).
+    func windowStart(forKind kind: String) -> Date? {
+        guard let w = snapshot?.windows.first(where: { $0.kind == kind }),
+              let k = UsageWindowKind(rawValue: kind) else { return nil }
+        return w.resetsAt.addingTimeInterval(-k.duration)
+    }
+
+    /// The day with the most token consumption (Monitoring "peak day").
+    var peakDay: TokenHistory.DayBucket? { TokenHistory.heaviestDay(tokenEvents) }
+    /// The project that ate the most tokens (History "top project").
+    var topProject: (project: String, tokens: Int)? { TokenHistory.topProject(tokenEvents) }
 
     /// Best-effort: focus the terminal window hosting this session.
     func focusSession(_ s: UsageSnapshot.Session) {

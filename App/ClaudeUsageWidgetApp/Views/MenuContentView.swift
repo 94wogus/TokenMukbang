@@ -111,13 +111,11 @@ struct MenuContentView: View {
         }
     }
 
-    /// Classic: windows + full clickable session list.
+    /// Classic = Monitoring space (flip tiles + pacing graph + peak day) + sessions.
     @ViewBuilder
     private func classicLayout(_ snapshot: UsageSnapshot) -> some View {
         if !snapshot.windows.isEmpty {
-            VStack(spacing: 8) {
-                ForEach(snapshot.windows, id: \.kind) { UsageRowView(window: $0, now: now) }
-            }
+            MonitoringView(model: model, snapshot: snapshot)
         }
         if !snapshot.sessions.isEmpty {
             Divider()
@@ -150,7 +148,7 @@ struct MenuContentView: View {
 
             HStack {
                 Button {
-                    Task { await model.refresh() }
+                    Task { await model.refresh(); await model.loadTokenHistory() }
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
