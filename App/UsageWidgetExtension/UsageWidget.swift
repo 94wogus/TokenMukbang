@@ -66,19 +66,24 @@ private struct SmallWidget: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("Claude").font(.caption.weight(.semibold))
+                Text(MukbangZone.forUtilization(headline.utilization).restingFace)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(headline.riskColor)
+                Text("먹방").font(.caption.weight(.semibold))
                 Spacer()
                 if let plan { Text(plan).font(.caption2).foregroundStyle(.secondary) }
             }
             Spacer()
-            Text(Formatting.percent(headline.utilization))
-                .font(.system(size: 38, weight: .bold, design: .rounded))
+            // Gauge read as an emptying table: "NN% 완식" (ADR-0009).
+            Text(MukbangCopy.headline(utilization: headline.utilization))
+                .font(.system(size: 30, weight: .bold, design: .rounded))
                 .foregroundStyle(headline.riskColor)
-            Text(headline.label.uppercased())
+                .minimumScaleFactor(0.6).lineLimit(1)
+            Text(headline.label)
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(.secondary)
             ProgressView(value: headline.fraction).tint(headline.riskColor)
-            Text("resets in \(Formatting.countdown(to: headline.resetsAt, from: now))")
+            Text(MukbangCopy.reset(to: headline.resetsAt, from: now))
                 .font(.caption2).foregroundStyle(.secondary)
         }
     }
@@ -91,7 +96,11 @@ private struct MediumWidget: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Claude Usage").font(.caption.weight(.semibold))
+                HStack(spacing: 4) {
+                    Text(MukbangZone.forUtilization(snapshot.headlineWindow?.utilization ?? 0).restingFace)
+                        .font(.system(.caption2, design: .monospaced))
+                    Text("TokenMukbang").font(.caption.weight(.semibold))
+                }
                 ForEach(snapshot.windows.prefix(3), id: \.kind) { w in
                     HStack(spacing: 6) {
                         Text(w.label).font(.caption2).frame(width: 58, alignment: .leading)

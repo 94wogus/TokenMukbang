@@ -26,20 +26,30 @@ struct MenuContentView: View {
     }
 
     private var header: some View {
-        HStack {
-            Image(systemName: "gauge.with.dots.needle.67percent")
-                .foregroundStyle(.tint)
-            Text("Claude Usage")
-                .font(.headline)
-            if let plan = model.snapshot?.planLabel {
-                Text(plan)
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(.quaternary, in: Capsule())
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                // The terminal-born mascot, chewing (ADR-0009).
+                Text(model.menuBarMascot)
+                    .font(.system(.title3, design: .monospaced))
+                    .foregroundStyle(model.menuBarColor)
+                Text("TokenMukbang")
+                    .font(.headline)
+                if let plan = model.snapshot?.planLabel {
+                    Text(plan)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(.quaternary, in: Capsule())
+                }
+                Spacer()
+                if model.isRefreshing {
+                    ProgressView().controlSize(.small)
+                }
             }
-            Spacer()
-            if model.isRefreshing {
-                ProgressView().controlSize(.small)
+            // Status mukbang line for the headline window.
+            if model.snapshot?.headlineWindow != nil {
+                Text(MukbangCopy.status(for: model.headlineZone))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }

@@ -49,6 +49,7 @@ final class AppModel: ObservableObject {
         snapshot = snap
         try? store.write(snap)
         WidgetCenter.shared.reloadAllTimelines()
+        await playChew()   // API 콜 = 한 입
     }
 
     /// Best-effort: focus the terminal window hosting this session.
@@ -59,13 +60,44 @@ final class AppModel: ObservableObject {
 
     // MARK: - Menu-bar label helpers
 
+    /// The current chew animation frame, set transiently after each refresh
+    /// ("API 콜 = 한 입"). nil when the mascot is resting.
+    @Published private(set) var chewFrame: String?
+
+    var headlineZone: MukbangZone {
+        guard let w = snapshot?.headlineWindow else { return .cruising }
+        return MukbangZone.forUtilization(w.utilization)
+    }
+
+    /// Face shown in the menu bar: a chew frame while chewing, else the resting
+    /// face for the headline zone.
+    var menuBarMascot: String { chewFrame ?? headlineZone.restingFace }
+
+    /// Menu-bar string: mascot + percent, padded to a fixed width so the bar
+    /// doesn't jitter while chewing (ADR-0009 기술 메모).
     var menuBarText: String {
-        guard let w = snapshot?.headlineWindow else { return "—" }
-        return "\(w.label) \(Formatting.percent(w.utilization))"
+        guard let w = snapshot?.headlineWindow else { return "( ﹃ )  —" }
+        let mascot = menuBarMascot
+        let padded = mascot.count < 9
+            ? mascot.padding(toLength: 9, withPad: " ", startingAt: 0)
+            : mascot
+        return "\(padded) \(Formatting.percent(w.utilization))"
     }
 
     var menuBarColor: Color {
         guard let w = snapshot?.headlineWindow else { return .secondary }
         return w.riskColor
+    }
+
+    /// One bite cycle through the headline zone's chew frames.
+    private func playChew() async {
+        let zone = headlineZone
+        let interval = MukbangFace.chewInterval(for: zone)
+        guard interval > 0 else { chewFrame = nil; return }
+        for frame in MukbangFace.chewFrames(for: zone) {
+            chewFrame = frame
+            try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+        }
+        chewFrame = nil
     }
 }
