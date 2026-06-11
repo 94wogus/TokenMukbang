@@ -36,3 +36,30 @@ extension UsageSnapshot.Session {
         }
     }
 }
+
+/// A minimal line sparkline over a 0...100 value series. Shared by the app
+/// dashboard and the widget (one implementation, two targets).
+struct MiniSparkline: View {
+    let values: [Double]
+    var color: Color = .accentColor
+
+    var body: some View {
+        GeometryReader { geo in
+            if values.count > 1 {
+                Path { p in
+                    let stepX = geo.size.width / CGFloat(values.count - 1)
+                    for (i, v) in values.enumerated() {
+                        let x = CGFloat(i) * stepX
+                        let y = geo.size.height * (1 - CGFloat(min(100, max(0, v)) / 100))
+                        i == 0 ? p.move(to: CGPoint(x: x, y: y)) : p.addLine(to: CGPoint(x: x, y: y))
+                    }
+                }
+                .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
+            } else {
+                Rectangle().fill(.quaternary)
+                    .frame(height: 1)
+                    .frame(maxHeight: .infinity, alignment: .center)
+            }
+        }
+    }
+}

@@ -74,6 +74,7 @@ struct MenuContentView: View {
         case .focus: focusLayout(snapshot)
         case .compact: compactLayout(snapshot)
         case .classic: classicLayout(snapshot)
+        case .history: HistoryBrowserView(model: model)
         }
     }
 
@@ -89,6 +90,10 @@ struct MenuContentView: View {
                 ProgressView(value: w.fraction).tint(w.riskColor)
                 Text(MukbangCopy.reset(to: w.resetsAt, from: now))
                     .font(.caption).foregroundStyle(.secondary)
+                // 7-day usage graph for the headline window (T3.2).
+                MiniSparkline(values: model.sparkline(forKind: w.kind).map(\.value), color: w.riskColor)
+                    .frame(height: 40)
+                    .padding(.top, 4)
             }
         }
     }

@@ -50,6 +50,9 @@ public struct UsageSnapshot: Codable, Sendable, Equatable {
     public let sessions: [Session]
     /// Set when the pipeline could not produce live data (expired token, offline…).
     public let error: String?
+    /// Headline window's 7-day sparkline values (0...100), attached by the app
+    /// before caching so the widget can draw it without history access.
+    public var headlineSparkline: [Double]?
 
     public init(capturedAt: Date, planLabel: String?, windows: [Window], sessions: [Session], error: String?) {
         self.capturedAt = capturedAt

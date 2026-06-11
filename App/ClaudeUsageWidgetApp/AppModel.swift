@@ -14,7 +14,13 @@ final class AppModel: ObservableObject {
     private let service: UsageService
     private let store: SharedStore
     private let focus: TerminalFocus
+    private let history: HistoryStore
     private var loop: Task<Void, Never>?
+
+    /// Persisted 7-day history (for sparklines / graph / browser).
+    @Published private(set) var historySamples: [HistorySample] = []
+    /// History-browser filter: which model's windows to show (nil = all).
+    @Published var historyModelFilter: ModelCast?
 
     /// How often to re-poll usage (seconds).
     private let interval: UInt64 = 60
@@ -22,11 +28,14 @@ final class AppModel: ObservableObject {
     init(
         service: UsageService = UsageService(),
         store: SharedStore = SharedStore(),
-        focus: TerminalFocus = TerminalFocus()
+        focus: TerminalFocus = TerminalFocus(),
+        history: HistoryStore = HistoryStore()
     ) {
         self.service = service
         self.store = store
         self.focus = focus
+        self.history = history
+        self.historySamples = history.load()
         start()
     }
 
@@ -47,11 +56,30 @@ final class AppModel: ObservableObject {
     func refresh() async {
         isRefreshing = true
         defer { isRefreshing = false }
-        let snap = await service.snapshot()
+        var snap = await service.snapshot()
+        history.record(snap)            // append to 7-day history
+        historySamples = history.load()
+        // Attach the headline sparkline so the widget can draw it offline.
+        if let kind = snap.headlineWindow?.kind {
+            snap.headlineSparkline = sparkline(forKind: kind, buckets: 24).map(\.value)
+        }
         snapshot = snap
         try? store.write(snap)
         WidgetCenter.shared.reloadAllTimelines()
         await playChew()   // API 콜 = 한 입
+    }
+
+    /// Sparkline series for a window kind over the retained history.
+    func sparkline(forKind kind: String, buckets: Int = 28) -> [Sparkline.Point] {
+        Sparkline.series(
+            from: historySamples, windowKind: kind,
+            span: HistoryStore.retention, buckets: buckets, now: Date()
+        )
+    }
+
+    /// Window kinds matching the current history-browser model filter.
+    var filteredHistoryKinds: [String] {
+        HistoryFilter.windowKinds(for: historyModelFilter)
     }
 
     /// Best-effort: focus the terminal window hosting this session.

@@ -110,6 +110,11 @@ private struct MediumWidget: View {
                             .foregroundStyle(w.riskColor)
                     }
                 }
+                // 7-day sparkline for the headline window (T3.2).
+                if let spark = snapshot.headlineSparkline, spark.count > 1 {
+                    MiniSparkline(values: spark, color: snapshot.headlineWindow?.riskColor ?? .secondary)
+                        .frame(height: 18)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
