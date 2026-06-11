@@ -90,7 +90,7 @@ is sent anywhere else.
 ## Scope (v1)
 
 **In:** 먹방 mascot personality (menu-bar kaomoji + chew, 완식 copy, model cast), menu bar,
-dropdown panel with 4 dashboard layouts (Classic/Compact/Focus/History), WidgetKit widget
+dropdown panel with 5 dashboard layouts (Classic/Compact/Focus/History/Settings), WidgetKit widget
 with sparkline, active-session detection with context fraction, click-to-focus, smart
 (pacing-aware) coloring + pace warning, and a 7-day history browser with usage graphs.
 **Not yet:** notifications, preferences, auto-launch, code-signed/notarized distribution.

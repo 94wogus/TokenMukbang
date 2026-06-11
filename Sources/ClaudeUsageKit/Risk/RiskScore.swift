@@ -88,7 +88,7 @@ public enum RiskScorer {
     }
 
     /// Discrete level from an absolute utilization % using the user's custom
-    /// warning/critical thresholds (Settings, ADR: customizable thresholds).
+    /// warning/critical thresholds (Settings — ADR-0013).
     public static func level(percent: Double, thresholds: RiskThresholds) -> RiskLevel {
         if percent >= thresholds.critical { return .critical }
         if percent >= thresholds.warning { return .warning }
