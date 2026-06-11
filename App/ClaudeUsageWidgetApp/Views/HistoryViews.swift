@@ -1,6 +1,16 @@
 import SwiftUI
 import ClaudeUsageKit
 
+/// Compact token count, e.g. 1.2k / 3.4M. Shared by the History views.
+private func fmtTokens(_ n: Int) -> String {
+    n >= 1_000_000 ? String(format: "%.1fM", Double(n) / 1_000_000)
+        : n >= 1000 ? String(format: "%.1fk", Double(n) / 1000) : "\(n)"
+}
+/// "M/d" day formatter shared by the History views.
+private let historyDayFmt: DateFormatter = {
+    let f = DateFormatter(); f.dateFormat = "M/d"; return f
+}()
+
 /// One window's 7-day usage graph: label + current "완식" + sparkline.
 struct UsageGraphView: View {
     @ObservedObject var model: AppModel
@@ -32,14 +42,6 @@ struct UsageGraphView: View {
 /// History browser (T3.3): filter by model cast, show each window's 7-day graph.
 struct HistoryBrowserView: View {
     @ObservedObject var model: AppModel
-
-    private static func tokens(_ n: Int) -> String {
-        n >= 1_000_000 ? String(format: "%.1fM", Double(n) / 1_000_000)
-            : n >= 1000 ? String(format: "%.1fk", Double(n) / 1000) : "\(n)"
-    }
-    private static let dayFmt: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "M/d"; return f
-    }()
 
     var body: some View {
         let buckets = model.historyTokenBuckets
@@ -73,12 +75,12 @@ struct HistoryBrowserView: View {
                 TokenBarChart(buckets: buckets, color: .accentColor)
                 // heaviest day + top project (C4).
                 if let peak = model.historyHeaviestDay {
-                    Label("최다 먹방: \(Self.dayFmt.string(from: peak.day)) · \(Self.tokens(peak.tokens)) 토큰",
+                    Label("최다 먹방: \(historyDayFmt.string(from: peak.day)) · \(fmtTokens(peak.tokens)) 토큰",
                           systemImage: "flame.fill")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
                 if let tp = model.historyTopProject {
-                    Label("대식 프로젝트: \(tp.project) · \(Self.tokens(tp.tokens)) 토큰", systemImage: "trophy")
+                    Label("대식 프로젝트: \(tp.project) · \(fmtTokens(tp.tokens)) 토큰", systemImage: "trophy")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }
@@ -91,14 +93,6 @@ struct TokenBarChart: View {
     let buckets: [TokenHistory.DayBucket]
     var color: Color = .accentColor
     @State private var hovered: Int?
-
-    private static func tokens(_ n: Int) -> String {
-        n >= 1_000_000 ? String(format: "%.1fM", Double(n) / 1_000_000)
-            : n >= 1000 ? String(format: "%.1fk", Double(n) / 1000) : "\(n)"
-    }
-    private static let dayFmt: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "M/d"; return f
-    }()
 
     var body: some View {
         let maxTokens = max(1, buckets.map(\.tokens).max() ?? 1)
@@ -114,7 +108,7 @@ struct TokenBarChart: View {
             .frame(height: 64)
             // Hover detail (or the heaviest bucket by default).
             if let i = hovered, i < buckets.count {
-                Text("\(Self.dayFmt.string(from: buckets[i].day)) · \(Self.tokens(buckets[i].tokens)) 토큰")
+                Text("\(historyDayFmt.string(from: buckets[i].day)) · \(fmtTokens(buckets[i].tokens)) 토큰")
                     .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
             } else {
                 Text("막대에 마우스를 올리면 일별 상세")

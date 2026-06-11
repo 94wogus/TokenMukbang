@@ -24,24 +24,19 @@ final class AppModel: ObservableObject {
     /// History-browser timeframe (24h / 7d / 30d / 90d).
     @Published var historyTimeframe: Timeframe = .week
 
-    /// Daily token-consumption buckets for the History browser, filtered by the
-    /// current timeframe + model.
-    var historyTokenBuckets: [TokenHistory.DayBucket] {
-        let filtered = HistoryFilter.tokenEvents(
+    /// Token events under the current History filter (timeframe + model) — single
+    /// filtering seam reused by the buckets/heaviest/top computations.
+    private var filteredTokenEvents: [TokenEvent] {
+        HistoryFilter.tokenEvents(
             tokenEvents, timeframe: historyTimeframe, cast: historyModelFilter, now: Date()
         )
-        return TokenHistory.byDay(filtered)
     }
 
+    /// Daily token-consumption buckets for the History browser.
+    var historyTokenBuckets: [TokenHistory.DayBucket] { TokenHistory.byDay(filteredTokenEvents) }
     /// Heaviest day / top project within the current History filter.
-    var historyHeaviestDay: TokenHistory.DayBucket? {
-        TokenHistory.heaviestDay(HistoryFilter.tokenEvents(
-            tokenEvents, timeframe: historyTimeframe, cast: historyModelFilter, now: Date()))
-    }
-    var historyTopProject: (project: String, tokens: Int)? {
-        TokenHistory.topProject(HistoryFilter.tokenEvents(
-            tokenEvents, timeframe: historyTimeframe, cast: historyModelFilter, now: Date()))
-    }
+    var historyHeaviestDay: TokenHistory.DayBucket? { TokenHistory.heaviestDay(filteredTokenEvents) }
+    var historyTopProject: (project: String, tokens: Int)? { TokenHistory.topProject(filteredTokenEvents) }
 
     /// How often to re-poll usage (seconds).
     private let interval: UInt64 = 60
