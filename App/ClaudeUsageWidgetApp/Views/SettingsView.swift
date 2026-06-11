@@ -39,7 +39,7 @@ struct SettingsView: View {
             }
 
             // G1 — Temperament (smart color)
-            section("기질 (위험도 성향)") {
+            section("기질 (식욕 성향)") {
                 Picker("", selection: $model.settings.temperament) {
                     ForEach(Temperament.allCases) { Text($0.label).tag($0) }
                 }

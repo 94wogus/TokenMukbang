@@ -25,6 +25,7 @@
 | [0011](0011-local-history-persistence.md) | 로컬 히스토리 영속화 (7일 롤링) | Accepted | 2026-06-11 | 사용량 샘플을 JSON에 append+prune → 스파크라인/그래프/히스토리 브라우저 |
 | [0012](0012-jsonl-transcript-as-token-source.md) | 토큰 소비량은 JSONL 트랜스크립트에서 | Accepted | 2026-06-11 | 절대 토큰 수를 `~/.claude/projects/*.jsonl`에서 파싱·집계 (API는 %만) |
 | [0013](0013-settings-json-persistence.md) | 사용자 설정 JSON 영속화 | Accepted | 2026-06-11 | 테마/임계값/알림을 `AppSettings`+`SettingsStore`(JSON, hex 색)로 저장 |
+| [0014](0014-dispatch-source-reactive-file-watch.md) | DispatchSource 반응형 파일 와처 | Accepted | 2026-06-11 | 자격 파일 변경을 `FileWatcher`(DispatchSource)로 즉시 감지→refresh (폴링 보완) |
 
 > 위 표의 "한 줄 요약"만 훑어도 어떤 결정이 어디 있는지 보이게 유지한다 — 결정이 바뀌면 해당 행의
 > ADR을 찾아 supersede/수정하고 이 표를 갱신한다.

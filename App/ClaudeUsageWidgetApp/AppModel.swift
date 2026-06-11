@@ -73,7 +73,7 @@ final class AppModel: ObservableObject {
     private var previousSnapshot: UsageSnapshot?
 
     /// Reactively refresh when Claude Code rewrites its credential file (H1).
-    private var credentialWatcher: FileWatcher?
+    private var credentialWatcher: (any FileWatching)?
     private func startCredentialWatch() {
         let path = (NSHomeDirectory() as NSString).appendingPathComponent(".claude/.credentials.json")
         credentialWatcher = FileWatcher(path: path) { [weak self] in

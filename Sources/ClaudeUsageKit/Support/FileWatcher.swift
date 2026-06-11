@@ -1,9 +1,16 @@
 import Foundation
 
+/// Injectable seam for reactive file watching (ADR-0006), so the app can depend
+/// on the abstraction and tests can substitute a fake.
+public protocol FileWatching: Sendable {
+    @discardableResult func start() -> Bool
+    func stop()
+}
+
 /// Watches a file with a `DispatchSource` and fires `onChange` on writes/renames/
 /// deletes — lets the app refresh *reactively* (e.g. when Claude Code rewrites the
-/// credential file after `claude /login`) instead of only on the poll timer.
-public final class FileWatcher: @unchecked Sendable {
+/// credential file after `claude /login`) instead of only on the poll timer (ADR-0014).
+public final class FileWatcher: FileWatching, @unchecked Sendable {
     private let path: String
     private let onChange: @Sendable () -> Void
     private var source: DispatchSourceFileSystemObject?

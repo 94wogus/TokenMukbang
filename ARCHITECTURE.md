@@ -126,7 +126,7 @@ substitute a fake:
 - **`Update/`** — `UpdateChecker` (parse GitHub `/releases/latest` tag + semver compare;
   delivery is ADR-0010). The `Casks/token-mukbang.rb` Homebrew cask ships the release.
 - **`Support/`** — `ProcessRunner`, `Formatting` (bars/percents/countdowns), `FileWatcher`
-  (`DispatchSource` reactive refresh when the credential file changes).
+  (`FileWatching` seam + `DispatchSource` reactive refresh when the credential file changes; ADR-0014).
 
 > Decision: [ADR-0011 — local history persistence](docs/adr/0011-local-history-persistence.md)
 > The app calls `history.record(snap)` each poll, then attaches the headline window's
