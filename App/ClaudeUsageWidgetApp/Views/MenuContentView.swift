@@ -23,6 +23,7 @@ struct MenuContentView: View {
         }
         .padding(14)
         .frame(width: 340)
+        .tint(Color(hex: model.settings.palette.accentHex))   // theme accent (D1)
     }
 
     private var header: some View {
@@ -75,6 +76,7 @@ struct MenuContentView: View {
         case .compact: compactLayout(snapshot)
         case .classic: classicLayout(snapshot)
         case .history: HistoryBrowserView(model: model)
+        case .settings: SettingsView(model: model)
         }
     }
 

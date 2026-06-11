@@ -86,4 +86,13 @@ public enum RiskScorer {
     ) -> RiskLevel {
         level(forScore: score(utilization: utilization, windowStart: windowStart, resetsAt: resetsAt, now: now))
     }
+
+    /// Discrete level from an absolute utilization % using the user's custom
+    /// warning/critical thresholds (Settings, ADR: customizable thresholds).
+    public static func level(percent: Double, thresholds: RiskThresholds) -> RiskLevel {
+        if percent >= thresholds.critical { return .critical }
+        if percent >= thresholds.warning { return .warning }
+        if percent >= thresholds.warning * 0.6 { return .watch }
+        return .calm
+    }
 }

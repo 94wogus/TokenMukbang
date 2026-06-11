@@ -15,6 +15,11 @@ All notable changes to this project are documented here.
 - **Token History browser (Area C)**: `Timeframe` (24h/7d/30d/90d) + `HistoryFilter.tokenEvents`
   (by timeframe + model) in Kit; `HistoryBrowserView` now shows a `TokenBarChart` of daily token
   consumption with hover detail + timeframe/model pickers + heaviest-day/top-project.
+- **Settings space (Area D)**: Kit `Settings/AppSettings` — `Theme` (4 presets + custom palette),
+  `RiskThresholds` (+ `RiskScorer.level(percent:thresholds:)`), `NotificationSettings`
+  (per-surface + per-event), `SettingsStore` (JSON persistence, injectable dir). App `SettingsView`
+  (theme picker + custom hex colors + threshold sliders + notification toggles) as a 5th layout;
+  theme accent applied to the popover.
 
 ### Added — TokenEater feature parity + 먹방 personality
 - **먹방 personality (ADR-0009)**: `MukbangZone`/`MukbangFace` (pacing zones, faces, chew

@@ -15,7 +15,13 @@ final class AppModel: ObservableObject {
     private let store: SharedStore
     private let focus: TerminalFocus
     private let history: HistoryStore
+    private let settingsStore: SettingsStore
     private var loop: Task<Void, Never>?
+
+    /// User settings (theme / thresholds / notifications) — persisted on change.
+    @Published var settings: AppSettings {
+        didSet { settingsStore.save(settings) }
+    }
 
     /// Persisted 7-day history (for sparklines / graph / browser).
     @Published private(set) var historySamples: [HistorySample] = []
@@ -45,12 +51,15 @@ final class AppModel: ObservableObject {
         service: UsageService = UsageService(),
         store: SharedStore = SharedStore(),
         focus: TerminalFocus = TerminalFocus(),
-        history: HistoryStore = HistoryStore()
+        history: HistoryStore = HistoryStore(),
+        settingsStore: SettingsStore = SettingsStore()
     ) {
         self.service = service
         self.store = store
         self.focus = focus
         self.history = history
+        self.settingsStore = settingsStore
+        self.settings = settingsStore.load()
         self.historySamples = history.load()
         start()
         Task { [weak self] in await self?.loadTokenHistory() }

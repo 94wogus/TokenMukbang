@@ -112,6 +112,8 @@ substitute a fake:
   + `JSONLParser`/`TokenHistory` (절대 토큰 소비량을
   `~/.claude/projects/*.jsonl`에서 파싱·집계 — by day/model/project, heaviest day, top project;
   ADR-0012).
+- **`Settings/`** — `AppSettings` (Codable: `Theme` 4 presets + custom `ThemePalette`,
+  `RiskThresholds`, `NotificationSettings`) + `SettingsStore` (JSON persistence, injectable dir).
 - **`Support/`** — `ProcessRunner`, `Formatting` (bars, percents, countdowns).
 
 > Decision: [ADR-0011 — local history persistence](docs/adr/0011-local-history-persistence.md)
