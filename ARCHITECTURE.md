@@ -104,7 +104,8 @@ substitute a fake:
 - **`UsageService.swift`** — the orchestrator above.
 - **`Mukbang/`** — `MukbangZone`/`MukbangFace` (pacing zones, faces, chew frames),
   `MukbangCopy` (완식 POV copy + event lines), `ModelCast` (대식가/평균인/소식좌). See ADR-0009.
-- **`Risk/`** — `RiskScorer` (absolute + pacing → color), `PaceForecast` ("N시간 뒤 완식").
+- **`Risk/`** — `RiskScorer` (absolute + pacing → color), `PaceForecast` ("N시간 뒤 완식"),
+  `PacingCalculator` (equilibrium line = elapsed%, delta = actual − equilibrium, isAheadOfPace).
 - **`History/`** — `HistoryStore` (`HistorySample` append/prune/load, 7-day rolling JSON,
   injectable dir; ADR-0011) + `HistoryAnalytics` (`Sparkline.series` bucketing, `HistoryFilter`
   by ModelCast + timeframe) + `JSONLParser`/`TokenHistory` (절대 토큰 소비량을

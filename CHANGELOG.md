@@ -8,6 +8,10 @@ All notable changes to this project are documented here.
 - **Token-consumption data (ADR-0012)**: `JSONLParser` reads real token counts from
   `~/.claude/projects/*.jsonl` (TokenEvent); `TokenHistory` aggregates by day/model/project +
   heaviest-day + top-project — the data behind TokenEater's token History browser.
+- **Monitoring space (Area B)**: `PacingCalculator` (equilibrium = elapsed%, delta,
+  isAheadOfPace) in Kit `Risk/`; `MonitoringView` with flippable `FlipTile` (front %완식 /
+  back sparkline), `PacingEquilibriumView` (sparkline + dashed equilibrium line + delta),
+  peak-day + top-project callouts. Classic layout = Monitoring space.
 
 ### Added — TokenEater feature parity + 먹방 personality
 - **먹방 personality (ADR-0009)**: `MukbangZone`/`MukbangFace` (pacing zones, faces, chew
