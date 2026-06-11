@@ -63,18 +63,61 @@ struct MenuContentView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
 
-        if !snapshot.windows.isEmpty {
-            VStack(spacing: 8) {
-                ForEach(snapshot.windows, id: \.kind) { window in
-                    UsageRowView(window: window, now: now)
-                }
-            }
+        // Pace warning for the most-urgent window (T2.2): "이 속도면 N시간 뒤 완식".
+        if let hours = snapshot.windows.compactMap(\.paceWarningHours).min() {
+            Label(MukbangCopy.event(.paceWarning(hoursToFull: hours)), systemImage: "flame.fill")
+                .font(.caption)
+                .foregroundStyle(.orange)
         }
 
+        switch model.layout {
+        case .focus: focusLayout(snapshot)
+        case .compact: compactLayout(snapshot)
+        case .classic: classicLayout(snapshot)
+        }
+    }
+
+    /// Focus: only the headline window, large.
+    @ViewBuilder
+    private func focusLayout(_ snapshot: UsageSnapshot) -> some View {
+        if let w = snapshot.headlineWindow {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(w.label).font(.caption).foregroundStyle(.secondary)
+                Text(MukbangCopy.headline(utilization: w.utilization))
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .foregroundStyle(w.riskColor)
+                ProgressView(value: w.fraction).tint(w.riskColor)
+                Text(MukbangCopy.reset(to: w.resetsAt, from: now))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// Compact: condensed window rows + a one-line session count.
+    @ViewBuilder
+    private func compactLayout(_ snapshot: UsageSnapshot) -> some View {
+        VStack(spacing: 6) {
+            ForEach(snapshot.windows, id: \.kind) { UsageRowView(window: $0, now: now) }
+        }
+        if !snapshot.sessions.isEmpty {
+            Text("활성 세션 \(snapshot.sessions.count)개 식사 중")
+                .font(.caption).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// Classic: windows + full clickable session list.
+    @ViewBuilder
+    private func classicLayout(_ snapshot: UsageSnapshot) -> some View {
+        if !snapshot.windows.isEmpty {
+            VStack(spacing: 8) {
+                ForEach(snapshot.windows, id: \.kind) { UsageRowView(window: $0, now: now) }
+            }
+        }
         if !snapshot.sessions.isEmpty {
             Divider()
             HStack {
-                Text("Active sessions")
+                Text("관전 중인 세션")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 Text("\(snapshot.sessions.count)")
@@ -82,34 +125,40 @@ struct MenuContentView: View {
             }
             VStack(spacing: 6) {
                 ForEach(snapshot.sessions) { session in
-                    SessionRowView(session: session) {
-                        model.focusSession(session)
-                    }
+                    SessionRowView(session: session) { model.focusSession(session) }
                 }
             }
         } else {
-            Text("No active Claude Code sessions.")
+            Text("관전할 세션이 없습니다.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
     }
 
     private var footer: some View {
-        HStack {
-            Button {
-                Task { await model.refresh() }
-            } label: {
-                Label("Refresh", systemImage: "arrow.clockwise")
+        VStack(spacing: 8) {
+            Picker("", selection: $model.layout) {
+                ForEach(DashboardLayout.allCases) { Text($0.label).tag($0) }
             }
-            .disabled(model.isRefreshing)
+            .pickerStyle(.segmented)
+            .labelsHidden()
 
-            Spacer()
+            HStack {
+                Button {
+                    Task { await model.refresh() }
+                } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+                .disabled(model.isRefreshing)
 
-            Button("Quit") {
-                NSApplication.shared.terminate(nil)
+                Spacer()
+
+                Button("Quit") {
+                    NSApplication.shared.terminate(nil)
+                }
+                .foregroundStyle(.secondary)
             }
-            .foregroundStyle(.secondary)
+            .font(.callout)
         }
-        .font(.callout)
     }
 }

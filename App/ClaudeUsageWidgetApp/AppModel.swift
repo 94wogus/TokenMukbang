@@ -8,6 +8,8 @@ import ClaudeUsageKit
 final class AppModel: ObservableObject {
     @Published private(set) var snapshot: UsageSnapshot?
     @Published private(set) var isRefreshing = false
+    /// Active dashboard layout (Classic / Compact / Focus).
+    @Published var layout: DashboardLayout = .classic
 
     private let service: UsageService
     private let store: SharedStore

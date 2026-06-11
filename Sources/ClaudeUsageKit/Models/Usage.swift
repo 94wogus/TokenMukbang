@@ -36,6 +36,15 @@ public enum UsageWindowKind: String, Sendable, CaseIterable {
         case .sevenDaySonnet: return "Sonnet 7d"
         }
     }
+
+    /// How long this window spans — used to estimate when it opened
+    /// (windowStart = resetsAt - duration) for pacing-aware risk (ADR: smart coloring).
+    public var duration: TimeInterval {
+        switch self {
+        case .fiveHour: return 5 * 60 * 60
+        case .sevenDay, .sevenDayOpus, .sevenDaySonnet: return 7 * 24 * 60 * 60
+        }
+    }
 }
 
 /// Decoded `GET /api/oauth/usage` payload. The API exposes many nullable buckets;

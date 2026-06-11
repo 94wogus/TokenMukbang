@@ -11,14 +11,18 @@ public struct UsageSnapshot: Codable, Sendable, Equatable {
         public let resetsAt: Date
         public let riskHex: String
         public let riskLabel: String
+        /// Hours until this window hits 100% at the current pace, if it will
+        /// before reset — drives the "이 속도면 N시간 뒤 완식" warning. nil = safe pace.
+        public let paceWarningHours: Int?
 
-        public init(kind: String, label: String, utilization: Double, resetsAt: Date, riskHex: String, riskLabel: String) {
+        public init(kind: String, label: String, utilization: Double, resetsAt: Date, riskHex: String, riskLabel: String, paceWarningHours: Int? = nil) {
             self.kind = kind
             self.label = label
             self.utilization = utilization
             self.resetsAt = resetsAt
             self.riskHex = riskHex
             self.riskLabel = riskLabel
+            self.paceWarningHours = paceWarningHours
         }
     }
 

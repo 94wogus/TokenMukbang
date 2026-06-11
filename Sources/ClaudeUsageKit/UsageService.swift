@@ -68,14 +68,23 @@ public struct UsageService: Sendable {
 
     private func windows(from usage: Usage, now: Date) -> [UsageSnapshot.Window] {
         usage.displayWindows.map { kind, w in
-            let level = RiskScorer.level(utilization: w.utilization, resetsAt: w.resetsAt, now: now)
+            // Estimate when this window opened so risk can account for pacing
+            // (smart coloring: absolute usage + projection).
+            let start = w.resetsAt.addingTimeInterval(-kind.duration)
+            let level = RiskScorer.level(
+                utilization: w.utilization, windowStart: start, resetsAt: w.resetsAt, now: now
+            )
+            let pace = PaceForecast.hoursToFull(
+                utilization: w.utilization, windowStart: start, resetsAt: w.resetsAt, now: now
+            )
             return UsageSnapshot.Window(
                 kind: kind.rawValue,
                 label: kind.label,
                 utilization: w.utilization,
                 resetsAt: w.resetsAt,
                 riskHex: level.hex,
-                riskLabel: level.label
+                riskLabel: level.label,
+                paceWarningHours: pace
             )
         }
     }

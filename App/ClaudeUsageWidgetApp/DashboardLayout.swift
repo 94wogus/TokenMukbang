@@ -1,0 +1,18 @@
+import Foundation
+
+/// The three popover/dashboard layouts (TokenEater parity).
+public enum DashboardLayout: String, CaseIterable, Identifiable, Sendable {
+    case classic   // windows + sessions, full detail
+    case compact   // condensed windows + session count
+    case focus     // only the headline window, large
+
+    public var id: String { rawValue }
+
+    public var label: String {
+        switch self {
+        case .classic: return "Classic"
+        case .compact: return "Compact"
+        case .focus: return "Focus"
+        }
+    }
+}
