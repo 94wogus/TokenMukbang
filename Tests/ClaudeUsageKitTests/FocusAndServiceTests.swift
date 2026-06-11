@@ -52,6 +52,21 @@ final class FocusTests: XCTestCase {
         let session = ActiveSession(pid: 1, tty: nil, cwd: "/x", contextFraction: nil)
         XCTAssertEqual(focus.focus(session), .noTTY)
     }
+
+    func testSupportedTerminalsIncludeExtras() {
+        let names = Set(TerminalFocus.SupportedTerminal.allCases.map(\.rawValue))
+        XCTAssertEqual(TerminalFocus.SupportedTerminal.allCases.count, 5)
+        XCTAssertTrue(names.isSuperset(of: ["terminal", "iterm2", "tmux", "kitty", "wezterm"]))
+    }
+
+    func testWeztermPaneMatchingByTTY() {
+        let json = """
+        [{"pane_id":3,"tty_name":"/dev/ttys009"},{"pane_id":7,"tty_name":"/dev/ttys016"}]
+        """
+        XCTAssertEqual(TerminalFocus.weztermPaneId(fromListJSON: json, devicePath: "/dev/ttys016"), 7)
+        XCTAssertNil(TerminalFocus.weztermPaneId(fromListJSON: json, devicePath: "/dev/ttys099"))
+        XCTAssertNil(TerminalFocus.weztermPaneId(fromListJSON: "not json", devicePath: "/dev/ttys016"))
+    }
 }
 
 final class ServiceTests: XCTestCase {

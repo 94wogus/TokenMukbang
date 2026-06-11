@@ -72,7 +72,61 @@ public struct TerminalFocus: Sendable {
         return r.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// Try to focus the terminal hosting `session`.
+    /// Terminals we attempt to focus, best-effort, in order.
+    public enum SupportedTerminal: String, Sendable, CaseIterable {
+        case terminal, iterm2, tmux, kitty, wezterm
+
+        public var displayName: String {
+            switch self {
+            case .terminal: return "Terminal.app"
+            case .iterm2: return "iTerm2"
+            case .tmux: return "tmux"
+            case .kitty: return "kitty"
+            case .wezterm: return "WezTerm"
+            }
+        }
+    }
+
+    /// Find the WezTerm pane id whose tty matches, from `wezterm cli list --format json`
+    /// output (array of objects with `pane_id` + `tty_name`). Pure → testable.
+    public static func weztermPaneId(fromListJSON json: String, devicePath: String) -> Int? {
+        guard let data = json.data(using: .utf8),
+              let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+        else { return nil }
+        for pane in arr {
+            if let tty = pane["tty_name"] as? String, tty == devicePath,
+               let id = pane["pane_id"] as? Int {
+                return id
+            }
+        }
+        return nil
+    }
+
+    private func focusWezterm(devicePath: String) -> Bool {
+        guard let list = try? runner.run(executable: "/usr/bin/env",
+                                         arguments: ["wezterm", "cli", "list", "--format", "json"]),
+              list.exitCode == 0,
+              let paneId = Self.weztermPaneId(fromListJSON: list.standardOutput, devicePath: devicePath)
+        else { return false }
+        let r = try? runner.run(executable: "/usr/bin/env",
+                                arguments: ["wezterm", "cli", "activate-pane", "--pane-id", "\(paneId)"])
+        return r?.exitCode == 0
+    }
+
+    private func focusKitty() -> Bool {
+        // kitty remote control (requires `allow_remote_control yes`); best-effort focus.
+        let r = try? runner.run(executable: "/usr/bin/env", arguments: ["kitty", "@", "focus-window"])
+        return r?.exitCode == 0
+    }
+
+    private func focusTmux(tty: String) -> Bool {
+        // Select the tmux window whose pane is on this tty, then switch client to it.
+        let r = try? runner.run(executable: "/usr/bin/env",
+                                arguments: ["tmux", "select-window", "-t", tty])
+        return r?.exitCode == 0
+    }
+
+    /// Try to focus the terminal hosting `session`, across the supported terminals.
     @discardableResult
     public func focus(_ session: ActiveSession) -> FocusOutcome {
         guard let tty = session.tty else { return .noTTY }
@@ -84,7 +138,11 @@ public struct TerminalFocus: Sendable {
         if runScript(Self.iTermScript(devicePath: device)) == "ok" {
             return .focused(app: "iTerm2")
         }
-        // Fallback: bring the frontmost terminal app forward, if either is running.
+        if focusWezterm(devicePath: device) { return .focused(app: "WezTerm") }
+        if focusKitty() { return .focused(app: "kitty") }
+        if focusTmux(tty: tty) { return .focused(app: "tmux") }
+
+        // Fallback: bring the frontmost terminal app forward, if any is running.
         for app in ["iTerm2", "Terminal"] {
             if runScript("tell application \"\(app)\"\nif it is running then\nactivate\nreturn \"ok\"\nend if\nend tell\nreturn \"nomatch\"") == "ok" {
                 return .activatedAppOnly(app: app)

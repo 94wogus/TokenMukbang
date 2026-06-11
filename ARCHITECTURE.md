@@ -95,8 +95,10 @@ substitute a fake:
 - **`Sessions/`** — `SessionDetector` (running `claude` procs → cwd → newest transcript)
   and `ContextFraction` (last assistant `usage` block → 0…1 window fill).
 - **`Risk/RiskScore.swift`** — pacing-aware 0…1 score → 4-level `RiskLevel` + hex color.
-- **`Focus/TerminalFocus.swift`** — TTY → Terminal.app/iTerm2 tab via AppleScript; always
-  best-effort, every failure swallowed.
+- **`Focus/TerminalFocus.swift`** — TTY → terminal tab, best-effort across Terminal.app/iTerm2
+  (AppleScript) + WezTerm (`wezterm cli` pane match) + kitty + tmux; `SupportedTerminal` enum;
+  every failure swallowed. The app's floating **Agent Watchers overlay** (`Overlay/`, NSPanel,
+  Frost/Neon styles, 2-second scan, dock-like hover) uses it to jump to a session's terminal.
 - **`SharedStore.swift`** — App↔widget snapshot bridge (App Group container, Application
   Support fallback).
 - **`UsageSnapshot.swift`** — the Codable DTO the UI renders; `headlineWindow` (max

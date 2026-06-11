@@ -10,6 +10,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var isRefreshing = false
     /// Active dashboard layout (Classic / Compact / Focus).
     @Published var layout: DashboardLayout = .classic
+    /// The floating Agent Watchers overlay controller (F1–F5).
+    let overlay = OverlayController()
 
     private let service: UsageService
     private let store: SharedStore

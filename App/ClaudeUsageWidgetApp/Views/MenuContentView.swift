@@ -156,6 +156,12 @@ struct MenuContentView: View {
                 }
                 .disabled(model.isRefreshing)
 
+                Button {
+                    model.overlay.toggle()
+                } label: {
+                    Label("관전", systemImage: "rectangle.on.rectangle")
+                }
+
                 Spacer()
 
                 Button("Quit") {

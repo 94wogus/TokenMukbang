@@ -23,6 +23,10 @@ All notable changes to this project are documented here.
 - **Notifications (Area E)**: Kit `NotificationDecider` (edge-triggered alerts — escalation /
   recovery / pacing / reset / token-expiry — gated by per-surface + per-event settings, 먹방 copy);
   App `NotificationService` delivers via `UNUserNotificationCenter`, driven from each poll.
+- **Agent Watchers floating overlay (Area F)**: Kit `TerminalFocus` extended with
+  `SupportedTerminal` (Terminal/iTerm2/tmux/kitty/WezTerm) + WezTerm pane matching by tty; App
+  `OverlayController`/`AgentWatcherOverlay` — floating `NSPanel` with dock-like hover, Frost/Neon
+  styles, 2-second session scan, click-to-focus-terminal. Toggle from the popover footer.
 
 ### Added — TokenEater feature parity + 먹방 personality
 - **먹방 personality (ADR-0009)**: `MukbangZone`/`MukbangFace` (pacing zones, faces, chew
