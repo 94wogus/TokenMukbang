@@ -84,6 +84,8 @@ public struct UsageService: Sendable {
                 resetsAt: w.resetsAt,
                 riskHex: level.hex,
                 riskLabel: level.label,
+                riskLevel: level.rawValue,
+                isOver: w.utilization >= 100,
                 paceWarningHours: pace
             )
         }

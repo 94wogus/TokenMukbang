@@ -4,53 +4,62 @@ import ClaudeUsageKit
 /// The dropdown panel shown when the menu-bar item is clicked.
 struct MenuContentView: View {
     @ObservedObject var model: AppModel
+    @Environment(\.colorScheme) private var scheme
     private let now = Date()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.section) {
             header
 
             if let snapshot = model.snapshot {
                 content(snapshot)
             } else {
-                ProgressView("Loading usage…")
+                ProgressView().controlSize(.small)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 10)
             }
 
-            Divider()
             footer
         }
-        .padding(14)
-        .frame(width: 340)
-        .tint(Color(hex: model.settings.palette.accentHex))   // theme accent (D1)
+        .padding(DS.outer)
+        .frame(width: 320)
+        .background(.regularMaterial)
+        .tint(Color(hex: model.settings.palette.accentHex))
     }
 
+    /// Hero header: chip + title (row 1) · hero % right-aligned · demoted bar ·
+    /// persistent status + reset (DESIGN_SYSTEM §3.1/3.3).
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                // The terminal-born mascot, chewing (ADR-0009).
+        let w = model.snapshot?.headlineWindow
+        return VStack(alignment: .leading, spacing: DS.row) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(model.menuBarMascot)
-                    .font(.system(.title3, design: .monospaced))
-                    .foregroundStyle(model.menuBarColor)
-                Text("TokenMukbang")
-                    .font(.headline)
+                    .font(.system(size: 12, design: .rounded))
+                    .lineLimit(1).fixedSize()
+                    .padding(.horizontal, 6).padding(.vertical, 3)
+                    .background(.quaternary.opacity(0.5), in: Capsule())
+                Text("TokenMukbang").font(DS.titleFont)
                 if let plan = model.snapshot?.planLabel {
-                    Text(plan)
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 6).padding(.vertical, 2)
+                    Text(plan).font(DS.captionFont.weight(.semibold))
+                        .padding(.horizontal, 5).padding(.vertical, 1)
                         .background(.quaternary, in: Capsule())
                 }
                 Spacer()
-                if model.isRefreshing {
-                    ProgressView().controlSize(.small)
+                if let w {
+                    Text(Formatting.percent(w.utilization))
+                        .font(DS.heroFont)
+                        .foregroundStyle(Color(.labelColor))
                 }
             }
-            // Status mukbang line for the headline window.
-            if model.snapshot?.headlineWindow != nil {
-                Text(MukbangCopy.status(for: model.headlineZone))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            if let w {
+                GaugeBar(window: w, scheme: scheme)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(MukbangCopy.status(for: model.headlineZone))
+                        .font(DS.bodyFont).foregroundStyle(.secondary)
+                    Spacer()
+                    Text(MukbangCopy.reset(to: w.resetsAt, from: now))
+                        .font(DS.resetFont).foregroundStyle(.secondary)
+                }
             }
         }
     }
@@ -84,16 +93,17 @@ struct MenuContentView: View {
     @ViewBuilder
     private func focusLayout(_ snapshot: UsageSnapshot) -> some View {
         if let w = snapshot.headlineWindow {
+            let risk = RiskTone.color(level: w.riskLevel, over: w.isOver, scheme: scheme)
             VStack(alignment: .leading, spacing: 6) {
                 Text(w.label).font(.caption).foregroundStyle(.secondary)
                 Text(MukbangCopy.headline(utilization: w.utilization))
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .foregroundStyle(w.riskColor)
-                ProgressView(value: w.fraction).tint(w.riskColor)
+                    .font(.system(size: 40, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(risk)
+                GaugeBar(window: w, scheme: scheme, height: 8)
                 Text(MukbangCopy.reset(to: w.resetsAt, from: now))
                     .font(.caption).foregroundStyle(.secondary)
                 // 7-day usage graph for the headline window (T3.2).
-                MiniSparkline(values: model.sparkline(forKind: w.kind).map(\.value), color: w.riskColor)
+                MiniSparkline(values: model.sparkline(forKind: w.kind).map(\.value), color: risk)
                     .frame(height: 40)
                     .padding(.top, 4)
             }
@@ -120,33 +130,46 @@ struct MenuContentView: View {
             MonitoringView(model: model, snapshot: snapshot)
         }
         if !snapshot.sessions.isEmpty {
-            Divider()
-            HStack {
-                Text("관전 중인 세션")
-                    .font(.subheadline.weight(.semibold))
+            // The single hairline seam between usage and Agent-Watchers.
+            Rectangle().fill(Color.primary.opacity(0.10)).frame(height: 1)
+            // The single eyebrow (DESIGN_SYSTEM §3.6).
+            HStack(alignment: .firstTextBaseline) {
+                Text("관전 중인 세션").dsEyebrow()
                 Spacer()
-                Text("\(snapshot.sessions.count)")
-                    .font(.caption).foregroundStyle(.secondary)
+                Text("\(snapshot.sessions.count)").font(DS.captionFont).foregroundStyle(.tertiary)
             }
-            VStack(spacing: 6) {
+            .padding(.top, 2)
+            VStack(spacing: DS.intra) {
                 ForEach(snapshot.sessions) { session in
                     SessionRowView(session: session) { model.focusSession(session) }
                 }
             }
         } else {
             Text("관전할 세션이 없습니다.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(DS.bodyFont).foregroundStyle(.secondary)
         }
     }
 
     private var footer: some View {
         VStack(spacing: 8) {
-            Picker("", selection: $model.layout) {
-                ForEach(DashboardLayout.allCases) { Text($0.label).tag($0) }
+            // Compact custom tab bar (a 5-segment Picker overflows 320 + breaks).
+            HStack(spacing: 2) {
+                ForEach(DashboardLayout.allCases) { layout in
+                    let on = model.layout == layout
+                    Text(layout.label)
+                        .font(.system(size: 11, weight: on ? .semibold : .regular))
+                        .foregroundStyle(on ? Color(.labelColor) : .secondary)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .padding(.vertical, 4)
+                        .frame(maxWidth: .infinity)
+                        .background(on ? AnyShapeStyle(.background.opacity(0.9)) : AnyShapeStyle(.clear),
+                                    in: RoundedRectangle(cornerRadius: 7))
+                        .contentShape(Rectangle())
+                        .onTapGesture { model.layout = layout }
+                }
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            .padding(2)
+            .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 9))
 
             HStack {
                 Button {

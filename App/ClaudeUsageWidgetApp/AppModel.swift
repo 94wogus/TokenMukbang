@@ -70,6 +70,19 @@ final class AppModel: ObservableObject {
         Task { [weak self] in await self?.loadTokenHistory() }
     }
 
+    /// Preview/render model: a fixed snapshot, no polling, no side effects — used by
+    /// the headless ImageRenderer design-iteration path.
+    init(previewSnapshot: UsageSnapshot, settings: AppSettings = .default, tokenEvents: [TokenEvent] = []) {
+        self.service = UsageService()
+        self.store = SharedStore()
+        self.focus = TerminalFocus()
+        self.history = HistoryStore()
+        self.settingsStore = SettingsStore()
+        self.settings = settings
+        self.snapshot = previewSnapshot
+        self.tokenEvents = tokenEvents
+    }
+
     /// Snapshot from the previous poll — for edge-triggered notifications.
     private var previousSnapshot: UsageSnapshot?
 
@@ -184,19 +197,6 @@ final class AppModel: ObservableObject {
     /// resting face for the headline zone. (The menu bar shows numbers, not the
     /// mascot — the mascot lives in the popover + widget.)
     var menuBarMascot: String { chewFrame ?? headlineZone.restingFace }
-
-    /// Menu-bar string. Delegates composition (face + percent + fixed-width
-    /// padding) to `ClaudeUsageKit` so the logic lives in one place (ADR-0001);
-    /// the app only supplies the transient chew frame.
-    var menuBarText: String {
-        guard let w = snapshot?.headlineWindow else { return "( ﹃ )  —" }
-        return MukbangFace.menuBarText(utilization: w.utilization, chewFrame: chewFrame)
-    }
-
-    var menuBarColor: Color {
-        guard let w = snapshot?.headlineWindow else { return .secondary }
-        return w.riskColor
-    }
 
     /// One bite cycle through the headline zone's chew frames.
     private func playChew() async {

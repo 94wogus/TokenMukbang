@@ -9,10 +9,8 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 12) {
             // D1 — Theme
             section("테마") {
-                Picker("", selection: $model.settings.theme) {
-                    ForEach(Theme.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented).labelsHidden()
+                DSSegmented(selection: $model.settings.theme,
+                            options: Theme.allCases) { $0.label }
 
                 if model.settings.theme == .custom {
                     HStack(spacing: 10) {
@@ -40,10 +38,8 @@ struct SettingsView: View {
 
             // G1 — Temperament (smart color)
             section("기질 (식욕 성향)") {
-                Picker("", selection: $model.settings.temperament) {
-                    ForEach(Temperament.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented).labelsHidden()
+                DSSegmented(selection: $model.settings.temperament,
+                            options: Temperament.allCases) { $0.label }
             }
 
             // D3 — Notifications
@@ -69,8 +65,8 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func section(_ title: String, @ViewBuilder _ content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.subheadline.weight(.semibold))
+        VStack(alignment: .leading, spacing: DS.intra) {
+            Text(title).dsEyebrow()
             content()
         }
     }
