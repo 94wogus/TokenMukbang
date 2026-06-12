@@ -12,7 +12,7 @@
 
 | # | 결정 | Status | Date | 한 줄 요약 (무슨 결정인지) |
 |---|------|--------|------|---------------------------|
-| [0001](0001-foundation-only-core-package.md) | Foundation-only 코어 패키지 `ClaudeUsageKit` | Accepted | 2026-06-11 | 모든 비-UI 로직을 Foundation만 쓰는 SPM 패키지에 둔다(앱·위젯·CLI 공유) |
+| [0001](0001-foundation-only-core-package.md) | Foundation-only 코어 패키지 `TokenMukbangKit` | Accepted | 2026-06-11 | 모든 비-UI 로직을 Foundation만 쓰는 SPM 패키지에 둔다(앱·위젯·CLI 공유) |
 | [0002](0002-keychain-via-security-cli.md) | Keychain은 `security` CLI로 읽기 전용 | Accepted | 2026-06-11 | OAuth 토큰을 `/usr/bin/security`로 읽기만, 토큰은 절대 노출 안 함 |
 | [0003](0003-app-writes-widget-reads-snapshot.md) | 앱이 스냅샷 write, 위젯은 read only | Accepted | 2026-06-11 | 앱만 파이프라인 실행→App Group 파일, 위젯은 그 파일만 읽음 |
 | [0004](0004-usageservice-never-throws.md) | `UsageService.snapshot()`은 throw 안 함 | Accepted | 2026-06-11 | 실패를 throw 대신 `UsageSnapshot.error` 데이터로 담아 우아하게 degrade |
@@ -29,6 +29,7 @@
 | [0015](0015-app-side-scheme-branched-risk-color.md) | 위험색은 앱 UI 계층에서 scheme 분기 해석 | Accepted | 2026-06-11 | Kit 은 risk 레벨만 emit, 앱 `RiskTone` 이 라이트/다크별 `Color` 해석 (디자인 시스템) |
 | [0016](0016-steam-visual-direction.md) | 비주얼 방향 "김 서림(Steam)" 채택 | Accepted | 2026-06-12 | 멀티에이전트 리서치(v1 12종·v2 6종) 끝 김 서림 채택, `DESIGN_SYSTEM`(Liquid Vitals) 대체 → `STEAM_DESIGN.md` |
 | [0017](0017-menu-bar-popover-ia.md) | 메뉴바 팝오버 IA: 하단 탭 폐기 | Accepted | 2026-06-12 | 네이티브 컨벤션 리서치 끝 하단 탭바 폐기 → 상단 `현황\|기록` 토글 + 기어→별도 ⌘, 설정 창 |
+| [0018](0018-custom-nspanel-glass-popover.md) | 팝오버를 커스텀 NSPanel 글래스로 | Accepted | 2026-06-12 | MenuBarExtra는 behind-window 유리 불가 → 직접 NSStatusItem + 투명 NSPanel + NSVisualEffect(.behindWindow,.active) |
 
 > 위 표의 "한 줄 요약"만 훑어도 어떤 결정이 어디 있는지 보이게 유지한다 — 결정이 바뀌면 해당 행의
 > ADR을 찾아 supersede/수정하고 이 표를 갱신한다.

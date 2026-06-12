@@ -1,6 +1,6 @@
 # Architecture
 
-> **TL;DR:** All logic lives in one Foundation-only Swift package, `ClaudeUsageKit`, so it's
+> **TL;DR:** All logic lives in one Foundation-only Swift package, `TokenMukbangKit`, so it's
 > fully unit-testable; the menu-bar app and the WidgetKit widget are thin UI shells over it.
 > One orchestrator — `UsageService.snapshot()` — runs Keychain → OAuth API → session scan
 > and returns a single `UsageSnapshot` that *never throws* (failures become
@@ -14,26 +14,26 @@
 
 ```
 claude-usage-widget/
-├── Package.swift                 # SPM: ClaudeUsageKit (lib) + usage-cli (exec) + tests
+├── Package.swift                 # SPM: TokenMukbangKit (lib) + usage-cli (exec) + tests
 ├── Sources/
-│   ├── ClaudeUsageKit/           # PURE LOGIC — imports only Foundation
+│   ├── TokenMukbangKit/           # PURE LOGIC — imports only Foundation
 │   └── usage-cli/                # headless --print / --json pipeline runner
-├── Tests/ClaudeUsageKitTests/    # 21 XCTest cases + Fixtures/
+├── Tests/TokenMukbangKitTests/    # 21 XCTest cases + Fixtures/
 └── App/                          # XcodeGen-generated app + widget (UI only)
-    ├── project.yml               # source of truth → ClaudeUsageWidget.xcodeproj
-    ├── ClaudeUsageWidgetApp/      # SwiftUI MenuBarExtra app
-    ├── UsageWidgetExtension/      # WidgetKit widget (systemSmall + systemMedium)
+    ├── project.yml               # source of truth → TokenMukbang.xcodeproj
+    ├── TokenMukbang/      # menu-bar app: NSStatusItem + custom glass NSPanel (ADR-0018)
+    ├── TokenMukbangWidget/      # WidgetKit widget (systemSmall + systemMedium)
     └── Shared/                    # UI-only helpers used by both targets
 ```
 
-The defining rule: **`ClaudeUsageKit` has no UI-framework dependency.** Three consumers
+The defining rule: **`TokenMukbangKit` has no UI-framework dependency.** Three consumers
 sit on top of it — `usage-cli`, the app, and the widget — and none of them re-implement
 any logic. The widget gets its data indirectly (via a file the app writes), not by
 running the pipeline itself.
 
 ```mermaid
 flowchart TB
-    subgraph kit["ClaudeUsageKit (Foundation only)"]
+    subgraph kit["TokenMukbangKit (Foundation only)"]
         US["UsageService.snapshot()"]
     end
     CLI["usage-cli<br/>(--print / --json)"] --> US
@@ -80,11 +80,11 @@ substitute a fake:
 | Subprocess | `ProcessRunning` | `SystemProcessRunner` | `Process` |
 | Keychain creds | `CredentialProviding` | `SecurityCLICredentialStore` | `security find-generic-password` (read-only) |
 | HTTP | `HTTPTransport` | `URLSessionTransport` | `URLSession` |
-| OAuth API | `UsageFetching` | `ClaudeUsageClient` | `GET /api/oauth/{usage,profile}` |
+| OAuth API | `UsageFetching` | `ClaudeAPIClient` | `GET /api/oauth/{usage,profile}` |
 | Sessions | (concrete, injects `ProcessRunning`) | `SessionDetector` | `ps` + `lsof` |
 | Terminal focus | (concrete, injects `ProcessRunning`) | `TerminalFocus` | `osascript` |
 
-`ClaudeUsageKit` module map:
+`TokenMukbangKit` module map:
 
 - **`Keychain/Credentials.swift`** — reads the `Claude Code-credentials` Keychain item
   (top-level `claudeAiOauth`); models `OAuthCredentials` with `isExpired(asOf:)`.
@@ -100,7 +100,7 @@ substitute a fake:
   (AppleScript) + WezTerm (`wezterm cli` pane match) + kitty + tmux; `SupportedTerminal` enum;
   every failure swallowed.
 
-> The app layer (`App/ClaudeUsageWidgetApp/Overlay/`) adds a floating `NSPanel` **Agent Watchers**
+> The app layer (`App/TokenMukbang/Overlay/`) adds a floating `NSPanel` **Agent Watchers**
 > overlay (`OverlayController`, Frost/Neon styles, 2-second session scan, dock-like hover) that
 > calls `TerminalFocus.focus(_:)` to jump to a session's terminal.
 - **`SharedStore.swift`** — App↔widget snapshot bridge (App Group container, Application
@@ -158,21 +158,21 @@ sandboxed** (it shells out to `security`/`ps`/`lsof`/`osascript`); only the widg
 
 > Decision: [ADR-0005 — XcodeGen as project source of truth](docs/adr/0005-xcodegen-as-project-source-of-truth.md)
 
-- **`ClaudeUsageKit` + `usage-cli` + tests** are plain SPM (`Package.swift`), buildable
+- **`TokenMukbangKit` + `usage-cli` + tests** are plain SPM (`Package.swift`), buildable
   with Command Line Tools — except `swift test`, which needs the Xcode toolchain for XCTest.
 - **The app + widget** are not in SPM. `App/project.yml` is the XcodeGen source of truth;
-  `xcodegen generate` produces `App/ClaudeUsageWidget.xcodeproj`, which references the
-  root SPM package for `ClaudeUsageKit`. The widget extension is embedded in the app.
+  `xcodegen generate` produces `App/TokenMukbang.xcodeproj`, which references the
+  root SPM package for `TokenMukbangKit`. The widget extension is embedded in the app.
 
 ```mermaid
 flowchart LR
-    PY["App/project.yml"] -- "xcodegen generate" --> XP["ClaudeUsageWidget.xcodeproj"]
-    PKG["Package.swift<br/>(ClaudeUsageKit)"] -. "package dependency" .-> XP
-    XP --> APPTGT["ClaudeUsageWidgetApp"]
-    XP --> WTGT["UsageWidgetExtension"]
+    PY["App/project.yml"] -- "xcodegen generate" --> XP["TokenMukbang.xcodeproj"]
+    PKG["Package.swift<br/>(TokenMukbangKit)"] -. "package dependency" .-> XP
+    XP --> APPTGT["TokenMukbang"]
+    XP --> WTGT["TokenMukbangWidget"]
     APPTGT -- embeds --> WTGT
 ```
 
 See [ADR-0010 — sign + notarize + Homebrew Cask distribution](docs/adr/0010-sign-notarize-homebrew-cask-distribution.md)
-for the release plan (and the pending `ClaudeUsageWidget` → `TokenMukbang` rename). The
+for the release plan (and the pending `TokenMukbang` → `TokenMukbang` rename). The
 product concept is [ADR-0009](docs/adr/0009-mukbang-product-concept.md).

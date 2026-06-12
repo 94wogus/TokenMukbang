@@ -7,14 +7,14 @@
 
 Settings space(TokenEater 패리티)는 테마(4프리셋+커스텀), warning/critical 임계값, 서피스별/이벤트별
 알림 토글을 사용자가 바꾸고 **재실행해도 유지**되어야 한다. 영속 수단은 (a) UserDefaults, (b) JSON 파일
-두 가지다. 또 설정 모델은 `ClaudeUsageKit`(UI-free, ADR-0001)에 두어 테스트 가능해야 한다.
+두 가지다. 또 설정 모델은 `TokenMukbangKit`(UI-free, ADR-0001)에 두어 테스트 가능해야 한다.
 
 ## Decision
 
 설정은 `AppSettings`(Codable: `Theme`/`ThemePalette`(hex 문자열)/`RiskThresholds`/`NotificationSettings`)로
 모델링하고, **`SettingsStore`가 JSON 파일(`settings.json`)로 저장/로드**한다. 디렉터리는 주입 가능(ADR-0006
 seam)해 테스트는 임시 디렉터리로 round-trip 한다. 파일이 없으면 `AppSettings.default`를 돌려준다. 색은
-`ClaudeUsageKit`이 UI-free를 유지하도록 **hex 문자열**로 저장하고, App 레이어가 `Color(hex:)`로 매핑한다.
+`TokenMukbangKit`이 UI-free를 유지하도록 **hex 문자열**로 저장하고, App 레이어가 `Color(hex:)`로 매핑한다.
 임계값은 `RiskScorer.level(percent:thresholds:)`로 위험도 분류에 반영된다.
 
 ## Consequences
@@ -32,6 +32,6 @@ seam)해 테스트는 임시 디렉터리로 round-trip 한다. 파일이 없으
 
 ## Affects
 
-- `Sources/ClaudeUsageKit/Settings/AppSettings.swift`, `Risk/RiskScore.swift`(`level(percent:thresholds:)`)
-- `App/ClaudeUsageWidgetApp/Views/SettingsView.swift`, `AppModel.swift`(settings + didSet save)
+- `Sources/TokenMukbangKit/Settings/AppSettings.swift`, `Risk/RiskScore.swift`(`level(percent:thresholds:)`)
+- `App/TokenMukbang/Views/SettingsView.swift`, `AppModel.swift`(settings + didSet save)
 - 같은 영속 패턴: ADR-0011(History), ADR-0003(Shared); seam: ADR-0006

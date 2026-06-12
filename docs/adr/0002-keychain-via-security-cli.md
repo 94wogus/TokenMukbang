@@ -35,5 +35,5 @@ access token은 어디에도 출력·로깅하지 않는다. 접근은 `Credenti
 
 ## Affects
 
-- `Sources/ClaudeUsageKit/Keychain/Credentials.swift`
+- `Sources/TokenMukbangKit/Keychain/Credentials.swift`
 - `CLAUDE.md`(토큰 미출력 불변식), `README.md` Privacy 섹션

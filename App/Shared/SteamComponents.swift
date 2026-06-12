@@ -1,5 +1,6 @@
 import SwiftUI
-import ClaudeUsageKit
+import AppKit
+import TokenMukbangKit
 
 // 김 서림(Steam) z-stack 컴포넌트 (STEAM_DESIGN §스팀 시그니처, ADR-0016).
 // z0 BrothGlow(바닥 언더글로우) · z3 SteamPlume(상단 김 워머스, 원형 없는 확산 워시) · GlassTile.
@@ -63,22 +64,26 @@ struct SteamPlume: View {
 struct GlassTile<Content: View>: View {
     let scheme: ColorScheme
     var radius: CGFloat = Steam.tileRadius
+    @Environment(\.themeMood) private var mood
     @ViewBuilder var content: () -> Content
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        let light = scheme == .light
         return content()
-            // 솟은 유리 카드 = **적응형 material**(고정 hex 아님 → 뒤 배경/모드에 vibrancy로 적응).
-            // 패널(.ultraThinMaterial)보다 한 단계 불투명해 카드가 떠 보인다.
+            // 솟은 유리 카드 = **적응형 material** + 진짜 유리 라이팅(광택·림광·두께·그림자).
             .background(.regularMaterial, in: shape)
-            // scheme-aware hairline (밝은 패널엔 진하게, 어두운 패널엔 옅게) — 카드 엣지를 또렷이.
-            .overlay(shape.strokeBorder(.white.opacity(scheme == .light ? 0.5 : 0.10), lineWidth: 1))
-            .overlay(alignment: .top) {                                         // 가는 상단 specular
-                LinearGradient(colors: [.white.opacity(scheme == .light ? 0.35 : 0.18), .clear],
-                               startPoint: .top, endPoint: .center)
+            .background(mood.glassTint, in: shape)             // 테마 무드 살짝 (.clear=중성)
+            // 보더는 거의 안 보이게 — 카드 구분은 그림자로(user 2026-06-12: 테두리 선 눈에 안 띄게).
+            .overlay(shape.strokeBorder(.white.opacity(light ? 0.10 : 0.04), lineWidth: 0.5))
+            // 상단 은은한 광택 sheen(유리에 비친 빛) — 부드럽게만.
+            .overlay(alignment: .top) {
+                LinearGradient(colors: [.white.opacity(light ? 0.18 : 0.10), .clear],
+                               startPoint: .topLeading, endPoint: .center)
                     .clipShape(shape).allowsHitTesting(false)
             }
-            .shadow(color: .black.opacity(0.18), radius: 8, y: 2)              // 솟은 느낌(부드럽게)
+            // 떠 있는 느낌의 부드러운 드롭 섀도(하드 보더 대신 그림자로 분리).
+            .shadow(color: .black.opacity(light ? 0.10 : 0.26), radius: 10, y: 4)
     }
 }
 
@@ -86,22 +91,10 @@ struct GlassTile<Content: View>: View {
 /// 그 *위에* broth 글로우·틴트가 와야 라이브에서 보인다(material을 위에 깔면 다 덮인다). z3 김은 콘텐츠 위
 /// 상단 빈 공간에만.
 extension View {
-    func steamBackground(level: String, isOver: Bool, scheme: ColorScheme) -> some View {
+    /// 팝오버 콘텐츠 배경을 **완전히 투명**하게 둔다 — 진짜 유리(데스크톱 굴절 + 살짝 blur)는 팝오버 패널의
+    /// `NSGlassEffectView(.clear)`(ADR-0018)가 *뒤*에서 제공하므로, 여기에 어떤 베일도 얹으면 그 유리가
+    /// 가려진다(user 2026-06-12: 완전 투명 + 살짝 blur). 위험/테마색은 카드(GlassTile)·게이지·칩이 든다.
+    func steamBackground(level: String, isOver: Bool, scheme: ColorScheme, mood: ThemeMood) -> some View {
         self
-            .background {
-                ZStack {
-                    Rectangle().fill(.ultraThinMaterial)                  // 데스크톱 vibrancy(있을 때)
-                    Steam.baseWash(scheme)                                // 자체 베이스 워시 — 어떤 데스크톱에서도 깊이 유지
-                    BrothGlow(level: level, isOver: isOver, scheme: scheme)            // 바닥 risk 글로우
-                }
-            }
-            .overlay {                                         // z3 — 상단 김 워머스(원형 없는 확산 워시)
-                VStack(spacing: 0) {
-                    SteamPlume(level: level, isOver: isOver, scheme: scheme)
-                        .frame(height: 150)
-                    Spacer(minLength: 0)
-                }
-                .allowsHitTesting(false)
-            }
     }
 }

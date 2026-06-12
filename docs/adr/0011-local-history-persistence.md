@@ -11,9 +11,9 @@ TokenEater 패리티(7일 스파크라인, 사용량 그래프, 모델별 히스
 
 ## Decision
 
-`ClaudeUsageKit`의 **`HistoryStore`**가 폴링마다 `HistorySample`(capturedAt + windowKind→utilization)을
+`TokenMukbangKit`의 **`HistoryStore`**가 폴링마다 `HistorySample`(capturedAt + windowKind→utilization)을
 로컬 JSON 파일(`history.json`)에 **append**하고, **7일**(가장 긴 윈도우와 일치)보다 오래된 샘플을 **prune**
-한다. 파일 위치는 Application Support의 `ClaudeUsageWidget/`(미서명/dev 폴백; ADR-0003의 SharedStore와
+한다. 파일 위치는 Application Support의 `TokenMukbang/`(미서명/dev 폴백; ADR-0003의 SharedStore와
 동일 패턴), 디렉터리는 테스트를 위해 주입 가능하다(ADR-0006 seam 스타일). 집계 로직 `Sparkline.series`와
 필터 `HistoryFilter`도 Kit에 두어 단위 테스트한다(ADR-0001). 앱은 매 refresh에서 `record(snapshot)`로
 기록한다.
@@ -38,7 +38,7 @@ TokenEater 패리티(7일 스파크라인, 사용량 그래프, 모델별 히스
 
 ## Affects
 
-- `Sources/ClaudeUsageKit/History/{HistoryStore,HistoryAnalytics}.swift`, `UsageSnapshot.headlineSparkline`
-- `App/ClaudeUsageWidgetApp/AppModel.swift`(record/sparkline), `Views/HistoryViews.swift`,
-  `App/Shared/UISupport.swift`(MiniSparkline), `App/UsageWidgetExtension/UsageWidget.swift`
+- `Sources/TokenMukbangKit/History/{HistoryStore,HistoryAnalytics}.swift`, `UsageSnapshot.headlineSparkline`
+- `App/TokenMukbang/AppModel.swift`(record/sparkline), `Views/HistoryViews.swift`,
+  `App/Shared/UISupport.swift`(MiniSparkline), `App/TokenMukbangWidget/UsageWidget.swift`
 - 데이터 흐름: ADR-0003(앱 write/위젯 read), 경계 주입: ADR-0006

@@ -12,7 +12,7 @@
 
 ## Decision
 
-`ClaudeUsageKit`의 **`FileWatcher`(`DispatchSource.makeFileSystemObjectSource`)**로 자격 파일
+`TokenMukbangKit`의 **`FileWatcher`(`DispatchSource.makeFileSystemObjectSource`)**로 자격 파일
 (`~/.claude/.credentials.json`)을 `O_EVTONLY`로 열어 `.write/.delete/.rename/.extend` 이벤트를 감지하고,
 이벤트 시 `onChange`로 즉시 refresh를 트리거한다(폴링은 그대로 백업). 주입 가능한 `FileWatching`
 프로토콜(ADR-0006) 뒤에 두어 앱은 추상화에 의존한다. 파일이 없으면 `start()`가 false를 돌려주며
@@ -34,5 +34,5 @@
 
 ## Affects
 
-- `Sources/ClaudeUsageKit/Support/FileWatcher.swift`(`FileWatching` 프로토콜 + `FileWatcher`)
-- `App/ClaudeUsageWidgetApp/AppModel.swift`(`startCredentialWatch`), 폴링: ADR-0003, seam: ADR-0006
+- `Sources/TokenMukbangKit/Support/FileWatcher.swift`(`FileWatching` 프로토콜 + `FileWatcher`)
+- `App/TokenMukbang/AppModel.swift`(`startCredentialWatch`), 폴링: ADR-0003, seam: ADR-0006

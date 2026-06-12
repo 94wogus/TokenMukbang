@@ -1,19 +1,16 @@
-name: ClaudeUsageWidget
+name: TokenMukbang
 options:
-  bundleIdPrefix: com.claudeusagewidget
+  bundleIdPrefix: com.tokenmukbang
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
 
 packages:
-  ClaudeUsageKit:
+  TokenMukbangKit:
     # The shared core lives in the SPM package at the repo root.
     path: ..
-  MenuBarExtraAccess:
-    # Reaches the underlying NSStatusItem from SwiftUI MenuBarExtra so we can KVO
-    # the button's effectiveAppearance (wallpaper-aware) → adaptive menu-bar color.
-    url: https://github.com/orchetect/MenuBarExtraAccess
-    from: "1.0.0"
+  # (MenuBarExtraAccess removed — the app no longer uses MenuBarExtra; it creates the
+  #  NSStatusItem + glass NSPanel directly, ADR-0018.)
 
 settings:
   base:
@@ -27,72 +24,70 @@ settings:
     DEVELOPMENT_TEAM: ""
 
 targets:
-  ClaudeUsageWidgetApp:
+  TokenMukbang:
     type: application
     platform: macOS
     sources:
-      - path: ClaudeUsageWidgetApp
+      - path: TokenMukbang
       - path: Shared
     dependencies:
-      - package: ClaudeUsageKit
-        product: ClaudeUsageKit
-      - package: MenuBarExtraAccess
-        product: MenuBarExtraAccess
-      - target: UsageWidgetExtension
+      - package: TokenMukbangKit
+        product: TokenMukbangKit
+      - target: TokenMukbangWidget
         embed: true
     info:
-      path: ClaudeUsageWidgetApp/Info.plist
+      path: TokenMukbang/Info.plist
       properties:
-        CFBundleDisplayName: Claude Usage Widget
+        CFBundleDisplayName: TokenMukbang
         # Menu-bar accessory app: no Dock icon, no main window.
         LSUIElement: true
         LSMinimumSystemVersion: "14.0"
     entitlements:
-      path: ClaudeUsageWidgetApp/App.entitlements
+      path: TokenMukbang/App.entitlements
       properties:
         # NOT sandboxed: shells out to security/ps/lsof/osascript. Shares the
         # cached snapshot with the widget via this App Group.
         com.apple.security.application-groups:
-          - group.com.claudeusagewidget
+          - group.com.tokenmukbang
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.claudeusagewidget.app
-        PRODUCT_NAME: ClaudeUsageWidget
+        PRODUCT_BUNDLE_IDENTIFIER: com.tokenmukbang.app
+        PRODUCT_NAME: TokenMukbang
         ENABLE_HARDENED_RUNTIME: "YES"
 
-  UsageWidgetExtension:
+  TokenMukbangWidget:
     type: app-extension
     platform: macOS
     sources:
-      - path: UsageWidgetExtension
+      - path: TokenMukbangWidget
       - path: Shared
     dependencies:
-      - package: ClaudeUsageKit
-        product: ClaudeUsageKit
+      - package: TokenMukbangKit
+        product: TokenMukbangKit
     info:
-      path: UsageWidgetExtension/Info.plist
+      path: TokenMukbangWidget/Info.plist
       properties:
-        CFBundleDisplayName: Claude Usage
+        CFBundleDisplayName: TokenMukbang
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
-      path: UsageWidgetExtension/Widget.entitlements
+      path: TokenMukbangWidget/Widget.entitlements
       properties:
         # Widget runs sandboxed; the App Group lets it read the app's snapshot.
         com.apple.security.app-sandbox: true
         com.apple.security.application-groups:
-          - group.com.claudeusagewidget
+          - group.com.tokenmukbang
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.claudeusagewidget.app.widget
-        PRODUCT_NAME: UsageWidgetExtension
+        PRODUCT_BUNDLE_IDENTIFIER: com.tokenmukbang.app.widget
+        PRODUCT_NAME: TokenMukbangWidget
         ENABLE_HARDENED_RUNTIME: "YES"
 
 schemes:
-  ClaudeUsageWidgetApp:
+  TokenMukbang:
     build:
       targets:
-        ClaudeUsageWidgetApp: all
-        UsageWidgetExtension: all
+        TokenMukbang: all
+        TokenMukbangWidget: all
     run:
       config: Debug

@@ -4,6 +4,37 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed — TokenMukbang 전면 리네임 (2026-06-12, ADR-0010 §0 완료)
+코드 전체에서 옛 `ClaudeUsage*` 브랜딩 제거 → **TokenMukbang**으로 정렬:
+- SPM 패키지 `ClaudeUsageKit`→`TokenMukbangKit`(+`Sources/`·`Tests/`·모든 `import`).
+- 앱/위젯 타깃·디렉토리 `ClaudeUsageWidgetApp`/`UsageWidgetExtension`→`TokenMukbang`/`TokenMukbangWidget`.
+- 번들 ID `com.claudeusagewidget.*`→`com.tokenmukbang.*`, App Group `group.com.claudeusagewidget`→
+  `group.com.tokenmukbang`(project.yml ×2 + `SharedStore.appGroupID`), `CFBundleDisplayName`→TokenMukbang.
+- 유일하게 남긴 `Claude`는 `ClaudeAPIClient`(과거 `ClaudeUsageClient`) — *Claude*의 OAuth API 클라이언트라 의도적.
+- 문서 동기화(CLAUDE 네이밍 노트·ADR-0010 §0·ARCHITECTURE 등). 빌드 green(app+widget) · `swift test` 77/77.
+
+### Changed — 진짜 glass 팝오버: 커스텀 NSPanel로 재구성 (2026-06-12, ADR-0018)
+라이브 피드백 + Apple/ghostty 리서치 끝, `MenuBarExtra`로는 behind-window 유리(뒤 데스크톱 블러)가
+원천 불가임을 확인하고 **상태바·팝오버를 직접 소유**하도록 전환:
+- **`MenuBarExtra` 제거** → `AppDelegate`가 `NSStatusItem` 생성, 라벨은 `MenuBarLabel`을 버튼 이미지로 렌더
+  (`$snapshot`/appearance 변경 시만 — 매 변경 렌더가 버벅임이라). `MenuBarExtraAccess` 의존성 삭제.
+- **팝오버 = borderless 투명 `NSPanel`** + contentView 최하단 `NSVisualEffectView(.behindWindow,
+  .underWindowBackground, state=.active)` + `NSHostingController(MenuContentView)`. `.state=.active`로
+  풀스크린에서도 회색 프로스트 안 끼고 일관. `blurStrength`(blur alphaValue)로 투명도/블러 다이얼.
+- **고정 높이(Option B)**: 두 탭 높이를 오프스크린 측정해 큰 쪽으로 고정 → 탭 전환 시 리사이즈 0(무버벅),
+  footer는 ZStack으로 바닥 고정.
+- **설정 = 컨트롤러 소유 NSWindow** (SwiftUI `Settings` 씬 재오픈 불안정 → 폐기). 닫히면 `.accessory` 복귀.
+  `applicationShouldTerminateAfterLastWindowClosed=false`(설정 닫아도 앱 유지).
+- **가독성·폴리시**: 헤더 Max/기어를 프로스트 칩으로(투명 유리 위 가독), 아이브로우 `.tertiary→.secondary`,
+  카드 하드 보더 제거(소프트 엣지+그림자), 탭 라벨 굵기 고정(전환 시 글자 안 들썩), 김/베일 제거(유리 그대로).
+- 빌드 green(app+widget) · `swift test` 77/77.
+
+### Changed — 분위기 테마 + 차트/위험색 테마 연동 + 기질 제거 (2026-06-12)
+- **분위기 테마**: 테마가 baseWash·유리 틴트·accent를 바꿈(`ThemeMood`). 위험색은 의미 유지하되 약하게
+  테마-틴트(게이지·세션 점·칩), 모델 식별색은 테마 쪽으로 톤 이동(Mono=그레이스케일). 기타는 중성.
+- **기질(Temperament) 제거**: 설정에서 삭제(라이브 파이프라인 미연결 + 모호). 스코어러는 `.balanced` 기본.
+- **게이지 히트램프 복원**: 단색 → calm→…→현재 티어로 *데워지는* amber→red 램프(개념 목업).
+
 ### Changed — 메뉴바 팝오버 IA 재구성 + 라이브 피드백 (2026-06-12, ADR-0017)
 실제 앱 실행 + 네이티브 컨벤션 리서치(Control Center·iStat Menus·Stats·Itsycal 등) 반영:
 - **하단 탭바 폐기 → 상단 `현황 | 기록` 세그먼트 토글**(위치 고정 → 탭 점프 제거). `DashboardLayout` 3→2 케이스.
@@ -123,7 +154,7 @@ First working version — a native macOS menu-bar app + WidgetKit widget that mo
 Claude usage, inspired by [TokenEater](https://github.com/AThevon/TokenEater).
 
 ### Added
-- **`ClaudeUsageKit`** — UI-framework-free Swift package holding all logic:
+- **`TokenMukbangKit`** — UI-framework-free Swift package holding all logic:
   - Keychain credential reader (`Claude Code-credentials`, read-only, via `security`).
   - OAuth client for `GET /api/oauth/usage` and `/api/oauth/profile`, with ISO-8601
     (fractional-second) date decoding.
@@ -138,10 +169,10 @@ Claude usage, inspired by [TokenEater](https://github.com/AThevon/TokenEater).
     missing/expired/offline states are surfaced as `snapshot.error`.
 - **`usage-cli`** — headless `--print` / `--json` full-pipeline runner (exit 0 even on
   graceful failure; the access token is never printed).
-- **Menu-bar app** (`ClaudeUsageWidgetApp`) — SwiftUI `MenuBarExtra` with a risk-tinted
+- **Menu-bar app** (`TokenMukbang`) — SwiftUI `MenuBarExtra` with a risk-tinted
   headline, a dropdown panel (usage windows + clickable active-session rows), and a
   60-second refresh loop that re-caches the snapshot and reloads widget timelines.
-- **WidgetKit widget** (`UsageWidgetExtension`) — `systemSmall` + `systemMedium` reading
+- **WidgetKit widget** (`TokenMukbangWidget`) — `systemSmall` + `systemMedium` reading
   the cached snapshot (no Keychain/network from the widget sandbox).
 - **XcodeGen** project spec (`App/project.yml`) generating the app + widget extension
   targets with correct Info.plist / entitlements (App Group, widget sandbox, `LSUIElement`).

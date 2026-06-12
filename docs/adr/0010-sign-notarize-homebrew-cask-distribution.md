@@ -18,20 +18,26 @@
 `brew install --cask 94wogus/tap/token-mukbang` 한 줄 설치를 제공한다. 먼저 **수동으로 1회 릴리즈**해
 전 과정을 검증한 뒤 **GitHub Actions로 자동화**한다.
 
-### 0. 이름 정렬
+### 0. 이름 정렬 — ✅ 완료 (2026-06-12)
 
-레포는 `TokenMukbang`인데 내부 product/번들은 `ClaudeUsageWidget`이다. 공개 배포 전에 정리한다.
+내부 이름을 전부 **TokenMukbang**으로 정렬했다(코드 리네임 2026-06-12): SPM 패키지
+`ClaudeUsageKit`→`TokenMukbangKit`, 타깃 `ClaudeUsageWidgetApp`/`UsageWidgetExtension`→
+`TokenMukbang`/`TokenMukbangWidget`, 번들 ID `com.claudeusagewidget.*`→`com.tokenmukbang.*`,
+App Group `group.com.claudeusagewidget`→`group.com.tokenmukbang`(`SharedStore.appGroupID` 포함).
+이름에 옛 `ClaudeUsage*` 흔적은 없다(`ClaudeAPIClient`만 남는데, 그건 *Claude*의 OAuth API
+클라이언트라 의도적).
 
 | 레이어 | 현재 | 배포 시 권장 |
 |--------|------|--------------|
-| 앱 표시 이름 (메뉴바/Finder) | Claude Usage Widget | **Token Mukbang** 🍚 |
-| `.app` 번들 / xcodebuild scheme | ClaudeUsageWidget | 유지 가능 (내부 이름) 또는 TokenMukbang |
+| 앱 표시 이름 (`CFBundleDisplayName`) | TokenMukbang | 유지 (원하면 "Token Mukbang" 🍚) |
+| `.app` 번들 / xcodebuild scheme | TokenMukbang | 유지 |
 | Cask 토큰 | — | `token-mukbang` |
-| Bundle ID | com.claudeusagewidget.app | `com.94wogus.tokenmukbang` (팀 도메인 기반 권장) |
-| App Group | group.com.claudeusagewidget | `group.<TEAMID>.tokenmukbang` (Developer ID는 팀ID 프리픽스) |
+| Bundle ID | com.tokenmukbang.app | `com.94wogus.tokenmukbang` (팀 도메인 기반 권장) |
+| App Group | group.com.tokenmukbang | `group.<TEAMID>.tokenmukbang` (Developer ID는 팀ID 프리픽스) |
 
-> Bundle ID / App Group을 바꾸면 `App/project.yml`·entitlements·`SharedStore.appGroupID`를 함께
-> 수정해야 한다. 양쪽 App Group ID가 일치해야 위젯이 스냅샷을 읽는다(ADR-0003 불변식, ADR-0005).
+> Bundle ID / App Group을 또 바꾸면(팀ID 프리픽스 등) `App/project.yml`·entitlements·
+> `SharedStore.appGroupID`를 함께 수정해야 한다. 양쪽 App Group ID가 일치해야 위젯이 스냅샷을
+> 읽는다(ADR-0003 불변식, ADR-0005).
 
 ### 1. 큰 그림 (릴리즈 파이프라인)
 
@@ -67,8 +73,8 @@ flowchart LR
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 cd App && xcodegen generate && cd ..
 xcodebuild archive \
-  -project App/ClaudeUsageWidget.xcodeproj \
-  -scheme ClaudeUsageWidgetApp \
+  -project App/TokenMukbang.xcodeproj \
+  -scheme TokenMukbang \
   -destination 'generic/platform=macOS' \
   -archivePath build/TokenMukbang.xcarchive
 xcodebuild -exportArchive \
@@ -130,7 +136,7 @@ cask "token-mukbang" do
   app "TokenMukbang.app"
 
   zap trash: [
-    "~/Library/Application Support/ClaudeUsageWidget",
+    "~/Library/Application Support/TokenMukbang",
     "~/Library/Containers/com.94wogus.tokenmukbang.widget",
   ]
 end

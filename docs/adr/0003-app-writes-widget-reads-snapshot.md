@@ -12,7 +12,7 @@ usage/세션 데이터를 보여줘야 한다. 두 프로세스가 같은 데이
 ## Decision
 
 **앱만** 라이브 파이프라인(Keychain→API→세션, `UsageService`)을 실행한다. 앱은 5분마다
-결과 `UsageSnapshot`을 App Group 컨테이너(`group.com.claudeusagewidget`)의 JSON 파일로
+결과 `UsageSnapshot`을 App Group 컨테이너(`group.com.tokenmukbang`)의 JSON 파일로
 쓰고(`SharedStore.write`) `WidgetCenter.reloadAllTimelines()`를 호출한다. **위젯은
 `SharedStore.read()`로 그 파일을 읽기만** 한다 — Keychain·네트워크를 절대 건드리지 않는다.
 `SharedStore`는 App Group 컨테이너를 우선 쓰고, 실패 시(미서명/dev) Application Support로
@@ -41,6 +41,6 @@ flowchart LR
 
 ## Affects
 
-- `Sources/ClaudeUsageKit/SharedStore.swift`, `App/ClaudeUsageWidgetApp/AppModel.swift`,
-  `App/UsageWidgetExtension/`, `App/project.yml`(entitlements)
+- `Sources/TokenMukbangKit/SharedStore.swift`, `App/TokenMukbang/AppModel.swift`,
+  `App/TokenMukbangWidget/`, `App/project.yml`(entitlements)
 - `CLAUDE.md`(App Group 일치 규칙), `ARCHITECTURE.md` §4, ADR-0010 §0

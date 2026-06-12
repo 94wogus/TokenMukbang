@@ -32,6 +32,6 @@
 
 ## Affects
 
-- `Sources/ClaudeUsageKit/UsageService.swift`, `UsageSnapshot.swift`
+- `Sources/TokenMukbangKit/UsageService.swift`, `UsageSnapshot.swift`
 - `Sources/usage-cli/main.swift`(exit 0 정책), `App/.../AppModel.swift`
 - `CLAUDE.md`("never throws" 규칙), `ARCHITECTURE.md` §2
