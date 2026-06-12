@@ -45,6 +45,60 @@ final class TokenHistoryTests: XCTestCase {
         XCTAssertEqual(byProject["beta"], 10)
     }
 
+    func testByCastBreakdown() {
+        func ev(_ model: String, _ tok: Int) -> TokenEvent {
+            TokenEvent(timestamp: Date(timeIntervalSince1970: 0), model: model,
+                       inputTokens: tok, outputTokens: 0, cacheReadTokens: 999,
+                       cacheCreationTokens: 0, project: "p")
+        }
+        // Opus dominates volume; Fable maps now; <synthetic> falls into the nil "기타" bucket.
+        let events = [ev("claude-opus-4-8", 100), ev("claude-opus-4-7", 50),
+                      ev("claude-sonnet-4-6", 30), ev("claude-fable-5", 24),
+                      ev("<synthetic>", 7)]
+        let casts = TokenHistory.byCast(events)
+        // Sorted by consumed tokens desc (cache reads excluded → equals input here).
+        XCTAssertEqual(casts.map(\.cast), [.opus, .sonnet, .fable, nil])
+        XCTAssertEqual(casts.first?.tokens, 150)            // opus 100 + 50
+        XCTAssertEqual(casts.first { $0.cast == .fable }?.tokens, 24)
+        XCTAssertEqual(casts.first { $0.cast == nil }?.tokens, 7)  // 기타 bucket
+        XCTAssertEqual(casts.first { $0.cast == nil }?.id, "기타")
+    }
+
+    func testByDayCastStacks() {
+        let day0 = Date(timeIntervalSince1970: 0)                 // 1970-01-01 UTC
+        let day1 = Date(timeIntervalSince1970: 86_400)            // 1970-01-02 UTC
+        func ev(_ d: Date, _ model: String, _ tok: Int) -> TokenEvent {
+            TokenEvent(timestamp: d, model: model, inputTokens: tok, outputTokens: 0,
+                       cacheReadTokens: 0, cacheCreationTokens: 0, project: "p")
+        }
+        let events = [ev(day0, "claude-opus-4-8", 100), ev(day0, "claude-sonnet-4-6", 30),
+                      ev(day0, "claude-fable-5", 20), ev(day1, "claude-opus-4-8", 10)]
+        let stacks = TokenHistory.byDayCast(events)
+        XCTAssertEqual(stacks.count, 2)
+        // Day 0 segments in canonical order Opus→Sonnet→Fable, total 150.
+        XCTAssertEqual(stacks[0].segments.map(\.cast), [.opus, .sonnet, .fable])
+        XCTAssertEqual(stacks[0].total, 150)
+        XCTAssertEqual(stacks[1].segments.map(\.cast), [.opus])
+        XCTAssertEqual(stacks[1].total, 10)
+    }
+
+    func testSummaryActiveCachedAndDelta() {
+        let now = Date(timeIntervalSince1970: 100 * 24 * 3600)   // day 100
+        func ev(_ daysAgo: Double, _ active: Int, _ cached: Int) -> TokenEvent {
+            TokenEvent(timestamp: now.addingTimeInterval(-daysAgo * 86400), model: "claude-opus-4-8",
+                       inputTokens: active, outputTokens: 0, cacheReadTokens: cached,
+                       cacheCreationTokens: 0, project: "p")
+        }
+        // This week: active 100, cached 900. Previous week (8 days ago): active 50.
+        let events = [ev(1, 100, 900), ev(8, 50, 0)]
+        let s = TokenHistory.summary(events, timeframe: .week, now: now)
+        XCTAssertEqual(s.active, 100)
+        XCTAssertEqual(s.cached, 900)
+        XCTAssertEqual(s.total, 1000)
+        XCTAssertEqual(s.cacheHitRate, 0.9, accuracy: 0.0001)
+        XCTAssertEqual(s.deltaPercent ?? 0, 100, accuracy: 0.0001)   // 100 vs prev 50 = +100%
+    }
+
     func testHeaviestDayAndTopProject() throws {
         let events = try fixtureEvents()
         XCTAssertEqual(TokenHistory.heaviestDay(events)?.tokens, 380)

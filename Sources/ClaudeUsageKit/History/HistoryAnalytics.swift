@@ -63,7 +63,7 @@ public enum Timeframe: String, Sendable, CaseIterable, Identifiable {
     }
 }
 
-/// Filters history for the browser — by model cast (Opus/Sonnet/Haiku) and timeframe.
+/// Filters history for the browser — by model cast (Opus/Sonnet/Haiku/Fable) and timeframe.
 public enum HistoryFilter {
     /// Token events within a timeframe, optionally restricted to one model cast.
     public static func tokenEvents(

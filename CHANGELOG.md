@@ -4,6 +4,20 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed / Added — per-model History breakdown
+- **Fable mapping (bug)**: `claude-fable-5` wasn't matched by `ModelCast.forModel` (only
+  opus/sonnet/haiku) → ~24% of recent tokens were uncategorized and invisible to the model
+  filter. Added `ModelCast.fable` (미식가); unmapped models now fall into an explicit "기타" bucket.
+- **Per-model breakdown (Kit)**: `TokenHistory.byCast` (consumed tokens per cast, 기타 incl.) +
+  `byDayCast` (per-day model segments) + `summary` (active/cached + cache-hit + Δ vs previous period).
+- **History UI redesign**: the daily bar chart is now **stacked by model** (`StackedTokenBarChart`) so
+  each day's bar shows its model composition, over a summary header (신선/재가열 tokens + 캐시 적중률 +
+  trend badge) and a per-model legend (color · model · total). Model-identity colors via `DS.modelColor`.
+  Purely token-based — the API utilization % is a different, **account-wide** metric (covers claude.ai
+  web etc., not just CLI), so it's not mixed into the per-CLI-model History (TokenEater does the same).
+  Replaces the old combined picker.
+- +7 Kit tests (byCast, byDayCast, summary, fable mapping). `swift test` 77/77 green.
+
 ### Changed — UI redesign ("Liquid Vitals, Instrument-Grade" design system)
 - **Design system** (`docs/design/DESIGN_RESEARCH.md` + `docs/design/DESIGN_SYSTEM.md`):
   scheme-branched risk palette resolved app-side (`RiskTone` in `App/Shared/DesignSystem.swift`);
