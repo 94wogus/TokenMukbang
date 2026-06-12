@@ -171,7 +171,7 @@ SwiftUI: `Font.system(size:, weight:, design: .default)` + `.monospacedDigit()`.
 - **하:** 핵심이 전부 표준 SwiftUI 텍스트 조판이다. 히어로 %·라벨·세션 행·리더 닷·밑줄 인코딩 모두 `Text` + `.monospacedDigit()` + `.tracking()` + 얇은 `Rectangle(height: 0.5)`로 충분. 박스/그림자/애니메이션이 없어 레이아웃 버그 표면이 작다. 위험 4단계는 weight/색 토큰 분기 한 줄.
 - **중(부분):** ① 리더 닷을 컨테이너 폭에 맞춰 동적으로 채우는 처리(`GeometryReader` 또는 가변폭 dot string + `Spacer` 트릭). ② 위젯 small의 타일-채우기 숫자는 `minimumScaleFactor` + `lineLimit(1)`로 안전하게. ③ 메뉴바 반투명 대비는 vibrancy on/off 분기 테스트 필요.
 
-핵심 로직(% / 위험 단계 / 토큰 합계)은 모두 `ClaudeUsageKit`이 이미 제공 → UI는 **순수 표현**만 담당(ADR-0001 준수). 새 데이터 경로 불필요.
+핵심 로직(% / 위험 단계 / 토큰 합계)은 모두 `TokenMukbangKit`이 이미 제공 → UI는 **순수 표현**만 담당(ADR-0001 준수). 새 데이터 경로 불필요.
 
 ## 트렌드 레퍼런스
 

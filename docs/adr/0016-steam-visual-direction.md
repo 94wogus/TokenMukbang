@@ -61,7 +61,7 @@
 - `docs/design/STEAM_DESIGN.md`(정본), `docs/design/STEAM_IMPLEMENTATION_PLAN.md`(계획)
 - `docs/design/DESIGN_SYSTEM.md`(대체 대상 — 코드 단계에서 superseded 처리)
 - `docs/design/concepts/`(04-steam 정본, 나머지 `_archive/`)
-- 코드 적용 시: `App/Shared/DesignSystem.swift`, `App/ClaudeUsageWidgetApp/ClaudeUsageWidgetApp.swift`(`MenuBarLabel`),
+- 코드 적용 시: `App/Shared/DesignSystem.swift`, `App/TokenMukbang/TokenMukbang.swift`(`MenuBarLabel`),
   `Views/MenuContentView.swift`·`MonitoringViews.swift`·`UsageRowView.swift`·`HistoryViews.swift`,
-  `App/UsageWidgetExtension/UsageWidget.swift`, `CLAUDE.md`/`ARCHITECTURE.md`/`CHANGELOG.md`
+  `App/TokenMukbangWidget/UsageWidget.swift`, `CLAUDE.md`/`ARCHITECTURE.md`/`CHANGELOG.md`
 - 관계: ADR-0009(먹방)·ADR-0015(RiskTone) 상속·유효 / ADR-0003(위젯 read-only) 준수(위젯 정적 김)

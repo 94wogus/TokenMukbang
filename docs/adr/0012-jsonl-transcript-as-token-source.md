@@ -12,7 +12,7 @@ assistant 턴 `message.usage`에 남기는 값에만 있다(세션 탐지 ADR과
 
 ## Decision
 
-**토큰 소비 데이터는 JSONL 트랜스크립트를 tail-read해서 얻는다.** `ClaudeUsageKit`의 `JSONLParser`가
+**토큰 소비 데이터는 JSONL 트랜스크립트를 tail-read해서 얻는다.** `TokenMukbangKit`의 `JSONLParser`가
 각 줄을 파싱해 `TokenEvent`(timestamp, model, input/output/cache 토큰, project=cwd lastPathComponent)를
 추출하고, `TokenHistory`가 일별/모델별/프로젝트별로 집계한다(heaviestDay/topProject/total). 파일 접근은
 `allEvents(claudeHome:)`의 `claudeHome` 파라미터로 주입 가능하게 두어(ADR-0006 seam) 테스트는 fixture로
@@ -32,6 +32,6 @@ assistant 턴 `message.usage`에 남기는 값에만 있다(세션 탐지 ADR과
 
 ## Affects
 
-- `Sources/ClaudeUsageKit/History/{JSONLParser,TokenHistory}.swift`
+- `Sources/TokenMukbangKit/History/{JSONLParser,TokenHistory}.swift`
 - 세션 탐지(ADR-0006 seam, 같은 `~/.claude/projects/` 소스), 사용률 API(ADR-0004)
 - History 브라우저 UI(`App/`), `ARCHITECTURE.md` History 섹션

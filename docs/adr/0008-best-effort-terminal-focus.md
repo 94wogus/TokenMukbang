@@ -43,5 +43,5 @@ TTY→탭 매칭 파싱은 순수 함수로 두어 단위 테스트한다.
 
 ## Affects
 
-- `Sources/ClaudeUsageKit/Focus/TerminalFocus.swift`(`SupportedTerminal` enum, `weztermPaneId`), `Sessions/SessionDetector.swift`
-- `App/ClaudeUsageWidgetApp/`(세션 행 클릭 핸들러, `Overlay/` Agent Watchers 오버레이), `ARCHITECTURE.md`(세션 섹션)
+- `Sources/TokenMukbangKit/Focus/TerminalFocus.swift`(`SupportedTerminal` enum, `weztermPaneId`), `Sessions/SessionDetector.swift`
+- `App/TokenMukbang/`(세션 행 클릭 핸들러, `Overlay/` Agent Watchers 오버레이), `ARCHITECTURE.md`(세션 섹션)

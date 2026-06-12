@@ -171,7 +171,7 @@ small (1 hero module)              medium (hero + secondary)
 - **하 (쉬움):** 모듈 셀(`RoundedRectangle(cornerRadius:0)` + 2px `stroke`), 모노 라벨, 컬러 토큰, plain 메뉴바 텍스트 fallback, 대괄호 마스코트(텍스트라 상태별 문자열 스왑만).
 - **중:** 세그먼트 LED 바(켜짐/꺼짐 세그를 `HStack`의 작은 `Rectangle` 배열로; 켜진 개수 = `round(pct*n)`), function 스트라이프, 4코너 `+` 등록마크 배치, 라벨 폭 기반 축약(`ViewThatFits` / `GeometryReader`).
 - **상 (까다로움):** 위젯 small/medium 양쪽에서 모듈 비례 깨짐 없이 맞추기(WidgetKit 고정 사이즈 클래스), 메뉴바 세그먼트 모드의 반투명 앨리어싱 튜닝, 모델 히스토리 세그먼트 스택의 비중→세그먼트 매핑(반올림 누적 오차 보정).
-- 전체적으로 **중** — 곡선/그림자/애니메이션이 없어 렌더는 단순하나, *세그먼트 매핑의 정수 반올림*과 *반응형 라벨 축약*이 품질을 가른다. ContextFraction·RiskScorer 등 수치는 전부 `ClaudeUsageKit`에서 오므로(ADR-0001) UI는 *표현*만 책임진다.
+- 전체적으로 **중** — 곡선/그림자/애니메이션이 없어 렌더는 단순하나, *세그먼트 매핑의 정수 반올림*과 *반응형 라벨 축약*이 품질을 가른다. ContextFraction·RiskScorer 등 수치는 전부 `TokenMukbangKit`에서 오므로(ADR-0001) UI는 *표현*만 책임진다.
 
 ## 트렌드 레퍼런스
 

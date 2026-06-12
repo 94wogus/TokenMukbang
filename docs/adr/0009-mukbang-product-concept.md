@@ -169,5 +169,5 @@ Native macOS menu bar app with a terminal-born mascot, for Claude usage metering
 ## Affects
 
 - 향후 `App/`의 메뉴바 라벨·위젯·팝오버 카피와 `MukbangFace` enum 도입, `usage-cli` 출력 톤
-- 네이밍/브랜딩: ADR-0010(배포 시 `ClaudeUsageWidget` → `TokenMukbang` 이름 정렬)
+- 네이밍/브랜딩: ADR-0010(배포 시 `TokenMukbang` → `TokenMukbang` 이름 정렬)
 - `README.md` 소개 문구

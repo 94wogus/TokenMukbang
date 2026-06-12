@@ -16,7 +16,7 @@
 ## 1. Color tokens
 
 Resolved in the **app layer** by a `RiskTone` resolver that reads `@Environment(\.colorScheme)`.
-`ClaudeUsageKit` stays UI-free and only emits the `RiskLevel` enum (calm/watch/warning/critical)
+`TokenMukbangKit` stays UI-free and only emits the `RiskLevel` enum (calm/watch/warning/critical)
 + an `isOver` flag — it never owns a `Color`.
 
 **Risk scale** — risk color rides **gauge fill / ring / endpoint dot ONLY**, never a small numeral.

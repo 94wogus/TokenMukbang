@@ -1,8 +1,25 @@
 import SwiftUI
-import ClaudeUsageKit
+import AppKit
+import TokenMukbangKit
+
+extension Color {
+    /// Blend this color a fraction `amount` (0…1) toward `other` in sRGB. Used to pull the
+    /// categorical model palette toward the theme accent — keeps relative distinguishability
+    /// (every hue shifts equally) while tinting the whole set on-theme.
+    func blended(toward other: Color, amount: Double) -> Color {
+        let a = max(0, min(1, amount))
+        guard a > 0 else { return self }
+        guard let c1 = NSColor(self).usingColorSpace(.sRGB),
+              let c2 = NSColor(other).usingColorSpace(.sRGB) else { return self }
+        return Color(.sRGB,
+                     red:   Double(c1.redComponent)   * (1 - a) + Double(c2.redComponent)   * a,
+                     green: Double(c1.greenComponent) * (1 - a) + Double(c2.greenComponent) * a,
+                     blue:  Double(c1.blueComponent)  * (1 - a) + Double(c2.blueComponent)  * a)
+    }
+}
 
 // The "Liquid Vitals, Instrument-Grade" design system (docs/design/DESIGN_SYSTEM.md).
-// Risk color is resolved HERE (app side), scheme-branched — ClaudeUsageKit stays
+// Risk color is resolved HERE (app side), scheme-branched — TokenMukbangKit stays
 // color-free and only emits the RiskLevel rawValue + isOver flag.
 
 /// Scheme-branched risk palette. Risk color rides gauge fill / ring / dot ONLY —
@@ -124,20 +141,74 @@ enum Steam {
     static func edgeLens(_ s: ColorScheme) -> Color { s == .light ? Color.white.opacity(0.70) : Color.white.opacity(0.20) }
     static func hairline(_ s: ColorScheme) -> Color { s == .light ? Color.black.opacity(0.08) : Color.white.opacity(0.094) }
 
-    /// Intrinsic base wash under the frost — gives the popover its OWN depth/color so it
-    /// looks rich over *any* desktop, not only a colorful wallpaper. (The pure-adaptive
-    /// glass blurred whatever was behind the popover, so over a plain desktop it went flat —
-    /// user feedback 2026-06-12.) Cool charcoal (dark) / warm paper (light), top→bottom.
-    static func baseWash(_ s: ColorScheme) -> LinearGradient {
-        let stops: [Color] = s == .light
-            ? [Color(hex: "#FBFAF8").opacity(0.72), Color(hex: "#EEECE8").opacity(0.80)]
-            : [Color(hex: "#2A2E35").opacity(0.74), Color(hex: "#191B20").opacity(0.82)]
-        return LinearGradient(colors: stops, startPoint: .top, endPoint: .bottom)
-    }
-
     // Tightened from 28/22 (design-critique: native macOS cards are crisper, not pill-soft).
     static let panelRadius: CGFloat = 18
     static let tileRadius: CGFloat = 14
+}
+
+/// Theme **mood** — how the selected `Theme` tints the popover *atmosphere* (background
+/// wash · glass tint · accent). Risk colors stay semantic & theme-independent: the theme is
+/// the room's mood, the danger scale never changes meaning (user decision 2026-06-12; ADR-0015
+/// keeps color app-side). Resolved once at the popover root and read via `\.themeMood`.
+struct ThemeMood: Equatable {
+    var baseTop: Color
+    var baseBottom: Color
+    var glassTint: Color        // faint per-theme overlay on cards (.clear = neutral)
+    var accent: Color           // theme accent (drives .tint + categorical-color biasing)
+    var dataTint: Double        // how hard categorical (model) colors pull toward accent (0…1)
+    var riskTint: Double        // GENTLER pull for risk colors (gauge/dots) — keeps the
+                                // calm→critical ordering so danger still reads, just on-theme
+
+    /// Blend a risk color toward the theme so the whole UI is cohesive — gentle so critical
+    /// stays clearly hot. 기타-style neutrals are untouched by callers.
+    func themedRisk(_ c: Color) -> Color { c.blended(toward: accent, amount: riskTint) }
+
+    /// Intrinsic base wash under the frost — gives the popover its OWN depth/color so it looks
+    /// rich over *any* desktop (not only a colorful wallpaper), now tinted by the theme.
+    var baseWash: LinearGradient {
+        LinearGradient(colors: [baseTop, baseBottom], startPoint: .top, endPoint: .bottom)
+    }
+
+    static func resolve(_ theme: Theme, _ scheme: ColorScheme, accent: Color) -> ThemeMood {
+        let light = scheme == .light
+        // The biggest container is PURE glass — only a faint NEUTRAL frost scrim for text
+        // legibility (no theme hue), so the behind-window blur reads as real glass. The THEME
+        // color lives on the CARDS (glassTint) instead (user idea 2026-06-12).
+        let baseTop    = Color(hex: light ? "#FFFFFF" : "#2C3036").opacity(light ? 0.12 : 0.16)
+        let baseBottom = Color(hex: light ? "#F1F0EE" : "#191B20").opacity(light ? 0.18 : 0.22)
+        func card(_ hex: String, _ a: Double) -> Color { Color(hex: hex).opacity(a) }
+        switch theme {
+        case .classic:            // neutral glass cards
+            return ThemeMood(baseTop: baseTop, baseBottom: baseBottom,
+                             glassTint: .clear, accent: accent, dataTint: 0.0, riskTint: 0.0)
+        case .custom:             // cards tinted by the user's accent
+            return ThemeMood(baseTop: baseTop, baseBottom: baseBottom,
+                             glassTint: accent.opacity(0.16), accent: accent, dataTint: 0.32, riskTint: 0.16)
+        case .mint:               // mint-tinted glass cards
+            return ThemeMood(baseTop: baseTop, baseBottom: baseBottom,
+                             glassTint: card(light ? "#13A56B" : "#37E8AE", 0.18),
+                             accent: accent, dataTint: 0.42, riskTint: 0.24)
+        case .sunset:             // amber-tinted glass cards
+            return ThemeMood(baseTop: baseTop, baseBottom: baseBottom,
+                             glassTint: card(light ? "#F2590A" : "#FFA86B", 0.18),
+                             accent: accent, dataTint: 0.42, riskTint: 0.24)
+        case .mono:               // neutral grey cards + greyscale data
+            return ThemeMood(baseTop: baseTop, baseBottom: baseBottom,
+                             glassTint: Color.gray.opacity(0.13),
+                             accent: accent, dataTint: 0.70, riskTint: 0.50)
+        }
+    }
+}
+
+private struct ThemeMoodKey: EnvironmentKey {
+    static let defaultValue = ThemeMood.resolve(.classic, .dark, accent: Color(hex: "#0A84FF"))
+    // (riskTint/dataTint baked by resolve)
+}
+extension EnvironmentValues {
+    var themeMood: ThemeMood {
+        get { self[ThemeMoodKey.self] }
+        set { self[ThemeMoodKey.self] = newValue }
+    }
 }
 
 /// Type scale, spacing, radii — the single source the views read from.
@@ -184,6 +255,15 @@ enum DS {
         case .none:   return (light ? Color.black : Color.white).opacity(0.32)  // 기타
         }
     }
+
+    /// Theme-aware model color — the categorical hue pulled toward the theme accent so the
+    /// History chart/legend read on-theme (relative distinctness preserved). 기타(neutral)
+    /// stays neutral. (user feedback 2026-06-12: charts must follow the theme too.)
+    static func modelColor(_ cast: ModelCast?, scheme: ColorScheme, mood: ThemeMood) -> Color {
+        let base = modelColor(cast, scheme: scheme)
+        guard cast != nil else { return base }   // 기타 stays neutral
+        return base.blended(toward: mood.accent, amount: mood.dataTint)
+    }
 }
 
 /// The demoted 6pt gauge bar — a quiet echo of the number, carrying the risk color
@@ -192,10 +272,14 @@ struct GaugeBar: View {
     let window: UsageSnapshot.Window
     let scheme: ColorScheme
     var height: CGFloat = DS.gaugeHeight
+    @Environment(\.themeMood) private var mood
 
     var body: some View {
         let frac = max(0, min(1, window.utilization / 100))
+        // Risk ramp, gently pulled on-theme so the dashboard matches the History chart while the
+        // calm→critical order (danger reading) survives (user feedback 2026-06-12).
         let ramp = RiskTone.gaugeRamp(level: window.riskLevel, over: window.isOver, scheme: scheme)
+            .map { mood.themedRisk($0) }
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule().fill(scheme == .light ? DS.gaugeTrackLight : DS.gaugeTrackDark)
@@ -240,10 +324,12 @@ struct DSSegmented<T: Hashable>: View {
         HStack(spacing: 2) {
             ForEach(options, id: \.self) { option in
                 let on = selection == option
+                // Constant weight — toggling .semibold/.regular changed the label width and made
+                // the tabs visibly jump on switch (user 2026-06-12). Selection = pill + ink only.
                 Text(label(option))
-                    .font(.system(size: 11, weight: on ? .semibold : .regular))
-                    .foregroundStyle(on ? Color(.labelColor) : .secondary)
-                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(on ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                    .lineLimit(1)
                     .padding(.vertical, 4)
                     .frame(maxWidth: .infinity)
                     .background(on ? AnyShapeStyle(.background.opacity(0.9)) : AnyShapeStyle(.clear),
@@ -261,10 +347,12 @@ extension View {
     /// An eyebrow-style section label (UPPERCASE, tracked, tertiary) — use ONCE,
     /// at the major seam (DESIGN_SYSTEM §3.6).
     func dsEyebrow() -> some View {
-        self.font(.system(size: 10, weight: .medium))
+        // .secondary (not .tertiary) — over the see-through glass the tertiary eyebrows vanished
+        // on busy backdrops (user 2026-06-12: "7D WINDOW/SESSIONS 안 보임").
+        self.font(.system(size: 10, weight: .semibold))
             .tracking(0.6)
             .textCase(.uppercase)
-            .foregroundStyle(.tertiary)
+            .foregroundStyle(.secondary)
     }
 
     /// The one hairline seam (crisp 1px via displayScale).

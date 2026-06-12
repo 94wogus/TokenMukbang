@@ -5,7 +5,7 @@
 > OAuth token from the Keychain, shows live per-window usage % + reset countdowns
 > with a risk-colored gauge, lists your **active Claude Code sessions** with their
 > context-window fill, and lets you **click a session to focus its terminal**.
-> The brain is a UI-free Swift package (`ClaudeUsageKit`) so it's fully unit-tested;
+> The brain is a UI-free Swift package (`TokenMukbangKit`) so it's fully unit-tested;
 > the app/widget are generated with XcodeGen. v1 is built and verified end-to-end.
 
 ## What it does
@@ -24,7 +24,7 @@
 
 ## Architecture
 
-A UI-free Swift package (`ClaudeUsageKit`, `import Foundation` only) holds all logic, so
+A UI-free Swift package (`TokenMukbangKit`, `import Foundation` only) holds all logic, so
 the data/logic layer is fully unit-testable; the SwiftUI app and WidgetKit widget both
 depend on that one package (no duplicated logic), and the widget only ever reads a cached
 `UsageSnapshot` the app writes to a shared App Group container.
@@ -37,7 +37,7 @@ depend on that one package (no duplicated logic), and the widget only ever reads
 
 - macOS 14+
 - Xcode (full) for building the app/widget — the menu-bar/widget targets need
-  `xcodebuild`. The `ClaudeUsageKit` core + `usage-cli` build with Command Line Tools.
+  `xcodebuild`. The `TokenMukbangKit` core + `usage-cli` build with Command Line Tools.
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`) to generate
   the Xcode project.
 - A signed-in Claude Code (Pro/Max/Team) — the OAuth token is read from the macOS Keychain
@@ -57,8 +57,8 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 # 3. The menu-bar app + widget
 cd App && xcodegen generate && cd ..
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
-  xcodebuild -project App/ClaudeUsageWidget.xcodeproj \
-  -scheme ClaudeUsageWidgetApp -destination 'platform=macOS' build
+  xcodebuild -project App/TokenMukbang.xcodeproj \
+  -scheme TokenMukbang -destination 'platform=macOS' build
 ```
 
 > `DEVELOPER_DIR=...` activates a full Xcode install for that command without changing

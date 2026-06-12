@@ -1,9 +1,9 @@
 import SwiftUI
-import ClaudeUsageKit
+import TokenMukbangKit
 
 // UI-only helpers shared by both the app and the widget extension. These are
 // presentation glue (hex → Color), not usage/session/risk logic — that all lives
-// once in ClaudeUsageKit.
+// once in TokenMukbangKit.
 
 extension Color {
     /// Build a color from a `#RRGGBB` hex string (the form `RiskLevel.hex` emits).

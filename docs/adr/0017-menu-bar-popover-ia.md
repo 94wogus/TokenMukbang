@@ -39,7 +39,7 @@
 - ➕ 팝오버가 글랜스 면으로 단순화, 설정의 복잡한 폼은 넓은 창에서 편집.
 - ➖ MenuBarExtra의 Settings-창 열기 패턴(활성화 정책 토글)이 비자명 — 코드 주석으로 박제.
 - ➖ `DashboardLayout`이 3→2 케이스로 축소(History는 토글로 유지, Settings는 enum에서 빠짐).
-- 영향 문서/코드: `MenuContentView`(상단 토글·기어·풋터), `ClaudeUsageWidgetApp`(`Settings` 씬),
+- 영향 문서/코드: `MenuContentView`(상단 토글·기어·풋터), `TokenMukbang`(`Settings` 씬),
   `DashboardLayout`(2-케이스), `CLAUDE.md`/`README.md`/`CHANGELOG.md`.
 
 ## Alternatives considered

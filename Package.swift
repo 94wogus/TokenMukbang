@@ -2,25 +2,25 @@
 import PackageDescription
 
 let package = Package(
-    name: "ClaudeUsageWidget",
+    name: "TokenMukbang",
     platforms: [.macOS(.v14)],
     products: [
-        .library(name: "ClaudeUsageKit", targets: ["ClaudeUsageKit"]),
+        .library(name: "TokenMukbangKit", targets: ["TokenMukbangKit"]),
         .executable(name: "usage-cli", targets: ["usage-cli"]),
     ],
     targets: [
         .target(
-            name: "ClaudeUsageKit",
+            name: "TokenMukbangKit",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .executableTarget(
             name: "usage-cli",
-            dependencies: ["ClaudeUsageKit"],
+            dependencies: ["TokenMukbangKit"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(
-            name: "ClaudeUsageKitTests",
-            dependencies: ["ClaudeUsageKit"],
+            name: "TokenMukbangKitTests",
+            dependencies: ["TokenMukbangKit"],
             resources: [.copy("Fixtures")]
         ),
     ]

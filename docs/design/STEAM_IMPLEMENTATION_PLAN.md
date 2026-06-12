@@ -18,14 +18,14 @@
 | `App/Shared/DesignSystem.swift` › `struct DSSegmented` | 세그먼트 컨트롤 | 유지(팔레트만 글래스화). |
 | `App/Shared/DesignSystem.swift` › `dsEyebrow()` | eyebrow 라벨 | 유지. |
 | **(신규)** `App/Shared/SteamComponents.swift` | — (없음) | 새 파일에 z-stack 재사용 View들: **`SteamPlume`**(z3 김 blur plume)·**`Condensation`**(응결 물방울)·**`FrostPanel`/`GlassTile`**(z1/z2)·**`BrothGlow`**(z0). `App/Shared/`에 두는 이유: `DesignSystem.swift`처럼 앱·위젯 **두 타깃이 공유**(project.yml의 `Shared` glob으로 자동 포함, S2에서 별도 project 편집 불필요). |
-| `App/ClaudeUsageWidgetApp/ClaudeUsageWidgetApp.swift` › `struct MenuBarLabel` | 비-template color NSImage로 `5h 85% 7d 47%` 렌더(현 시그니처: colored %) | 시그니처 교체: `▓ 85% · 3 ◐` scrim 캡슐 + 텍스트 위 미세 김 plume(`RiskTone.steamTint`). 렌더 경로(`ImageRenderer`+`isTemplate=false`) 재사용. |
-| `App/ClaudeUsageWidgetApp/ClaudeUsageWidgetApp.swift` › `final class MenuBarAppearance` | 메뉴바 light/dark 추적(status 버튼 effectiveAppearance) | **유지**(김/스크림 색 분기에 그대로 사용). |
-| `App/ClaudeUsageWidgetApp/Views/MenuContentView.swift` (팝오버 루트) | VStack(헤더/content/footer), `.background(.regularMaterial)` | z-stack 도입: z0 `BrothGlow` → `.regularMaterial`(z1) → 기존 content를 `GlassTile`(z2)로 → `SteamPlume`(z3) 오버레이 + `Condensation`. |
-| `App/ClaudeUsageWidgetApp/Views/MonitoringViews.swift` › `struct WindowRow` | 라벨·게이지·우측 값 | 유지, GlassTile 안으로. 히어로 윈도우만 별도 타일+히어로 %. |
-| `App/ClaudeUsageWidgetApp/Views/UsageRowView.swift` › `struct UsageRowView`,`struct SessionRowView` | 윈도우 row / 세션 row(risk dot=`RiskTone.contextColor`) | 유지, GlassTile 안으로. dot/색 그대로. |
-| `App/ClaudeUsageWidgetApp/Views/HistoryViews.swift` | 히스토리 막대(`TokenBarChart`) | 유지(글래스화). 모델별 스택은 PR #2 합류 후. |
-| `App/UsageWidgetExtension/UsageWidget.swift` › `SmallWidget`/`MediumWidget` | 위젯(스냅샷 read-only, ADR-0003) | 정적 김 한 프레임(`SteamPlume` 정적 모드) + 그릇 % 중심. 동적 금지. |
-| `Sources/ClaudeUsageKit/**` | level enum만 emit(color-free, ADR-0001/0015) | **변경 없음** — 김/색은 전부 앱-측. |
+| `App/TokenMukbang/TokenMukbang.swift` › `struct MenuBarLabel` | 비-template color NSImage로 `5h 85% 7d 47%` 렌더(현 시그니처: colored %) | 시그니처 교체: `▓ 85% · 3 ◐` scrim 캡슐 + 텍스트 위 미세 김 plume(`RiskTone.steamTint`). 렌더 경로(`ImageRenderer`+`isTemplate=false`) 재사용. |
+| `App/TokenMukbang/TokenMukbang.swift` › `final class MenuBarAppearance` | 메뉴바 light/dark 추적(status 버튼 effectiveAppearance) | **유지**(김/스크림 색 분기에 그대로 사용). |
+| `App/TokenMukbang/Views/MenuContentView.swift` (팝오버 루트) | VStack(헤더/content/footer), `.background(.regularMaterial)` | z-stack 도입: z0 `BrothGlow` → `.regularMaterial`(z1) → 기존 content를 `GlassTile`(z2)로 → `SteamPlume`(z3) 오버레이 + `Condensation`. |
+| `App/TokenMukbang/Views/MonitoringViews.swift` › `struct WindowRow` | 라벨·게이지·우측 값 | 유지, GlassTile 안으로. 히어로 윈도우만 별도 타일+히어로 %. |
+| `App/TokenMukbang/Views/UsageRowView.swift` › `struct UsageRowView`,`struct SessionRowView` | 윈도우 row / 세션 row(risk dot=`RiskTone.contextColor`) | 유지, GlassTile 안으로. dot/색 그대로. |
+| `App/TokenMukbang/Views/HistoryViews.swift` | 히스토리 막대(`TokenBarChart`) | 유지(글래스화). 모델별 스택은 PR #2 합류 후. |
+| `App/TokenMukbangWidget/UsageWidget.swift` › `SmallWidget`/`MediumWidget` | 위젯(스냅샷 read-only, ADR-0003) | 정적 김 한 프레임(`SteamPlume` 정적 모드) + 그릇 % 중심. 동적 금지. |
+| `Sources/TokenMukbangKit/**` | level enum만 emit(color-free, ADR-0001/0015) | **변경 없음** — 김/색은 전부 앱-측. |
 
 ## 슬라이스 단계
 
