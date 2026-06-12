@@ -36,48 +36,165 @@ struct UsageGraphView: View {
     }
 }
 
-/// History browser (T3.3): filter by model cast, show each window's 7-day graph.
+/// History browser: per-model breakdown (token volume OR API utilization %) + the
+/// daily token chart. The metric toggle exists because the two answer different
+/// questions — Opus dominates token volume, while the API util view shows Sonnet.
 struct HistoryBrowserView: View {
     @ObservedObject var model: AppModel
-
-    /// Model-filter options as optionals (nil = 전체) for the segmented control.
-    private var castOptions: [ModelCast?] { [ModelCast?.none] + ModelCast.allCases.map { $0 } }
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        let buckets = model.historyTokenBuckets
         VStack(alignment: .leading, spacing: DS.row) {
-            // Eyebrow seam + timeframe segmented (24h / 7d / 30d / 90d — C1).
             Text("식단 기록").dsEyebrow()
-            DSSegmented(selection: $model.historyTimeframe,
-                        options: Timeframe.allCases) { $0.label }
-            // Model cast filter (전체 / Opus / Sonnet / …).
-            DSSegmented(selection: $model.historyModelFilter,
-                        options: castOptions) { $0?.modelName ?? "전체" }
+            // Timeframe (24h/7d/30d/90d) + metric (토큰량 / 사용률) toggles.
+            DSSegmented(selection: $model.historyTimeframe, options: Timeframe.allCases) { $0.label }
+            DSSegmented(selection: $model.historyMetric, options: HistoryMetric.allCases) { $0.label }
 
-            if buckets.isEmpty {
-                Text(model.tokenEvents.isEmpty
-                     ? "아직 식사 기록이 없습니다. 잠시 후 다시 보세요."
-                     : "이 기간/출연진의 기록이 없습니다.")
-                    .font(DS.bodyFont).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 8)
-            } else {
-                // Daily token bar chart with hover detail (C2).
-                TokenBarChart(buckets: buckets, color: .accentColor)
-                // heaviest day + top project (C4).
-                VStack(alignment: .leading, spacing: 2) {
-                    if let peak = model.historyHeaviestDay {
-                        Label("최다 먹방 \(historyDayFmt.string(from: peak.day)) · \(fmtTokens(peak.tokens)) 토큰",
-                              systemImage: "flame")
-                    }
-                    if let tp = model.historyTopProject {
-                        Label("대식 프로젝트 \(tp.project) · \(fmtTokens(tp.tokens)) 토큰", systemImage: "trophy")
-                    }
-                }
-                .font(DS.captionFont).foregroundStyle(.tertiary)
-                .labelStyle(.titleAndIcon)
+            switch model.historyMetric {
+            case .tokens:      tokenBreakdown
+            case .utilization: utilizationBreakdown
             }
         }
+    }
+
+    // MARK: 토큰량 — per-model consumed-token volume + daily chart
+
+    @ViewBuilder
+    private var tokenBreakdown: some View {
+        let totals = model.historyCastTotals
+        if model.tokenEvents.isEmpty {
+            emptyState("아직 식사 기록이 없습니다. 잠시 후 다시 보세요.")
+        } else if totals.isEmpty {
+            emptyState("이 기간엔 먹은 기록이 없어요.")
+        } else {
+            let maxTokens = max(1, totals.map(\.tokens).max() ?? 1)
+            VStack(spacing: DS.intra) {
+                ForEach(totals) { tokenBar($0, maxTokens: maxTokens) }
+            }
+            tokenChartOrEmpty
+        }
+    }
+
+    private func tokenBar(_ t: TokenHistory.CastTotal, maxTokens: Int) -> some View {
+        let selected = model.historyModelFilter == t.cast && t.cast != nil
+        let dimmed = model.historyModelFilter != nil && model.historyModelFilter != t.cast
+        return BreakdownBar(
+            label: t.cast?.modelName ?? "기타",
+            valueText: fmtTokens(t.tokens),
+            fraction: Double(t.tokens) / Double(maxTokens),
+            color: DS.modelColor(t.cast, scheme: scheme),
+            selected: selected, dimmed: dimmed
+        )
+        .onTapGesture {
+            guard let c = t.cast else { return }   // 기타 can't be isolated
+            model.historyModelFilter = (model.historyModelFilter == c) ? nil : c
+        }
+    }
+
+    @ViewBuilder
+    private var tokenChartOrEmpty: some View {
+        let buckets = model.historyTokenBuckets
+        if buckets.isEmpty {
+            // A model is selected but it ate 0 tokens this timeframe — the key
+            // "Sonnet looks empty" case made explicit instead of just blank.
+            emptyState("이 기간 \(model.historyModelFilter?.modelName ?? "") 사용 0 — 턴은 있어도 토큰이 적을 수 있어요.")
+        } else {
+            // Daily chart takes the selected model's color, or the accent when showing all.
+            let chartColor = model.historyModelFilter.map { DS.modelColor($0, scheme: scheme) } ?? Color.accentColor
+            TokenBarChart(buckets: buckets, color: chartColor)
+            tokenFooter
+        }
+    }
+
+    @ViewBuilder
+    private var tokenFooter: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if let peak = model.historyHeaviestDay {
+                Label("최다 먹방 \(historyDayFmt.string(from: peak.day)) · \(fmtTokens(peak.tokens)) 토큰", systemImage: "flame")
+            }
+            if let tp = model.historyTopProject {
+                Label("대식 프로젝트 \(tp.project) · \(fmtTokens(tp.tokens)) 토큰", systemImage: "trophy")
+            }
+        }
+        .font(DS.captionFont).foregroundStyle(.tertiary).labelStyle(.titleAndIcon)
+    }
+
+    // MARK: 사용률 — per-model API limit %, risk-colored, with sparklines
+
+    @ViewBuilder
+    private var utilizationBreakdown: some View {
+        let windows = model.historyModelWindows
+        if windows.isEmpty {
+            emptyState("이 계정/플랜은 API가 모델별 한도(%)를 따로 주지 않아요. ‘토큰량’으로 보세요.")
+        } else {
+            VStack(spacing: DS.intra) {
+                ForEach(windows, id: \.kind) { utilBar($0) }
+            }
+            VStack(alignment: .leading, spacing: DS.intra) {
+                ForEach(windows, id: \.kind) { utilSparkline($0) }
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    private func utilBar(_ w: UsageSnapshot.Window) -> BreakdownBar {
+        BreakdownBar(
+            label: ModelCast.forModel(w.kind)?.modelName ?? w.label,
+            valueText: "\(Int(w.utilization.rounded()))%",
+            fraction: min(1, w.utilization / 100),
+            color: RiskTone.color(level: w.riskLevel, over: w.isOver, scheme: scheme)
+        )
+    }
+
+    @ViewBuilder
+    private func utilSparkline(_ w: UsageSnapshot.Window) -> some View {
+        let color = RiskTone.color(level: w.riskLevel, over: w.isOver, scheme: scheme)
+        VStack(alignment: .leading, spacing: 1) {
+            Text(ModelCast.forModel(w.kind)?.modelName ?? w.label)
+                .font(DS.captionFont).foregroundStyle(.secondary)
+            MiniSparkline(values: model.sparkline(forKind: w.kind).map(\.value), color: color)
+                .frame(height: 26)
+        }
+    }
+
+    private func emptyState(_ text: String) -> some View {
+        Text(text)
+            .font(DS.bodyFont).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 8)
+    }
+}
+
+/// One labeled horizontal bar in the per-model breakdown (label · gauge · value).
+private struct BreakdownBar: View {
+    let label: String
+    let valueText: String
+    let fraction: Double
+    let color: Color
+    var selected: Bool = false
+    var dimmed: Bool = false
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        HStack(spacing: DS.intra) {
+            Text(label)
+                .font(selected ? DS.bodyFont.weight(.semibold) : DS.bodyFont)
+                .foregroundStyle(selected ? Color(.labelColor) : .secondary)
+                .frame(width: 56, alignment: .leading)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(scheme == .light ? DS.gaugeTrackLight : DS.gaugeTrackDark)
+                    Capsule().fill(color).frame(width: max(3, geo.size.width * max(0, min(1, fraction))))
+                }
+            }
+            .frame(height: 8)
+            Text(valueText)
+                .font(DS.valueFont).foregroundStyle(Color(.labelColor))
+                .frame(width: 52, alignment: .trailing)
+        }
+        .opacity(dimmed ? 0.4 : 1)
+        .contentShape(Rectangle())
     }
 }
 

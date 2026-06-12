@@ -45,6 +45,45 @@ final class TokenHistoryTests: XCTestCase {
         XCTAssertEqual(byProject["beta"], 10)
     }
 
+    func testByCastBreakdown() {
+        func ev(_ model: String, _ tok: Int) -> TokenEvent {
+            TokenEvent(timestamp: Date(timeIntervalSince1970: 0), model: model,
+                       inputTokens: tok, outputTokens: 0, cacheReadTokens: 999,
+                       cacheCreationTokens: 0, project: "p")
+        }
+        // Opus dominates volume; Fable maps now; <synthetic> falls into the nil "기타" bucket.
+        let events = [ev("claude-opus-4-8", 100), ev("claude-opus-4-7", 50),
+                      ev("claude-sonnet-4-6", 30), ev("claude-fable-5", 24),
+                      ev("<synthetic>", 7)]
+        let casts = TokenHistory.byCast(events)
+        // Sorted by consumed tokens desc (cache reads excluded → equals input here).
+        XCTAssertEqual(casts.map(\.cast), [.opus, .sonnet, .fable, nil])
+        XCTAssertEqual(casts.first?.tokens, 150)            // opus 100 + 50
+        XCTAssertEqual(casts.first { $0.cast == .fable }?.tokens, 24)
+        XCTAssertEqual(casts.first { $0.cast == nil }?.tokens, 7)  // 기타 bucket
+        XCTAssertEqual(casts.first { $0.cast == nil }?.id, "기타")
+    }
+
+    func testSnapshotModelWindows() {
+        func w(_ kind: String, _ util: Double) -> UsageSnapshot.Window {
+            UsageSnapshot.Window(kind: kind, label: kind, utilization: util,
+                                 resetsAt: Date(), riskHex: "#000", riskLabel: "")
+        }
+        let snap = UsageSnapshot(capturedAt: Date(), planLabel: nil,
+            windows: [w("five_hour", 3), w("seven_day", 56),
+                      w("seven_day_sonnet", 20), w("seven_day_opus", 40)],
+            sessions: [], error: nil)
+        // Only the model-specific windows (opus/sonnet) — not five_hour/seven_day.
+        XCTAssertEqual(Set(snap.modelWindows.map(\.kind)),
+                       ["seven_day_sonnet", "seven_day_opus"])
+    }
+
+    func testHistoryMetricCases() {
+        XCTAssertEqual(HistoryMetric.allCases.count, 2)
+        XCTAssertEqual(HistoryMetric.tokens.label, "토큰량")
+        XCTAssertEqual(HistoryMetric.utilization.label, "사용률")
+    }
+
     func testHeaviestDayAndTopProject() throws {
         let events = try fixtureEvents()
         XCTAssertEqual(TokenHistory.heaviestDay(events)?.tokens, 380)

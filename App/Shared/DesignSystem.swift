@@ -78,6 +78,20 @@ enum DS {
 
     static let gaugeTrackLight = Color.white.opacity(0.12)
     static let gaugeTrackDark = Color.white.opacity(0.14)
+
+    /// Model **identity** color for the per-model breakdown — a stable hue per cast,
+    /// distinct from the risk palette (this channel means "which model", not "how hot").
+    /// nil cast = 기타 (synthetic/unmapped) → neutral gray.
+    static func modelColor(_ cast: ModelCast?, scheme: ColorScheme) -> Color {
+        let light = scheme == .light
+        switch cast {
+        case .opus:   return Color(hex: light ? "#6B4FBB" : "#B49CFF")    // 보라 — 대식가
+        case .sonnet: return Color(hex: light ? "#1F6FB2" : "#6FB7F0")    // 파랑 — 평균인
+        case .haiku:  return Color(hex: light ? "#1E8A6E" : "#5FD3B0")    // 청록 — 소식좌
+        case .fable:  return Color(hex: light ? "#B23A77" : "#F08FC2")    // 분홍 — 미식가
+        case .none:   return (light ? Color.black : Color.white).opacity(0.35)  // 기타
+        }
+    }
 }
 
 /// The demoted 6pt gauge bar — a quiet echo of the number, carrying the risk color

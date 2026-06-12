@@ -77,9 +77,14 @@ final class MukbangTests: XCTestCase {
         XCTAssertEqual(ModelCast.forModel("claude-opus-4-8"), .opus)
         XCTAssertEqual(ModelCast.forModel("seven_day_sonnet"), .sonnet)
         XCTAssertEqual(ModelCast.forModel("claude-haiku-4-5"), .haiku)
+        // Fable 5 must map (was previously unmapped → 24% of recent tokens invisible).
+        XCTAssertEqual(ModelCast.forModel("claude-fable-5"), .fable)
         XCTAssertNil(ModelCast.forModel("five_hour"))
+        XCTAssertNil(ModelCast.forModel("<synthetic>"))
+        XCTAssertEqual(ModelCast.allCases.count, 4)   // opus/sonnet/haiku/fable
         XCTAssertEqual(ModelCast.opus.label, "대식가")
         XCTAssertEqual(ModelCast.haiku.label, "소식좌")
+        XCTAssertEqual(ModelCast.fable.modelName, "Fable")
         for c in ModelCast.allCases {
             XCTAssertFalse(c.face.isEmpty)
             XCTAssertFalse(c.modelName.isEmpty)

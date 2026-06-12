@@ -29,14 +29,37 @@ enum PreviewData {
         s.headlineSparkline = [8, 14, 22, 31, 40, 52, 61, 70, 78, 85]
         return s
     }
+
+    /// Sample token events so the History breakdown renders a realistic split —
+    /// Opus-dominant by volume, with Fable (newly mapped), a little Sonnet, and a
+    /// `<synthetic>` turn that lands in the 기타 bucket.
+    static var tokenEvents: [TokenEvent] {
+        func ev(_ daysAgo: Double, _ model: String, _ tok: Int, _ proj: String) -> TokenEvent {
+            TokenEvent(timestamp: Date().addingTimeInterval(-daysAgo * 86400), model: model,
+                       inputTokens: tok, outputTokens: tok / 4, cacheReadTokens: tok * 5,
+                       cacheCreationTokens: tok / 2, project: proj)
+        }
+        return [
+            ev(0.1, "claude-opus-4-8", 90_000, "arkraft"),
+            ev(0.5, "claude-opus-4-7", 60_000, "claude-usage-widget"),
+            ev(1.2, "claude-fable-5", 40_000, "arkraft"),
+            ev(2.0, "claude-opus-4-8", 55_000, "njtransit"),
+            ev(2.4, "claude-sonnet-4-6", 6_000, "claude-usage-widget"),
+            ev(3.1, "claude-fable-5", 24_000, "njtransit"),
+            ev(4.0, "claude-sonnet-4-6", 4_000, "arkraft"),
+            ev(5.0, "<synthetic>", 1_500, "arkraft"),
+        ]
+    }
 }
 
 @MainActor
 enum PopoverRenderer {
     /// Render the popover for a layout + scheme to a PNG (no window needed).
-    static func render(to path: String, layout: DashboardLayout, scheme: ColorScheme) {
-        let model = AppModel(previewSnapshot: PreviewData.snapshot)
+    static func render(to path: String, layout: DashboardLayout, scheme: ColorScheme,
+                       metric: HistoryMetric = .tokens) {
+        let model = AppModel(previewSnapshot: PreviewData.snapshot, tokenEvents: PreviewData.tokenEvents)
         model.layout = layout
+        model.historyMetric = metric
         let bg = scheme == .dark ? Color(red: 0.12, green: 0.12, blue: 0.13)
                                  : Color(red: 0.93, green: 0.93, blue: 0.94)
         let view = MenuContentView(model: model)
@@ -81,7 +104,8 @@ enum PopoverRenderer {
             let tag = scheme == .dark ? "dark" : "light"
             renderMenuBar(to: "\(dir)/menubar-\(tag).png", scheme: scheme)
             render(to: "\(dir)/classic-\(tag).png", layout: .classic, scheme: scheme)
-            render(to: "\(dir)/history-\(tag).png", layout: .history, scheme: scheme)
+            render(to: "\(dir)/history-\(tag).png", layout: .history, scheme: scheme, metric: .tokens)
+            render(to: "\(dir)/history-util-\(tag).png", layout: .history, scheme: scheme, metric: .utilization)
             render(to: "\(dir)/settings-\(tag).png", layout: .settings, scheme: scheme)
         }
     }

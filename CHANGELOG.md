@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed / Added — per-model History breakdown
+- **Fable mapping (bug)**: `claude-fable-5` wasn't matched by `ModelCast.forModel` (only
+  opus/sonnet/haiku) → ~24% of recent tokens were uncategorized and invisible to the model
+  filter. Added `ModelCast.fable` (미식가); unmapped models now fall into an explicit "기타" bucket.
+- **Per-model breakdown (Kit)**: `TokenHistory.byCast` (consumed tokens per cast, 기타 incl.) +
+  `UsageSnapshot.modelWindows` (the API's per-model utilization buckets) + `HistoryMetric`
+  (토큰량 / 사용률) toggle. Token volume is Opus-dominant; API utilization% is where Sonnet shows —
+  the two answer different questions, so the History browser toggles between them.
+- **History UI redesign**: per-model bars (model-identity colors via `DS.modelColor`, tap to
+  isolate), 토큰량/사용률 toggle, per-model utilization sparklines, and explicit empty-states
+  (e.g. "이 기간 Sonnet 사용 0 — 턴은 있어도 토큰이 적을 수 있어요"). Replaces the old combined picker.
+- +6 Kit tests (byCast, modelWindows, HistoryMetric, fable mapping). `swift test` 77/77 green.
+
 ### Changed — UI redesign ("Liquid Vitals, Instrument-Grade" design system)
 - **Design system** (`docs/design/DESIGN_RESEARCH.md` + `docs/design/DESIGN_SYSTEM.md`):
   scheme-branched risk palette resolved app-side (`RiskTone` in `App/Shared/DesignSystem.swift`);

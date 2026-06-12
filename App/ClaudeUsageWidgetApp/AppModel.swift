@@ -27,10 +27,13 @@ final class AppModel: ObservableObject {
 
     /// Persisted 7-day history (for sparklines / graph / browser).
     @Published private(set) var historySamples: [HistorySample] = []
-    /// History-browser filter: which model's windows to show (nil = all).
+    /// History-browser filter: which model to isolate (nil = all). Tapping a model
+    /// breakdown bar sets this; tapping again clears it.
     @Published var historyModelFilter: ModelCast?
     /// History-browser timeframe (24h / 7d / 30d / 90d).
     @Published var historyTimeframe: Timeframe = .week
+    /// How the breakdown measures models: token volume vs API utilization %.
+    @Published var historyMetric: HistoryMetric = .tokens
 
     /// Token events under the current History filter (timeframe + model) — single
     /// filtering seam reused by the buckets/heaviest/top computations.
@@ -39,6 +42,17 @@ final class AppModel: ObservableObject {
             tokenEvents, timeframe: historyTimeframe, cast: historyModelFilter, now: Date()
         )
     }
+
+    /// All token events in the timeframe (ignoring the model filter) — for the
+    /// per-model breakdown, which must show *every* model side by side.
+    private var timeframeTokenEvents: [TokenEvent] {
+        HistoryFilter.tokenEvents(tokenEvents, timeframe: historyTimeframe, cast: nil, now: Date())
+    }
+
+    /// Per-model token-volume breakdown (Opus/Sonnet/Haiku/Fable/기타) in the timeframe.
+    var historyCastTotals: [TokenHistory.CastTotal] { TokenHistory.byCast(timeframeTokenEvents) }
+    /// Per-model **utilization** windows from the latest snapshot (Opus/Sonnet buckets).
+    var historyModelWindows: [UsageSnapshot.Window] { snapshot?.modelWindows ?? [] }
 
     /// Daily token-consumption buckets for the History browser.
     var historyTokenBuckets: [TokenHistory.DayBucket] { TokenHistory.byDay(filteredTokenEvents) }

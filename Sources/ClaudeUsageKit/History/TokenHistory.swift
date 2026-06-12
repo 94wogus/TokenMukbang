@@ -35,6 +35,26 @@ public enum TokenHistory {
         return totals
     }
 
+    /// One model cast's share of consumed tokens (nil cast = 기타: synthetic/unmapped).
+    public struct CastTotal: Sendable, Equatable, Identifiable {
+        public let cast: ModelCast?
+        public let tokens: Int
+        public var id: String { cast?.modelName ?? "기타" }
+        public init(cast: ModelCast?, tokens: Int) { self.cast = cast; self.tokens = tokens }
+    }
+
+    /// Consumed tokens grouped by model cast (Opus/Sonnet/Haiku/Fable + nil "기타"),
+    /// heaviest first. This is the per-model breakdown by *token volume* — note Opus
+    /// dominates here because its turns carry far more tokens than Sonnet/Haiku turns
+    /// even when those run more often (the API-utilization view tells a different story).
+    public static func byCast(_ events: [TokenEvent]) -> [CastTotal] {
+        var totals: [ModelCast?: Int] = [:]
+        for e in events { totals[e.cast, default: 0] += e.consumedTokens }
+        return totals.map { CastTotal(cast: $0.key, tokens: $0.value) }
+            .filter { $0.tokens > 0 }
+            .sorted { $0.tokens > $1.tokens }
+    }
+
     /// Total tokens per project.
     public static func byProject(_ events: [TokenEvent]) -> [String: Int] {
         var totals: [String: Int] = [:]

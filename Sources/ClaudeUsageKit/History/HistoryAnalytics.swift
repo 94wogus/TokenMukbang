@@ -63,7 +63,18 @@ public enum Timeframe: String, Sendable, CaseIterable, Identifiable {
     }
 }
 
-/// Filters history for the browser — by model cast (Opus/Sonnet/Haiku) and timeframe.
+/// How the History browser breaks usage down by model. Two genuinely different metrics:
+/// `tokens` = JSONL consumed-token volume (Opus-dominant); `utilization` = the OAuth API's
+/// per-model limit % (where Sonnet shows meaningfully). The toggle exists because each
+/// answers a different question ("who ate the most tokens?" vs "who's closest to a limit?").
+public enum HistoryMetric: String, Sendable, CaseIterable, Identifiable {
+    case tokens = "토큰량"
+    case utilization = "사용률"
+    public var id: String { rawValue }
+    public var label: String { rawValue }
+}
+
+/// Filters history for the browser — by model cast (Opus/Sonnet/Haiku/Fable) and timeframe.
 public enum HistoryFilter {
     /// Token events within a timeframe, optionally restricted to one model cast.
     public static func tokenEvents(
