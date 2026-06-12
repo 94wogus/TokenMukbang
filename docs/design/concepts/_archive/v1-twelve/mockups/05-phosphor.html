@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>05 · Phosphor (인광) — TokenMukbang</title>
+<style>
+  :root{
+    /* dark CRT phosphor tokens */
+    --bg:#0A0E0A;
+    --bg-vignette:#050705;
+    --amber:#FFB000;       /* calm / primary phosphor */
+    --amber-dim:#B07A12;   /* secondary labels */
+    --amber-faint:#7A5A14; /* meta / resets */
+    --rule:#5A4410;        /* box-drawing rule */
+    --track:#23200F;       /* empty meter blocks */
+    --watch:#FFC233;       /* hot amber-gold */
+    --warning:#FF6A00;     /* phosphor orange */
+    --critical:#FF2E2E;    /* red phosphor */
+    --mono:ui-monospace,'Berkeley Mono',Menlo,monospace;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  html,body{height:100%;}
+
+  body{
+    width:800px;
+    height:560px;
+    margin:0 auto;
+    font-family:var(--mono);
+    font-variant-numeric:tabular-nums;
+    font-feature-settings:"tnum" 1;
+    /* desktop backdrop */
+    background:
+      radial-gradient(120% 90% at 50% 0%, #1c2230 0%, #0d1119 55%, #05070b 100%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    overflow:hidden;
+    position:relative;
+  }
+
+  /* ============ MENU BAR STRIP (flat, no glow) ============ */
+  .menubar{
+    width:100%;
+    height:26px;
+    flex:0 0 26px;
+    background:linear-gradient(180deg,#2a2e33 0%,#202327 100%);
+    border-bottom:1px solid #000;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    padding:0 14px;
+    box-shadow:0 1px 0 rgba(255,255,255,0.04) inset;
+  }
+  .menubar .mb-left{
+    margin-right:auto;
+    color:#c8ccd2;
+    font-size:12px;
+    letter-spacing:0.5px;
+    opacity:0.85;
+  }
+  .menubar .mb-item{
+    font-size:12.5px;
+    color:#d8b46a;            /* flat amber, NO text-shadow on menubar */
+    letter-spacing:0.5px;
+    padding:0 9px;
+  }
+  .menubar .mb-item .pct{color:#e6c47e;}
+  .menubar .mb-crit{
+    color:var(--critical);   /* flat red, no glow per spec */
+    font-weight:600;
+  }
+  .menubar .mb-clock{
+    color:#aab0b8;
+    font-size:12px;
+    padding-left:6px;
+    letter-spacing:0.5px;
+  }
+
+  /* ============ STAGE (centers the popover) ============ */
+  .stage{
+    flex:1 1 auto;
+    width:100%;
+    display:flex;
+    align-items:flex-start;
+    justify-content:flex-end;
+    padding:8px 30px 0 0;
+  }
+
+  /* little caret connecting menubar item to popover */
+  .caret{
+    width:0;height:0;
+    border-left:7px solid transparent;
+    border-right:7px solid transparent;
+    border-bottom:8px solid #11160f;
+    margin-right:96px;
+    margin-bottom:-1px;
+    position:relative;
+    z-index:3;
+    filter:drop-shadow(0 -1px 0 #1d2a17);
+  }
+
+  /* ============ POPOVER = TERMINAL WINDOW ============ */
+  .term{
+    width:340px;
+    position:relative;
+    background:var(--bg);
+    border:1px solid #11160f;
+    border-radius:3px;            /* whisper of a window chrome; content is pure box-drawing */
+    box-shadow:
+      0 18px 50px rgba(0,0,0,0.65),
+      0 0 0 1px rgba(255,176,0,0.05);
+    overflow:hidden;
+    /* corner vignette */
+    background-image:
+      radial-gradient(140% 120% at 50% 50%, transparent 55%, var(--bg-vignette) 100%);
+  }
+
+  /* 1px scanline overlay */
+  .term::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.32) 0px,
+      rgba(0,0,0,0.32) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    mix-blend-mode:multiply;
+    z-index:2;
+  }
+
+  /* faint top phosphor bloom */
+  .term::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:radial-gradient(80% 50% at 50% 0%, rgba(255,176,0,0.05), transparent 70%);
+    z-index:1;
+  }
+
+  .screen{
+    position:relative;
+    z-index:1;
+    padding:7px 10px 9px;
+    font-size:13px;
+    line-height:1.42;
+    color:var(--amber);
+    text-shadow:0 0 3px rgba(255,176,0,0.55), 0 0 8px rgba(255,176,0,0.18);
+    white-space:pre;
+  }
+
+  /* a monospace row container */
+  .row{display:block;white-space:pre;}
+
+  /* phosphor color shifts (text-shadow glow per channel) */
+  .calm{ color:var(--amber);
+    text-shadow:0 0 3px rgba(255,176,0,0.55),0 0 8px rgba(255,176,0,0.18);}
+  .watch{ color:var(--watch);
+    text-shadow:0 0 3px rgba(255,194,51,0.6),0 0 9px rgba(255,194,51,0.22);}
+  .warning{ color:var(--warning);
+    text-shadow:0 0 4px rgba(255,106,0,0.65),0 0 10px rgba(255,106,0,0.28);}
+  .critical{ color:var(--critical);
+    text-shadow:0 0 4px rgba(255,46,46,0.8),0 0 12px rgba(255,46,46,0.4),0 0 20px rgba(255,46,46,0.18);
+    animation:flicker 1.2s steps(2,jump-none) infinite;}
+
+  .dim{color:var(--amber-faint);text-shadow:0 0 3px rgba(122,90,20,0.5);}
+  .label{color:var(--amber-dim);text-shadow:0 0 3px rgba(176,122,18,0.45);letter-spacing:0.5px;}
+  .rule{color:var(--rule);text-shadow:0 0 2px rgba(90,68,16,0.6);}
+  .track{color:var(--track);text-shadow:none;}
+
+  /* the title-bar clock + frame inherit a slight warm shift in critical demo */
+
+  @keyframes flicker{
+    0%,100%{opacity:1;}
+    50%{opacity:0.9;}
+  }
+  @keyframes blink{
+    0%,49%{opacity:1;}
+    50%,100%{opacity:0.15;}
+  }
+  .cursor{
+    color:var(--amber);
+    text-shadow:0 0 4px rgba(255,176,0,0.7),0 0 10px rgba(255,176,0,0.3);
+    animation:blink 1.05s steps(1,jump-none) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .critical{animation:none;opacity:1;}
+    .cursor{animation:none;opacity:1;}
+  }
+
+  /* meter helpers: fill vs track share the glyph row, color differs */
+  .fill{color:var(--amber);text-shadow:0 0 3px rgba(255,176,0,0.55),0 0 8px rgba(255,176,0,0.18);}
+  .fill.watch{color:var(--watch);text-shadow:0 0 3px rgba(255,194,51,0.6),0 0 9px rgba(255,194,51,0.22);}
+  .fill.warning{color:var(--warning);text-shadow:0 0 4px rgba(255,106,0,0.65),0 0 10px rgba(255,106,0,0.28);}
+  .fill.critical{color:var(--critical);
+    text-shadow:0 0 4px rgba(255,46,46,0.8),0 0 12px rgba(255,46,46,0.4);
+    animation:flicker 1.2s steps(2,jump-none) infinite;}
+
+  /* caption under the stage */
+  .caption{
+    position:absolute;
+    left:14px;bottom:10px;
+    font-size:11px;
+    color:#5a6168;
+    letter-spacing:0.6px;
+  }
+  .caption b{color:#8a9298;font-weight:600;}
+</style>
+</head>
+<body>
+
+  <!-- ===================== MENU BAR ===================== -->
+  <div class="menubar">
+    <span class="mb-left">  TokenMukbang</span>
+    <span class="mb-item"><span class="mb-crit">!5h&nbsp;<span class="pct">85%</span></span>&nbsp;&nbsp;7d&nbsp;<span class="pct">47%</span></span>
+    <span class="mb-clock">12:42</span>
+  </div>
+
+  <!-- ===================== STAGE ===================== -->
+  <div class="stage">
+    <div style="display:flex;flex-direction:column;align-items:flex-end;">
+      <div class="caret"></div>
+
+      <!-- ===== TERMINAL POPOVER ===== -->
+      <div class="term">
+        <div class="screen"><span class="row"><span class="rule">┌─ </span><span class="label">TOKENMUKBANG</span><span class="rule"> ───────── </span><span class="dim">12:42</span><span class="rule"> ─┐</span></span>
+<span class="row"><span class="rule">│</span>                       <span class="critical">(×﹏×)</span>  <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span>                                 <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span><span class="critical">!5H </span> <span class="fill critical">▰▰▰▰▰▰▰▰▰</span><span class="track">▱</span>  <span class="critical">85%</span>  <span class="dim">resets </span><span class="critical">00:08</span> <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span> <span class="label">7D </span> <span class="fill watch">▰▰▰▰▰</span><span class="track">▱▱▱▱▱</span>  <span class="watch">47%</span>  <span class="dim">resets 4d  </span> <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span> <span class="label">SON</span> <span class="fill">▰</span><span class="track">▱▱▱▱▱▱▱▱▱</span>  <span class="calm">11%</span>  <span class="dim">resets 4d  </span> <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span>                                 <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span><span class="rule">══════════════ </span><span class="label">SESSIONS</span><span class="rule"> ═════════</span><span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span> <span class="calm">◆</span> <span class="calm">arkraft-api  </span> <span class="fill warning">▰▰▰▰</span><span class="track">▱▱</span>  <span class="warning">71%</span><span class="dim"> ctx</span> <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span> <span class="calm">◆</span> <span class="calm">usage-widget </span> <span class="fill">▰▰</span><span class="track">▱▱▱▱</span>  <span class="calm">28%</span><span class="dim"> ctx</span> <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span> <span class="dim">◇</span> <span class="dim">docs         </span> <span class="fill">▰</span><span class="track">▱▱▱▱▱</span>  <span class="dim">09% ctx</span> <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span>                                 <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span><span class="rule">═══════════════ </span><span class="label">MODELS</span><span class="rule"> ══════════</span><span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span> <span class="label">opus  </span> <span class="fill warning">▰▰▰▰▰▰▰</span><span class="track">▱▱▱</span>  <span class="warning">68%</span>      <span class="rule">  │</span></span>
+<span class="row"><span class="rule">│</span> <span class="label">sonnet</span> <span class="fill">▰▰▰</span><span class="track">▱▱▱▱▱▱▱</span>  <span class="calm">31%</span>      <span class="rule">  │</span></span>
+<span class="row"><span class="rule">│</span> <span class="label">haiku </span> <span class="fill">▰</span><span class="track">▱▱▱▱▱▱▱▱▱</span>  <span class="calm">04%</span>      <span class="rule">  │</span></span>
+<span class="row"><span class="rule">│</span>                                 <span class="rule">│</span></span>
+<span class="row"><span class="rule">│</span> <span class="calm">&gt; </span><span class="cursor">█</span>                             <span class="rule">│</span></span>
+<span class="row"><span class="rule">└───────────────────────────────────┘</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="caption"><b>05 · Phosphor</b> &nbsp;—&nbsp; 앰버-온-블랙 CRT readout · 인광 채널 시프트(앰버→오렌지→레드) · scheme: dark</div>
+
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>06 · OP-1 Token Console — light</title>
+<style>
+  :root{
+    --paper:#F2F1ED;
+    --ink:#111111;
+    --ink-muted:#5C584F;
+    --cell:#FFFFFF;
+    --accent:#FF4D00;     /* signal orange — the one brand accent */
+    --watch:#FFD400;      /* yellow danger block */
+    --warn:#FF4D00;       /* orange danger block (== accent hue, intentional) */
+    --crit:#E5240E;       /* red danger block */
+    --seg-off:#D8D6CF;    /* unlit LED notch */
+    --gutter:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    width:800px;height:560px;margin:0 auto;
+    display:flex;align-items:center;justify-content:center;
+    font-family:ui-monospace,'Commit Mono',Menlo,monospace;
+    font-variant-numeric:tabular-nums;
+    -webkit-font-smoothing:antialiased;
+    /* desktop backdrop — warm light, subtle vignette */
+    background:
+      radial-gradient(120% 90% at 50% 18%, #E9E7E0 0%, #DAD7CE 55%, #C8C4B9 100%);
+  }
+  .stage{position:relative;width:100%;height:100%;}
+
+  /* ── top menu-bar strip (~26px) ───────────────────────── */
+  .menubar{
+    position:absolute;top:0;left:0;right:0;height:26px;
+    background:rgba(245,244,240,0.86);
+    border-bottom:1px solid rgba(17,17,17,0.18);
+    backdrop-filter:saturate(1.1) blur(2px);
+    display:flex;align-items:center;justify-content:flex-end;
+    padding:0 12px;gap:18px;
+    font-size:12px;color:var(--ink);
+  }
+  .menubar .mb-left{margin-right:auto;color:var(--ink-muted);font-size:11px;letter-spacing:.04em;}
+  .mb-meter{display:inline-flex;align-items:center;gap:6px;letter-spacing:.02em;}
+  .mb-meter .lab{color:var(--ink-muted);font-weight:600;}
+  .seg-mini{letter-spacing:1px;font-size:12px;line-height:1;}
+  .seg-mini .on{color:var(--ink);}
+  .seg-mini .on.crit{color:var(--crit);}     /* crit: red 1-seg lit */
+  .seg-mini .on.warn{color:var(--accent);}   /* warn: orange last seg */
+  .seg-mini .off{color:var(--seg-off);}
+  .mb-mascot{font-size:12px;color:var(--crit);letter-spacing:.5px;}
+
+  /* ── popover faceplate (~340px wide) ──────────────────── */
+  .popover{
+    position:absolute;top:34px;right:18px;width:340px;
+    background:var(--paper);
+    border:2px solid var(--ink);
+    padding:12px 12px 14px;
+  }
+  /* corner registration marks */
+  .reg{position:absolute;font-size:13px;line-height:1;color:var(--ink);font-weight:700;}
+  .reg.tl{top:5px;left:6px;} .reg.tr{top:5px;right:6px;}
+  .reg.bl{bottom:5px;left:6px;} .reg.br{bottom:5px;right:6px;}
+
+  /* header */
+  .head{display:flex;align-items:flex-start;justify-content:space-between;
+    padding:2px 4px 10px;}
+  .brand{display:flex;flex-direction:column;gap:3px;}
+  .brand .title{font-size:13px;font-weight:700;letter-spacing:.22em;color:var(--ink);}
+  .brand .mascot{font-size:13px;letter-spacing:2px;color:var(--ink);}
+  .head .meta{text-align:right;display:flex;flex-direction:column;gap:3px;}
+  .head .meta .pn{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--ink);}
+  .head .meta .ver{font-size:10px;color:var(--ink-muted);letter-spacing:.06em;}
+
+  /* generic hard-border module cell */
+  .module{
+    border:2px solid var(--ink);
+    background:var(--cell);
+    border-radius:0;box-shadow:none;
+    display:flex;position:relative;
+    margin-bottom:var(--gutter);
+  }
+  /* left function stripe = module's worst-case status colour */
+  .stripe{width:8px;flex:0 0 8px;border-right:2px solid var(--ink);}
+  .stripe.calm{background:var(--cell);}        /* calm: just an orange tick (below) */
+  .stripe.watch{background:var(--watch);}
+  .stripe.warn{background:var(--warn);}
+  .stripe.crit{background:var(--crit);}
+  .mod-body{flex:1;padding:9px 10px 9px;}
+
+  /* big window module (5H / 7D) */
+  .winmod .toprow{display:flex;align-items:baseline;justify-content:space-between;}
+  .winmod .wlabel{font-size:12px;font-weight:700;letter-spacing:.26em;color:var(--ink);}
+  .winmod .calm-tick{color:var(--accent);font-size:12px;font-weight:700;}
+  .winmod .midrow{display:flex;align-items:center;gap:12px;margin:6px 0 4px;}
+  .winmod .pct{font-size:30px;font-weight:700;line-height:1;color:var(--ink);min-width:74px;}
+  .winmod .pct.crit{color:var(--crit);}
+  .winmod .seg{font-size:15px;letter-spacing:2px;line-height:1;flex:1;}
+  .winmod .botrow{display:flex;align-items:center;justify-content:space-between;margin-top:5px;}
+  .winmod .resets{font-size:11px;color:var(--ink-muted);letter-spacing:.02em;}
+
+  /* segment colours per status (lit notches inherit status colour) */
+  .seg .on{color:var(--ink);}
+  .seg .on.watch{color:var(--watch);}
+  .seg .on.warn{color:var(--warn);}
+  .seg .on.crit{color:var(--crit);}
+  .seg .off{color:var(--seg-off);}
+
+  /* status chip */
+  .chip{
+    border:2px solid var(--ink);background:var(--cell);
+    font-size:10px;font-weight:700;letter-spacing:.18em;
+    padding:3px 8px;color:var(--ink);white-space:nowrap;
+  }
+  .chip.ok{}
+  .chip.watch{background:var(--watch);}
+  .chip.warn{background:var(--warn);color:#fff;}
+  .chip.crit{background:var(--crit);color:#fff;}
+
+  /* sessions module */
+  .listmod .mod-body{padding:8px 10px 9px;}
+  .listmod .mhead{display:flex;align-items:baseline;justify-content:space-between;
+    margin-bottom:6px;}
+  .listmod .mtitle{font-size:11px;font-weight:700;letter-spacing:.2em;color:var(--ink);}
+  .listmod .mcount{font-size:11px;color:var(--ink-muted);letter-spacing:.04em;}
+  .srow{display:grid;grid-template-columns:96px 1fr 34px;align-items:center;
+    gap:8px;font-size:11px;padding:2px 0;color:var(--ink);}
+  .srow .repo{color:var(--ink);letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .srow .sbar{font-size:12px;letter-spacing:1.5px;line-height:1;}
+  .srow .sbar .on{color:var(--ink);}
+  .srow .sbar .off{color:var(--seg-off);}
+  .srow .sp{text-align:right;color:var(--ink-muted);}
+
+  /* model history module */
+  .histmod .mod-body{padding:8px 10px 9px;}
+  .hrow{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:8px;
+    font-size:11px;padding:2px 0;}
+  .hrow .hname{color:var(--ink-muted);letter-spacing:.04em;}
+  .hrow .hbar{font-size:12px;letter-spacing:1px;line-height:1;color:var(--ink);}
+  .hrow .hbar .off{color:var(--seg-off);}
+  .histmod .footnote{margin-top:5px;font-size:9.5px;color:var(--ink-muted);letter-spacing:.02em;}
+
+  .rule{border:none;border-top:1px solid rgba(17,17,17,0.18);margin:0 0 8px;}
+</style>
+</head>
+<body>
+  <div class="stage">
+
+    <!-- ── MENU BAR STRIP ─────────────────────────────── -->
+    <div class="menubar">
+      <span class="mb-left">TokenMukbang</span>
+      <span class="mb-meter">
+        <span class="lab">5h</span>
+        <span class="seg-mini"><span class="on crit">▮</span><span class="off">▯▯▯▯</span></span>
+      </span>
+      <span class="mb-meter">
+        <span class="lab">7d</span>
+        <span class="seg-mini"><span class="on warn">▮▮</span><span class="off">▮▯▯</span></span>
+      </span>
+      <span class="mb-mascot">[ ✕ _ ✕ ]</span>
+    </div>
+
+    <!-- ── POPOVER FACEPLATE ──────────────────────────── -->
+    <div class="popover">
+      <span class="reg tl">+</span><span class="reg tr">+</span>
+      <span class="reg bl">+</span><span class="reg br">+</span>
+
+      <!-- header -->
+      <div class="head">
+        <div class="brand">
+          <span class="title">TOKENMUKBANG</span>
+          <span class="mascot">[ ✕ _ ✕ ]</span>
+        </div>
+        <div class="meta">
+          <span class="pn">TKM-01</span>
+          <span class="ver">v.7d</span>
+        </div>
+      </div>
+
+      <!-- 5-HOUR module · CRIT (red full-fill stripe) -->
+      <div class="module winmod">
+        <div class="stripe crit"></div>
+        <div class="mod-body">
+          <div class="toprow">
+            <span class="wlabel">5-HOUR</span>
+          </div>
+          <div class="midrow">
+            <span class="pct crit">85%</span>
+            <span class="seg">
+              <span class="on crit">▮▮▮▮▮▮▮▮▮</span><span class="off">▯</span>
+            </span>
+          </div>
+          <div class="botrow">
+            <span class="resets">resets in 0h 47m</span>
+            <span class="chip crit">CRIT</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7-DAY module · WATCH (yellow stripe) -->
+      <div class="module winmod">
+        <div class="stripe watch"></div>
+        <div class="mod-body">
+          <div class="toprow">
+            <span class="wlabel">7-DAY</span>
+          </div>
+          <div class="midrow">
+            <span class="pct">47%</span>
+            <span class="seg">
+              <span class="on watch">▮▮▮▮▯</span><span class="off">▯▯▯▯▯</span>
+            </span>
+          </div>
+          <div class="botrow">
+            <span class="resets">resets in 3d 04h</span>
+            <span class="chip watch">WATCH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7-DAY · SONNET sub-window · OK (calm: orange tick only) -->
+      <div class="module winmod">
+        <div class="stripe calm"></div>
+        <div class="mod-body">
+          <div class="toprow">
+            <span class="wlabel">7-DAY · SONNET</span>
+            <span class="calm-tick">▮</span>
+          </div>
+          <div class="midrow">
+            <span class="pct">11%</span>
+            <span class="seg">
+              <span class="on">▮</span><span class="off">▯▯▯▯▯▯▯▯▯</span>
+            </span>
+          </div>
+          <div class="botrow">
+            <span class="resets">resets in 3d 04h</span>
+            <span class="chip ok">OK</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVE SESSIONS module -->
+      <div class="module listmod">
+        <div class="stripe calm"></div>
+        <div class="mod-body">
+          <div class="mhead">
+            <span class="mtitle">ACTIVE SESSIONS</span>
+            <span class="mcount">·3</span>
+          </div>
+          <div class="srow">
+            <span class="repo">arkraft-api</span>
+            <span class="sbar"><span class="on">▮▮▮▮▮▮</span><span class="off">▯▯▯▯</span></span>
+            <span class="sp">62%</span>
+          </div>
+          <div class="srow">
+            <span class="repo">usage-widget</span>
+            <span class="sbar"><span class="on">▮▮▮</span><span class="off">▯▯▯▯▯▯▯</span></span>
+            <span class="sp">28%</span>
+          </div>
+          <div class="srow">
+            <span class="repo">notes</span>
+            <span class="sbar"><span class="on">▮</span><span class="off">▯▯▯▯▯▯▯▯▯</span></span>
+            <span class="sp">09%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODEL HISTORY module -->
+      <div class="module histmod">
+        <div class="stripe calm"></div>
+        <div class="mod-body">
+          <div class="mhead">
+            <span class="mtitle">MODEL HISTORY · 7d</span>
+            <span class="mcount">TKM-01/hist</span>
+          </div>
+          <div class="hrow">
+            <span class="hname">opus</span>
+            <span class="hbar"><span>▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮</span><span class="off">▯▯▯▯▯▯▯▯</span></span>
+          </div>
+          <div class="hrow">
+            <span class="hname">sonnet</span>
+            <span class="hbar"><span>▮▮▮▮▮▮▮</span><span class="off">▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯</span></span>
+          </div>
+          <div class="footnote">segment stack = per-model token share</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

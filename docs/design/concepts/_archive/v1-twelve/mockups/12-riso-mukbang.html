@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>12 · Riso Mukbang — 오늘의 토큰 먹방</title>
+<style>
+  /* ============================================================
+     12. RISO MUKBANG  —  리소그래프 zine 목업
+     Scheme: DARK "ink-navy stock" (검은 종이에 인쇄 — fluo 잉크가 더 글로우, 가장 on-brand)
+     Inks: 리소 블루 #5A7BF0 (calm) · 플루오 핑크 #FF6E92 (warning) · 예비 레드/오렌지 #FF7350 (critical)
+     Rule: 텍스처(그레인·하프톤·misregistration)는 헤더/채움/배경에만. 숫자는 클린 모노, 그레인 밖.
+     Inline CSS only · no JS.
+     ============================================================ */
+
+  :root{
+    --paper:        #1C2230;   /* 잉크네이비 stock */
+    --paper-edge:   #232b3d;
+    --ink-text:     #F1E9D2;   /* 크림 = 잉크 */
+    --ink-blue:     #5A7BF0;   /* calm */
+    --ink-pink:     #FF6E92;   /* warning / fluo */
+    --ink-spare:    #FF7350;   /* critical 예비 */
+    --rule:         rgba(241,233,210,0.35);
+    --rule-strong:  rgba(241,233,210,0.55);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html,body{ height:100%; }
+
+  body{
+    width:100%; min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    /* 데스크톱 배경 — 인쇄소 작업대 느낌의 어두운 그라데이션 */
+    background:
+      radial-gradient(120% 120% at 50% 0%, #2a3346 0%, #11151f 70%, #0a0d14 100%);
+    font-family:'Arial Narrow', Impact, sans-serif;
+  }
+
+  /* ===== 800×560 캔버스 ===== */
+  .stage{
+    width:800px; height:560px;
+    position:relative;
+    display:flex; flex-direction:column; align-items:center;
+    /* 종이 위에 떨군 듯 살짝 떠 보이는 그림자 */
+    filter: drop-shadow(0 24px 48px rgba(0,0,0,0.55));
+  }
+
+  /* ===== 공통 하프톤 도트 타일(하프톤 칩/연료바 등에서 재사용) ===== */
+  /* radial-gradient 도트 패턴: 채움 색은 currentColor로 받음 */
+  .halftone{
+    background-image: radial-gradient(currentColor 32%, transparent 33%);
+    background-size: 6px 6px;
+    background-position: 0 0;
+  }
+  .halftone-fine{
+    background-image: radial-gradient(currentColor 30%, transparent 31%);
+    background-size: 4px 4px;
+  }
+
+  /* ===== 페이퍼 그레인 / 잉크 노이즈 오버레이 (SVG feTurbulence) ===== */
+  .grain{
+    position:absolute; inset:0; pointer-events:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.945  0 0 0 0 0.914  0 0 0 0 0.823  0 0 0 0.5 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+    background-size:160px 160px;
+    opacity:0.05;
+    mix-blend-mode:screen;
+    z-index:30;
+  }
+
+  /* ============================================================
+     상단 메뉴바 스트립 (~26px)
+     ============================================================ */
+  .menubar{
+    position:relative;
+    width:340px; height:26px;
+    margin-top:34px; margin-bottom:8px;
+    display:flex; align-items:center; gap:14px;
+    padding:0 12px;
+    background: rgba(18,22,33,0.72);
+    backdrop-filter: blur(6px);
+    border:1px solid rgba(241,233,210,0.10);
+    font-family: ui-monospace, Menlo, monospace;
+    font-size:12px; letter-spacing:0.3px;
+    color: var(--ink-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .menubar .mb-label{ opacity:0.78; font-weight:600; }
+
+  /* 라이브 % 하프톤 칩 — 어긋난 더블엣지(리소 사인) */
+  .chip{
+    position:relative;
+    display:inline-flex; align-items:center; justify-content:center;
+    height:17px; padding:0 7px; margin-left:5px;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size:12px; font-weight:700;
+    font-variant-numeric: tabular-nums;
+    color:#15110a;                      /* 칩 안 숫자는 잉크 위라 어둡게 → 크리스프 */
+    /* misregistration 더블엣지: 핑크/블루 2색 오프셋 박스섀도 */
+  }
+  .chip .chip-fill{ position:absolute; inset:0; z-index:0; }
+  .chip span{ position:relative; z-index:2; }
+
+  /* critical 칩 = 예비 레드/오렌지, 어긋남 큼 */
+  .chip.crit{ color:#1a0d07; }
+  .chip.crit .chip-fill{ color:var(--ink-spare); }
+  .chip.crit{
+    box-shadow:
+      -2px 0 0 var(--ink-pink),     /* 핑크가 왼쪽으로 어긋남 */
+       2px 1px 0 var(--ink-blue);   /* 블루가 오른쪽으로 어긋남 — press 과열 */
+  }
+  /* warning 칩 = 플루오 핑크, 어긋남 작음 */
+  .chip.warn{ color:#1a0a10; }
+  .chip.warn .chip-fill{ color:var(--ink-pink); }
+  .chip.warn{
+    box-shadow:
+      -1px 0 0 var(--ink-blue),
+       1px 0 0 rgba(255,110,146,0.6);
+  }
+
+  /* ============================================================
+     팝오버 — 한 장짜리 zine 표지 (~340px)
+     ============================================================ */
+  .popover{
+    position:relative;
+    width:340px;
+    background: var(--paper);
+    color: var(--ink-text);
+    border:1px solid rgba(241,233,210,0.16);
+    padding:0;
+    overflow:hidden;
+  }
+  /* 종이 가장자리 비네팅(스캔 느낌) */
+  .popover::after{
+    content:""; position:absolute; inset:0; pointer-events:none; z-index:25;
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.45);
+  }
+
+  .pop-pad{ padding:13px 15px 14px; position:relative; z-index:10; }
+
+  /* ---- 표지 타이틀 ---- */
+  .cover-head{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    margin-bottom:9px;
+  }
+  .zine-title{
+    font-family:'Arial Narrow', Impact, sans-serif;
+    font-weight:900;
+    font-size:27px; line-height:0.92;
+    letter-spacing:-0.5px;
+    transform: scaleX(0.86);          /* 콘덴스드 squeeze */
+    transform-origin:left bottom;
+    color: var(--ink-text);
+    /* misregistration: 핑크/블루 살짝 어긋난 이중 그림자 */
+    text-shadow:
+      -1.5px 0 0 var(--ink-pink),
+       1.5px 0.5px 0 var(--ink-blue);
+  }
+  .zine-date{
+    font-family: ui-monospace, Menlo, monospace;
+    font-size:10px; font-weight:700; letter-spacing:1px;
+    color: var(--ink-text); opacity:0.8;
+    border:1px solid var(--rule);
+    padding:2px 6px;
+  }
+
+  .rule{ height:1px; background: var(--rule); margin:9px 0; border:0; }
+  .rule.strong{ height:2px; background: var(--rule-strong); }
+  .rule.dashed{
+    height:0; border:0; border-top:1.5px dashed var(--rule);
+    background:none;
+  }
+
+  /* ---- 메뉴판처럼 늘어선 belly 연료바 (5h / 7d) ---- */
+  .fuel{ margin:7px 0; }
+  .fuel-top{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:4px;
+  }
+  .fuel-name{
+    font-family: ui-monospace, Menlo, monospace;
+    font-size:12px; font-weight:700; letter-spacing:1px;
+    opacity:0.85;
+  }
+  .fuel-pct{
+    font-family: ui-monospace, Menlo, monospace;
+    font-size:16px; font-weight:700;
+    font-variant-numeric: tabular-nums;
+  }
+  .fuel-pct.crit{ color:var(--ink-spare); }
+  .fuel-pct.warn{ color:var(--ink-pink); }
+  .fuel-pct.calm{ color:var(--ink-blue); }
+
+  /* 하프톤 채움 바 — 사각 코너, 도트가 인쇄된 배처럼 차오름 */
+  .bar{
+    position:relative;
+    height:16px;
+    background: rgba(241,233,210,0.07);
+    border:1px solid var(--rule);
+    overflow:hidden;
+  }
+  .bar .fill{
+    position:absolute; top:0; bottom:0; left:0;
+    /* 하프톤 도트 채움; 색은 currentColor */
+  }
+  /* critical = 예비 레드/오렌지, press 과열 → misregistration 큼 */
+  .bar .fill.crit{ color:var(--ink-spare); }
+  .bar .fill.crit::after{
+    content:""; position:absolute; inset:0;
+    background-image: radial-gradient(var(--ink-pink) 26%, transparent 27%);
+    background-size:6px 6px;
+    transform: translate(2px,1px);     /* 어긋난 핑크 레이어 */
+    opacity:0.55; mix-blend-mode:screen;
+  }
+  /* warning = 플루오 핑크 */
+  .bar .fill.warn{ color:var(--ink-pink); }
+  .bar .fill.warn::after{
+    content:""; position:absolute; inset:0;
+    background-image: radial-gradient(var(--ink-blue) 24%, transparent 25%);
+    background-size:6px 6px;
+    transform: translate(1px,0);
+    opacity:0.35; mix-blend-mode:screen;
+  }
+
+  .fuel-reset{
+    font-family: ui-monospace, Menlo, monospace;
+    font-size:10.5px; letter-spacing:0.5px;
+    opacity:0.72; margin-top:4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- "지금 먹는 중" 세션 패널 ---- */
+  .panel{
+    border:1.5px solid var(--rule-strong);
+    padding:8px 10px 9px;
+    margin:4px 0 2px;
+    position:relative;
+  }
+  .panel-label{
+    position:absolute; top:-8px; left:10px;
+    background: var(--paper);
+    padding:0 6px;
+    font-family:'Arial Narrow', Impact, sans-serif;
+    font-weight:900; font-size:12px; letter-spacing:0.5px;
+    transform: scaleX(0.9);
+    text-shadow: -1px 0 0 var(--ink-pink), 1px 0 0 var(--ink-blue);
+  }
+  .sess{
+    display:flex; align-items:center; gap:8px;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size:11px;
+    padding:3px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .sess + .sess{ border-top:1px solid rgba(241,233,210,0.10); }
+  .dot{ width:7px; height:7px; flex:0 0 7px; }
+  .dot.blue{ background:var(--ink-blue); box-shadow:1px 0 0 var(--ink-pink); }
+  .dot.pink{ background:var(--ink-pink); box-shadow:1px 0 0 var(--ink-blue); }
+  .sess-name{ flex:1 1 auto; opacity:0.92; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sess-ctx-label{ opacity:0.55; font-size:10px; }
+  .mini-bar{
+    width:62px; height:9px; position:relative; flex:0 0 62px;
+    background:rgba(241,233,210,0.07);
+    border:1px solid var(--rule);
+    overflow:hidden;
+  }
+  .mini-bar .mfill{ position:absolute; left:0; top:0; bottom:0; }
+  .mini-bar .mfill.blue{ color:var(--ink-blue); }
+  .mini-bar .mfill.pink{ color:var(--ink-pink); }
+  .sess-pct{ width:32px; text-align:right; font-weight:700; }
+
+  /* ---- 모델 히스토리 하프톤 스택 ---- */
+  .hist-title{
+    font-family:'Arial Narrow', Impact, sans-serif;
+    font-weight:900; font-size:14px; letter-spacing:0.5px;
+    transform: scaleX(0.88); transform-origin:left;
+    margin:2px 0 6px;
+    text-shadow: -1px 0 0 var(--ink-pink), 1px 0.5px 0 var(--ink-blue);
+  }
+  .hist-row{
+    display:flex; align-items:center; gap:8px;
+    margin:3px 0;
+  }
+  .hist-name{
+    width:54px;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size:11px; font-weight:700; opacity:0.85;
+  }
+  .hist-track{
+    flex:1 1 auto; height:11px; position:relative;
+    background:rgba(241,233,210,0.05);
+    overflow:hidden;
+  }
+  .hist-track .hfill{ position:absolute; left:0; top:0; bottom:0; }
+  .hist-track .hfill.blue{ color:var(--ink-blue); }
+  .hist-track .hfill.pink{ color:var(--ink-pink); }
+  .hist-track .hfill.spare{ color:var(--ink-spare); }
+  .hist-num{
+    font-family: ui-monospace, Menlo, monospace;
+    font-size:10px; opacity:0.6; width:30px; text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ---- critical 스탬프 "포만 임박" ---- */
+  .stamp{
+    position:absolute; top:18px; right:8px; z-index:22;
+    font-family:'Arial Narrow', Impact, sans-serif;
+    font-weight:900; font-size:15px; letter-spacing:1px;
+    color: var(--ink-spare);
+    border:2.5px solid var(--ink-spare);
+    padding:3px 8px;
+    transform: rotate(-9deg) scaleX(0.92);
+    /* 어긋나게 찍힌 스탬프 — 핑크 더블엣지 + 거친 그레인 */
+    text-shadow: -1.5px 0 0 var(--ink-pink);
+    box-shadow: -2px 1px 0 rgba(255,110,146,0.5);
+    opacity:0.92;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+
+    <!-- ===== 메뉴바 스트립 ===== -->
+    <div class="menubar">
+      <div class="grain"></div>
+      <span class="mb-label">5h</span>
+      <span class="chip crit">
+        <span class="chip-fill halftone-fine" style="color:var(--ink-spare)"></span>
+        <span>85%</span>
+      </span>
+      <span class="mb-label" style="margin-left:8px;">7d</span>
+      <span class="chip warn">
+        <span class="chip-fill halftone-fine" style="color:var(--ink-pink)"></span>
+        <span>47%</span>
+      </span>
+    </div>
+
+    <!-- ===== 팝오버: 한 장 zine 표지 ===== -->
+    <div class="popover">
+      <div class="grain"></div>
+
+      <!-- critical 스탬프 (5h 85% → 포만 임박) -->
+      <div class="stamp">포만 임박</div>
+
+      <div class="pop-pad">
+
+        <!-- 표지 타이틀 -->
+        <div class="cover-head">
+          <div class="zine-title">오늘의<br>토큰 먹방</div>
+          <div class="zine-date">12 JUN ’26</div>
+        </div>
+        <hr class="rule strong">
+
+        <!-- 5h belly 연료바 (critical 85%) -->
+        <div class="fuel">
+          <div class="fuel-top">
+            <span class="fuel-name">5h · BELLY</span>
+            <span class="fuel-pct crit">85%</span>
+          </div>
+          <div class="bar">
+            <div class="fill crit halftone" style="width:85%"></div>
+          </div>
+          <div class="fuel-reset">reset in 04:12:33 · 너무 빨리 먹는 중 (HOT)</div>
+        </div>
+
+        <!-- 7d belly 연료바 (warning 47%) -->
+        <div class="fuel">
+          <div class="fuel-top">
+            <span class="fuel-name">7d · BELLY</span>
+            <span class="fuel-pct warn">47%</span>
+          </div>
+          <div class="bar">
+            <div class="fill warn halftone" style="width:47%"></div>
+          </div>
+          <div class="fuel-reset">reset in 3d 06:41 · WARMING</div>
+        </div>
+
+        <hr class="rule dashed">
+
+        <!-- "지금 먹는 중" 세션 패널 -->
+        <div class="panel">
+          <div class="panel-label">지금 먹는 중</div>
+          <div class="sess">
+            <span class="dot blue"></span>
+            <span class="sess-name">claude-usage-widget</span>
+            <span class="sess-ctx-label">ctx</span>
+            <span class="mini-bar"><span class="mfill blue halftone-fine" style="width:64%"></span></span>
+            <span class="sess-pct">64%</span>
+          </div>
+          <div class="sess">
+            <span class="dot blue"></span>
+            <span class="sess-name">arkraft-api</span>
+            <span class="sess-ctx-label">ctx</span>
+            <span class="mini-bar"><span class="mfill blue halftone-fine" style="width:31%"></span></span>
+            <span class="sess-pct">31%</span>
+          </div>
+          <div class="sess">
+            <span class="dot pink"></span>
+            <span class="sess-name">design-mockups</span>
+            <span class="sess-ctx-label">ctx</span>
+            <span class="mini-bar"><span class="mfill pink halftone-fine" style="width:82%"></span></span>
+            <span class="sess-pct">82%</span>
+          </div>
+        </div>
+
+        <hr class="rule">
+
+        <!-- 모델 히스토리 하프톤 스택 -->
+        <div class="hist-title">모델 히스토리</div>
+        <div class="hist-row">
+          <span class="hist-name">Opus</span>
+          <span class="hist-track"><span class="hfill spare halftone" style="width:78%"></span></span>
+          <span class="hist-num">78%</span>
+        </div>
+        <div class="hist-row">
+          <span class="hist-name">Sonnet</span>
+          <span class="hist-track"><span class="hfill blue halftone" style="width:11%"></span></span>
+          <span class="hist-num">11%</span>
+        </div>
+        <div class="hist-row">
+          <span class="hist-name">Haiku</span>
+          <span class="hist-track"><span class="hfill pink halftone" style="width:5%"></span></span>
+          <span class="hist-num">5%</span>
+        </div>
+
+        <hr class="rule strong" style="margin-bottom:2px;">
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

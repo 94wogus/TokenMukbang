@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>02. 뚝배기 (Ttukbaegi) — TokenMukbang concept mockup</title>
+</head>
+<!-- 800x560 고정. 인라인 CSS만, JS 없음. 다크 우선 흙빛 돌솥. -->
+<body style="margin:0;padding:0;width:800px;height:560px;overflow:hidden;font-family:-apple-system,'SF Pro Text',sans-serif;
+  background:
+    radial-gradient(120% 90% at 18% 8%, #2a2018 0%, #181210 42%, #0d0a07 100%),
+    #0d0a07;">
+
+  <!-- 데스크톱 배경 grain (구운 흙 noise 느낌) -->
+  <div style="position:absolute;inset:0;opacity:0.5;pointer-events:none;
+    background-image:radial-gradient(#ffffff05 1px,transparent 1px),radial-gradient(#00000022 1px,transparent 1px);
+    background-size:5px 5px, 7px 7px;background-position:0 0, 3px 4px;"></div>
+
+  <!-- ============ 메뉴바 스트립 (~26px) ============ -->
+  <div style="position:absolute;top:0;left:0;width:800px;height:26px;display:flex;align-items:center;
+    background:linear-gradient(#1f1813ee,#15100bdd);
+    border-bottom:1px solid #ffffff10;backdrop-filter:blur(8px);box-shadow:0 1px 0 #00000060;">
+    <!-- 좌측 메뉴 더미 -->
+    <div style="padding-left:14px;font-size:12px;color:#cdbfa9;font-weight:600;letter-spacing:.2px;">🍲 TokenMukbang</div>
+    <div style="flex:1"></div>
+    <!-- 메뉴바 위젯: 불투명 흙빛 스크림 캡슐 + 국물 메니스커스 + critical 기포 점 -->
+    <div style="position:relative;margin-right:10px;display:flex;align-items:center;gap:7px;
+      padding:2px 10px 4px;border-radius:8px;
+      background:linear-gradient(#14100c,#0e0b08);border:1px solid #ffffff12;box-shadow:0 1px 2px #00000080;">
+      <span style="font-size:12px;font-weight:700;color:#f3ede3;font-variant-numeric:tabular-nums;">85%</span>
+      <span style="font-size:11px;color:#8a7c69;">·</span>
+      <span style="font-size:11px;color:#cdbfa9;font-weight:600;">3 ◐</span>
+      <!-- 국물 메니스커스 3px (critical 엠버레드) -->
+      <div style="position:absolute;left:6px;right:6px;bottom:1px;height:3px;border-radius:2px;
+        background:linear-gradient(90deg,#e63e22cc,#ff6a3aee,#e63e22cc);box-shadow:0 0 6px #e63e2299;"></div>
+      <!-- critical 기포 점 -->
+      <div style="position:absolute;left:18px;bottom:4px;width:3px;height:3px;border-radius:50%;background:#ffd9a0cc;box-shadow:0 0 4px #ffd9a0;"></div>
+      <div style="position:absolute;right:20px;bottom:5px;width:2px;height:2px;border-radius:50%;background:#ffd9a0aa;"></div>
+    </div>
+  </div>
+
+  <!-- 메뉴바 앵커(드롭다운 꼭지) -->
+  <div style="position:absolute;top:25px;right:430px;width:0;height:0;
+    border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:9px solid #2a2119;
+    filter:drop-shadow(0 -1px 1px #00000060);"></div>
+
+  <!-- ============ 팝오버 (~340px wide) ============ -->
+  <div style="position:absolute;top:34px;right:60px;width:340px;
+    border-radius:26px;overflow:hidden;
+    box-shadow:0 24px 60px #000000bb, 0 2px 0 #ffffff08 inset;
+    border:2px solid;border-image:linear-gradient(160deg,#ffe9c933,#ffe9c910,#00000000) 1;">
+
+    <!-- z-1 돌솥 본체: 거친 흙빛 + grain -->
+    <div style="position:relative;
+      background:
+        radial-gradient(140% 120% at 50% 120%, #3a2a1d 0%, #241a12 38%, #19120c 70%, #120d09 100%),
+        #16100b;">
+
+      <!-- 돌 grain 노이즈 오버레이 -->
+      <div style="position:absolute;inset:0;opacity:0.55;pointer-events:none;
+        background-image:radial-gradient(#ffffff08 1px,transparent 1px),radial-gradient(#00000033 1.2px,transparent 1.2px);
+        background-size:4px 4px,6px 6px;background-position:0 0,2px 3px;"></div>
+
+      <!-- z0 국물 글로우: 5h=critical → 바닥 전체 엠버레드로 끓음 -->
+      <div style="position:absolute;left:0;right:0;bottom:0;height:62%;pointer-events:none;
+        background:radial-gradient(120% 130% at 50% 135%, #e63e2299 0%, #e6701c55 30%, #c0381f22 55%, transparent 78%);
+        filter:blur(6px);"></div>
+
+      <!-- z0 부글 기포 (critical 시그니처) — 바닥에서 떠오르는 정지 프레임 -->
+      <div style="position:absolute;left:64px;bottom:22px;width:14px;height:14px;border-radius:50%;
+        background:radial-gradient(circle at 35% 30%, #ffd9a0bb, #e6701c44);border:1px solid #ffd9a066;box-shadow:0 0 8px #ff7a3a66;"></div>
+      <div style="position:absolute;left:150px;bottom:54px;width:9px;height:9px;border-radius:50%;
+        background:radial-gradient(circle at 35% 30%, #ffe1b0aa, #e6701c33);border:1px solid #ffd9a055;box-shadow:0 0 6px #ff7a3a55;"></div>
+      <div style="position:absolute;right:70px;bottom:38px;width:11px;height:11px;border-radius:50%;
+        background:radial-gradient(circle at 35% 30%, #ffd9a0aa, #e6701c33);border:1px solid #ffd9a055;box-shadow:0 0 7px #ff7a3a55;"></div>
+      <div style="position:absolute;right:120px;bottom:72px;width:6px;height:6px;border-radius:50%;
+        background:#ffe1b099;box-shadow:0 0 5px #ff7a3a44;"></div>
+
+      <!-- z1 김 서린 유리 뚜껑 + 응결 물방울 (전체 패딩 콘텐츠 래퍼) -->
+      <div style="position:relative;padding:16px;backdrop-filter:blur(2px);">
+
+        <!-- 유리 뚜껑 위 응결 물방울들 (condensation drops) -->
+        <div style="position:absolute;top:10px;left:30px;width:5px;height:5px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff66,#ffffff10);"></div>
+        <div style="position:absolute;top:22px;right:54px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff55,#ffffff0a);"></div>
+        <div style="position:absolute;top:14px;right:120px;width:4px;height:4px;border-radius:50%;background:#ffffff44;"></div>
+        <div style="position:absolute;top:8px;left:160px;width:3px;height:3px;border-radius:50%;background:#ffffff33;"></div>
+
+        <!-- 헤더 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:1.2px;color:#b0a595;">5-HOUR WINDOW</span>
+          <span style="font-size:11px;color:#cdbfa9;letter-spacing:1px;">◐ ◑ ◔</span>
+        </div>
+
+        <!-- z2 히어로 타일: 게이지 + 응결 -->
+        <div style="position:relative;border-radius:20px;padding:14px 16px 12px;margin-bottom:12px;
+          background:linear-gradient(#322a21f0,#241d16f0);
+          border:1px solid #ffffff10;box-shadow:0 6px 16px #00000070, 0 1px 0 #ffe9c918 inset;">
+          <!-- 응결 -->
+          <div style="position:absolute;top:9px;right:18px;width:5px;height:5px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff55,#ffffff0a);"></div>
+          <div style="position:absolute;top:18px;left:22px;width:3px;height:3px;border-radius:50%;background:#ffffff33;"></div>
+
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <!-- 히어로 % : 흙빛 scrim 위 -->
+            <div style="background:linear-gradient(#14100c,#0e0b08);border-radius:12px;padding:2px 12px;box-shadow:0 1px 3px #00000080 inset;">
+              <span style="font-size:42px;font-weight:600;color:#f3ede3;font-variant-numeric:tabular-nums;letter-spacing:-1px;
+                font-family:'SF Pro Rounded',-apple-system,sans-serif;">85<span style="font-size:24px;">%</span></span>
+            </div>
+            <span style="font-size:11px;font-weight:700;letter-spacing:.5px;color:#ff8a5a;background:#e63e2222;padding:3px 8px;border-radius:7px;border:1px solid #e63e2244;">CRITICAL</span>
+          </div>
+          <!-- 게이지 바 (끓는 sparkline 느낌) -->
+          <div style="display:flex;align-items:flex-end;gap:2px;height:18px;margin-top:10px;">
+            <!-- 채워진 바: 85% 엠버 -->
+            <div style="flex:1;height:8px;border-radius:5px;overflow:hidden;background:#0e0b08;box-shadow:0 1px 2px #00000080 inset;">
+              <div style="width:85%;height:100%;border-radius:5px;background:linear-gradient(90deg,#e6701c,#e63e22,#ff6a3a);box-shadow:0 0 8px #e63e2288;"></div>
+            </div>
+          </div>
+          <div style="margin-top:7px;font-size:11px;color:#b0a595;">resets in <span style="color:#e8ddcb;font-weight:600;font-variant-numeric:tabular-nums;">1h 48m</span></div>
+        </div>
+
+        <!-- 7-DAY (watch) + SONNET (calm) -->
+        <div style="display:flex;gap:10px;margin-bottom:13px;">
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;letter-spacing:.6px;color:#b0a595;margin-bottom:5px;">
+              <span style="font-weight:700;">7-DAY</span><span style="color:#e8ddcb;font-weight:700;font-variant-numeric:tabular-nums;">47%</span></div>
+            <div style="height:6px;border-radius:4px;background:#0e0b08;overflow:hidden;box-shadow:0 1px 2px #00000080 inset;">
+              <div style="width:47%;height:100%;background:linear-gradient(90deg,#c97e22,#e89824);box-shadow:0 0 5px #e8982466;"></div></div>
+          </div>
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;letter-spacing:.6px;color:#b0a595;margin-bottom:5px;">
+              <span style="font-weight:700;">SONNET</span><span style="color:#e8ddcb;font-weight:700;font-variant-numeric:tabular-nums;">11%</span></div>
+            <div style="height:6px;border-radius:4px;background:#0e0b08;overflow:hidden;box-shadow:0 1px 2px #00000080 inset;">
+              <div style="width:11%;height:100%;background:linear-gradient(90deg,#9a7a48,#c8862f);"></div></div>
+          </div>
+        </div>
+
+        <!-- SESSIONS 구분 -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#8a7c69;">SESSIONS</span>
+          <div style="flex:1;height:1px;background:#ffffff12;"></div>
+        </div>
+
+        <!-- z2 세션 타일 스택 -->
+        <div style="border-radius:18px;overflow:hidden;margin-bottom:13px;
+          background:linear-gradient(#2c241cf0,#211a13f0);border:1px solid #ffffff10;box-shadow:0 5px 14px #00000060;">
+          <!-- row 1: ctx 80% -->
+          <div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid #ffffff0e;">
+            <span style="font-size:12px;color:#ff8a5a;">◐</span>
+            <span style="flex:1;font-size:12px;color:#e8ddcb;font-weight:500;">arkraft-api</span>
+            <div style="width:74px;height:5px;border-radius:3px;background:#0e0b08;overflow:hidden;">
+              <div style="width:80%;height:100%;background:linear-gradient(90deg,#e6701c,#e63e22);"></div></div>
+            <span style="font-size:11px;color:#e8ddcb;font-variant-numeric:tabular-nums;width:30px;text-align:right;">80%</span>
+            <span style="font-size:10px;color:#9a8b76;">↗ focus</span>
+          </div>
+          <!-- row 2: ctx 69% -->
+          <div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid #ffffff0e;">
+            <span style="font-size:12px;color:#e89824;">◑</span>
+            <span style="flex:1;font-size:12px;color:#e8ddcb;font-weight:500;">usage-widget</span>
+            <div style="width:74px;height:5px;border-radius:3px;background:#0e0b08;overflow:hidden;">
+              <div style="width:69%;height:100%;background:linear-gradient(90deg,#c97e22,#e89824);"></div></div>
+            <span style="font-size:11px;color:#e8ddcb;font-variant-numeric:tabular-nums;width:30px;text-align:right;">69%</span>
+            <span style="font-size:10px;color:#9a8b76;">↗ focus</span>
+          </div>
+          <!-- row 3: ctx 21% -->
+          <div style="display:flex;align-items:center;gap:9px;padding:9px 13px;">
+            <span style="font-size:12px;color:#c8862f;">◔</span>
+            <span style="flex:1;font-size:12px;color:#e8ddcb;font-weight:500;">blog-pipeline</span>
+            <div style="width:74px;height:5px;border-radius:3px;background:#0e0b08;overflow:hidden;">
+              <div style="width:21%;height:100%;background:linear-gradient(90deg,#9a7a48,#c8862f);"></div></div>
+            <span style="font-size:11px;color:#e8ddcb;font-variant-numeric:tabular-nums;width:30px;text-align:right;">21%</span>
+            <span style="font-size:10px;color:#9a8b76;">↗ focus</span>
+          </div>
+        </div>
+
+        <!-- MODEL HISTORY 구분 -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#8a7c69;">MODEL HISTORY</span>
+          <div style="flex:1;height:1px;background:#ffffff12;"></div>
+        </div>
+        <div style="display:flex;gap:18px;align-items:flex-end;padding:0 2px 4px;">
+          <!-- opus sparkline -->
+          <div style="display:flex;align-items:flex-end;gap:7px;">
+            <span style="font-size:10px;color:#b0a595;font-weight:600;">opus</span>
+            <div style="display:flex;align-items:flex-end;gap:1.5px;height:16px;">
+              <div style="width:3px;height:3px;background:#9a8b76;border-radius:1px;"></div>
+              <div style="width:3px;height:6px;background:#c8862f;border-radius:1px;"></div>
+              <div style="width:3px;height:10px;background:#e89824;border-radius:1px;"></div>
+              <div style="width:3px;height:15px;background:#e6701c;border-radius:1px;"></div>
+              <div style="width:3px;height:12px;background:#e89824;border-radius:1px;"></div>
+              <div style="width:3px;height:8px;background:#c8862f;border-radius:1px;"></div>
+              <div style="width:3px;height:5px;background:#9a8b76;border-radius:1px;"></div>
+              <div style="width:3px;height:3px;background:#9a8b76;border-radius:1px;"></div>
+              <div style="width:3px;height:7px;background:#c8862f;border-radius:1px;"></div>
+              <div style="width:3px;height:11px;background:#e89824;border-radius:1px;"></div>
+            </div>
+          </div>
+          <!-- sonnet sparkline -->
+          <div style="display:flex;align-items:flex-end;gap:7px;">
+            <span style="font-size:10px;color:#b0a595;font-weight:600;">sonnet</span>
+            <div style="display:flex;align-items:flex-end;gap:1.5px;height:16px;">
+              <div style="width:3px;height:2px;background:#9a8b76;border-radius:1px;"></div>
+              <div style="width:3px;height:2px;background:#9a8b76;border-radius:1px;"></div>
+              <div style="width:3px;height:4px;background:#9a8b76;border-radius:1px;"></div>
+              <div style="width:3px;height:7px;background:#c8862f;border-radius:1px;"></div>
+              <div style="width:3px;height:4px;background:#9a8b76;border-radius:1px;"></div>
+              <div style="width:3px;height:2px;background:#9a8b76;border-radius:1px;"></div>
+              <div style="width:3px;height:2px;background:#9a8b76;border-radius:1px;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /z1 콘텐츠 래퍼 -->
+    </div><!-- /z-1 돌솥 본체 -->
+  </div><!-- /팝오버 -->
+
+  <!-- ============ 위젯 미리보기 (좌하단, 위에서 본 돌솥) ============ -->
+  <div style="position:absolute;left:60px;bottom:46px;width:172px;height:172px;border-radius:24px;overflow:hidden;
+    box-shadow:0 18px 44px #000000aa;border:2px solid #ffe9c91f;">
+    <!-- 거친 돌 림 -->
+    <div style="position:absolute;inset:0;background:
+      radial-gradient(circle at 50% 50%, #3a2a1d 0%, #241a12 55%, #19120c 100%);">
+    </div>
+    <div style="position:absolute;inset:0;opacity:0.5;
+      background-image:radial-gradient(#ffffff08 1px,transparent 1px),radial-gradient(#00000033 1.2px,transparent 1.2px);
+      background-size:4px 4px,6px 6px;"></div>
+    <!-- 김 서린 유리 디스크 -->
+    <div style="position:absolute;top:24px;left:24px;width:124px;height:124px;border-radius:50%;
+      background:radial-gradient(circle at 42% 38%, #2e251c 0%, #221a12 60%, #1a130d 100%);
+      border:1px solid #ffffff14;box-shadow:0 4px 14px #00000080 inset, 0 0 0 6px #19120c;">
+      <!-- 중심 국물 글로우 (critical) -->
+      <div style="position:absolute;inset:14px;border-radius:50%;
+        background:radial-gradient(circle, #e63e2266 0%, #e6701c33 45%, transparent 72%);filter:blur(3px);"></div>
+      <!-- 국물 기포 (정지) -->
+      <div style="position:absolute;top:34px;left:36px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd9a0bb,#e6701c44);box-shadow:0 0 5px #ff7a3a55;"></div>
+      <div style="position:absolute;bottom:30px;right:40px;width:5px;height:5px;border-radius:50%;background:#ffe1b099;box-shadow:0 0 4px #ff7a3a44;"></div>
+      <!-- 응결 물방울 -->
+      <div style="position:absolute;top:20px;right:34px;width:4px;height:4px;border-radius:50%;background:#ffffff44;"></div>
+      <!-- 히어로 % -->
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+        <span style="font-size:34px;font-weight:600;color:#f3ede3;font-variant-numeric:tabular-nums;
+          font-family:'SF Pro Rounded',-apple-system,sans-serif;letter-spacing:-1px;text-shadow:0 1px 3px #000000aa;">85<span style="font-size:18px;">%</span></span>
+        <span style="font-size:9px;color:#b0a595;letter-spacing:.5px;margin-top:1px;">resets 1h48m</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 위젯 라벨 -->
+  <div style="position:absolute;left:60px;bottom:24px;width:172px;text-align:center;font-size:10px;color:#8a7c69;letter-spacing:.5px;">small widget · 위에서 본 돌솥</div>
+
+  <!-- 컨셉 캡션 (좌상단) -->
+  <div style="position:absolute;left:60px;top:54px;width:200px;">
+    <div style="font-size:20px;font-weight:700;color:#f3ede3;font-family:'SF Pro Rounded',-apple-system,sans-serif;">02. 뚝배기</div>
+    <div style="font-size:11px;color:#b0a595;margin-top:4px;line-height:1.5;">거친 돌솥 위 김 서린 유리. 위험은 바닥에서 끓는 앰버 국물 — critical엔 부글 기포가 떠오른다.</div>
+    <div style="margin-top:10px;display:flex;gap:5px;flex-wrap:wrap;">
+      <span style="font-size:9px;color:#cdbfa9;background:#ffffff10;border:1px solid #ffffff14;padding:2px 7px;border-radius:6px;">stoneware</span>
+      <span style="font-size:9px;color:#cdbfa9;background:#ffffff10;border:1px solid #ffffff14;padding:2px 7px;border-radius:6px;">condensation</span>
+      <span style="font-size:9px;color:#ff8a5a;background:#e63e2218;border:1px solid #e63e2233;padding:2px 7px;border-radius:6px;">simmer bubbles</span>
+      <span style="font-size:9px;color:#cdbfa9;background:#ffffff10;border:1px solid #ffffff14;padding:2px 7px;border-radius:6px;">dark-first</span>
+    </div>
+  </div>
+
+</body>
+</html>

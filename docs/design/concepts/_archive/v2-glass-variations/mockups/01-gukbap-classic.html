@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>01 · 유리국밥 클래식 (Gukbap Classic)</title>
+</head>
+<body style="margin:0; width:800px; height:560px; overflow:hidden; position:relative; font-family:-apple-system,'SF Pro Text','Helvetica Neue',sans-serif; background:radial-gradient(120% 130% at 18% 8%, #3a2f6e 0%, #2a2350 28%, #1d2b55 55%, #123042 78%, #0c2230 100%);">
+
+  <!-- colorful wallpaper texture so glass shows through -->
+  <div style="position:absolute; left:-60px; top:-40px; width:340px; height:340px; border-radius:50%; background:radial-gradient(circle, rgba(255,120,180,0.55), rgba(255,120,180,0) 70%); filter:blur(8px);"></div>
+  <div style="position:absolute; right:-40px; top:30px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(80,200,255,0.5), rgba(80,200,255,0) 70%);"></div>
+  <div style="position:absolute; right:120px; bottom:-80px; width:380px; height:380px; border-radius:50%; background:radial-gradient(circle, rgba(120,255,200,0.4), rgba(120,255,200,0) 70%);"></div>
+  <div style="position:absolute; left:200px; bottom:40px; width:260px; height:260px; border-radius:50%; background:radial-gradient(circle, rgba(255,210,90,0.4), rgba(255,210,90,0) 70%);"></div>
+
+  <!-- ===================== MENU BAR STRIP ===================== -->
+  <div style="position:absolute; top:0; left:0; right:0; height:26px; background:rgba(18,20,26,0.55); backdrop-filter:blur(14px) saturate(140%); -webkit-backdrop-filter:blur(14px) saturate(140%); display:flex; align-items:center; justify-content:flex-end; padding-right:14px; box-shadow:inset 0 -0.5px 0 rgba(255,255,255,0.08);">
+    <!-- left os hints -->
+    <div style="position:absolute; left:12px; top:0; height:26px; display:flex; align-items:center; gap:14px; color:rgba(255,255,255,0.78); font-size:12px; font-weight:600;">
+      <span style="font-size:13px;"></span><span>Finder</span><span style="opacity:.7; font-weight:500;">File</span><span style="opacity:.7; font-weight:500;">Edit</span>
+    </div>
+    <!-- our menubar item: scrim capsule + meniscus -->
+    <div style="position:relative; display:flex; flex-direction:column; align-items:stretch;">
+      <div style="background:rgba(21,23,26,0.92); border-radius:6px; padding:2px 9px 3px; display:flex; align-items:center; gap:8px; font-family:'SF Mono',ui-monospace,monospace; font-size:12px; font-weight:600; color:#F2F3F5; letter-spacing:.2px;">
+        <span>5h <span style="color:#FF8A6B;">85%</span></span>
+        <span style="opacity:.4;">·</span>
+        <span>7d <span style="color:#F2C04A;">47%</span></span>
+        <span style="opacity:.4;">·</span>
+        <span style="color:#A7ACB5;">3◐</span>
+      </div>
+      <!-- broth meniscus: 3px glow line, critical amber-red -->
+      <div style="height:3px; margin:1px 3px 0; border-radius:2px; background:linear-gradient(90deg, rgba(232,74,44,0) 0%, rgba(232,74,44,0.95) 50%, rgba(232,74,44,0) 100%); box-shadow:0 0 6px 1px rgba(232,74,44,0.7);"></div>
+    </div>
+    <span style="margin-left:14px; color:rgba(255,255,255,0.7); font-size:12px;">100% &#9201;  Mon 9:41</span>
+  </div>
+
+  <!-- ===================== POPOVER ===================== -->
+  <div style="position:absolute; top:40px; right:18px; width:340px; border-radius:26px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.5), 0 2px 0 rgba(255,255,255,0.08) inset; border:1px solid rgba(255,255,255,0.10);">
+
+    <!-- z0 broth glow + sediment, behind frost -->
+    <div style="position:absolute; inset:0; background:
+        radial-gradient(120% 70% at 50% 118%, rgba(232,74,44,0.62) 0%, rgba(232,74,44,0.30) 32%, rgba(232,74,44,0) 62%),
+        radial-gradient(60% 40% at 38% 30%, rgba(240,122,34,0.20) 0%, rgba(240,122,34,0) 70%);"></div>
+
+    <!-- z1 frosted panel -->
+    <div style="position:relative; background:rgba(30,32,36,0.62); backdrop-filter:blur(26px) saturate(150%); -webkit-backdrop-filter:blur(26px) saturate(150%); padding:16px;">
+
+      <!-- edge.lens asymmetric rim -->
+      <div style="position:absolute; inset:0; border-radius:26px; pointer-events:none; box-shadow:inset 0 1.5px 0 rgba(255,255,255,0.28), inset 0 -1.5px 0 rgba(0,0,0,0.30);"></div>
+
+      <!-- 5-HOUR hero tile -->
+      <div style="font-size:10px; font-weight:700; letter-spacing:1.4px; color:#A7ACB5; margin:0 2px 7px;">5-HOUR WINDOW</div>
+      <div style="position:relative; border-radius:18px; padding:14px 14px 12px; background:linear-gradient(180deg, rgba(56,60,68,0.55), rgba(34,37,43,0.45)); box-shadow:inset 0 1px 0 rgba(255,255,255,0.18), 0 6px 14px rgba(0,0,0,0.28);">
+        <div style="display:flex; align-items:baseline; justify-content:center; gap:2px;">
+          <span style="font-family:'SF Pro Rounded','SF Pro Display',-apple-system,sans-serif; font-size:46px; font-weight:600; color:#F2F3F5; letter-spacing:-1px; font-variant-numeric:tabular-nums;">85</span>
+          <span style="font-family:'SF Pro Rounded',-apple-system,sans-serif; font-size:22px; font-weight:600; color:#C9CCD2;">%</span>
+        </div>
+        <!-- gauge with critical fill -->
+        <div style="margin:8px 2px 0; height:8px; border-radius:5px; background:rgba(0,0,0,0.35); overflow:hidden; box-shadow:inset 0 1px 1px rgba(0,0,0,0.4);">
+          <div style="width:85%; height:100%; border-radius:5px; background:linear-gradient(90deg,#F0832E,#E84A2C); box-shadow:0 0 8px rgba(232,74,44,0.8);"></div>
+        </div>
+        <div style="text-align:center; margin-top:7px; font-size:11px; color:#A7ACB5; font-variant-numeric:tabular-nums;">resets in 0h 52m</div>
+      </div>
+
+      <!-- 7-DAY + SONNET row -->
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <div style="flex:1; border-radius:14px; padding:9px 11px; background:rgba(42,45,51,0.5); box-shadow:inset 0 1px 0 rgba(255,255,255,0.12);">
+          <div style="font-size:10px; letter-spacing:.6px; color:#A7ACB5; font-weight:600;">7-DAY · <span style="color:#F2F3F5; font-variant-numeric:tabular-nums;">47%</span></div>
+          <div style="margin-top:6px; height:6px; border-radius:4px; background:rgba(0,0,0,0.3); overflow:hidden;">
+            <div style="width:47%; height:100%; background:linear-gradient(90deg,#E89B2E,#F2A226); box-shadow:0 0 5px rgba(242,162,38,0.6);"></div>
+          </div>
+        </div>
+        <div style="flex:1; border-radius:14px; padding:9px 11px; background:rgba(42,45,51,0.5); box-shadow:inset 0 1px 0 rgba(255,255,255,0.12);">
+          <div style="font-size:10px; letter-spacing:.6px; color:#A7ACB5; font-weight:600;">SONNET · <span style="color:#F2F3F5; font-variant-numeric:tabular-nums;">11%</span></div>
+          <div style="margin-top:6px; height:6px; border-radius:4px; background:rgba(0,0,0,0.3); overflow:hidden;">
+            <div style="width:11%; height:100%; background:linear-gradient(90deg,#D9A85a,#E8A33D); box-shadow:0 0 4px rgba(232,163,61,0.4);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SESSIONS -->
+      <div style="font-size:10px; font-weight:700; letter-spacing:1.4px; color:#A7ACB5; margin:13px 2px 6px;">SESSIONS</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <!-- arkraft 80 -->
+        <div style="display:flex; align-items:center; border-radius:13px; padding:8px 11px; background:rgba(42,45,51,0.5); box-shadow:inset 0 1px 0 rgba(255,255,255,0.10);">
+          <span style="color:#F2C04A; font-size:13px; margin-right:8px;">◐</span>
+          <span style="flex:1; font-size:12px; color:#F2F3F5; font-weight:500;">arkraft</span>
+          <span style="font-size:11px; color:#C9CCD2; font-variant-numeric:tabular-nums; margin-right:9px;">ctx 80%</span>
+          <span style="font-size:11px; color:#7FB3FF; font-weight:600;">↗ focus</span>
+        </div>
+        <!-- claude-usage-widget 69 -->
+        <div style="display:flex; align-items:center; border-radius:13px; padding:8px 11px; background:rgba(42,45,51,0.5); box-shadow:inset 0 1px 0 rgba(255,255,255,0.10);">
+          <span style="color:#F2A226; font-size:13px; margin-right:8px;">◑</span>
+          <span style="flex:1; font-size:12px; color:#F2F3F5; font-weight:500;">claude-usage-widget</span>
+          <span style="font-size:11px; color:#C9CCD2; font-variant-numeric:tabular-nums; margin-right:9px;">ctx 69%</span>
+          <span style="font-size:11px; color:#7FB3FF; font-weight:600;">↗ focus</span>
+        </div>
+        <!-- njtransit 21 -->
+        <div style="display:flex; align-items:center; border-radius:13px; padding:8px 11px; background:rgba(42,45,51,0.5); box-shadow:inset 0 1px 0 rgba(255,255,255,0.10);">
+          <span style="color:#8FD0A0; font-size:13px; margin-right:8px;">◔</span>
+          <span style="flex:1; font-size:12px; color:#F2F3F5; font-weight:500;">njtransit</span>
+          <span style="font-size:11px; color:#C9CCD2; font-variant-numeric:tabular-nums; margin-right:9px;">ctx 21%</span>
+          <span style="font-size:11px; color:#7FB3FF; font-weight:600;">↗ focus</span>
+        </div>
+      </div>
+
+      <!-- MODEL HISTORY on sediment bed -->
+      <div style="font-size:10px; font-weight:700; letter-spacing:1.4px; color:#A7ACB5; margin:13px 2px 6px;">MODEL HISTORY</div>
+      <div style="display:flex; gap:8px; border-radius:13px; padding:9px 11px; background:linear-gradient(180deg, rgba(14,15,18,0.55), rgba(8,9,11,0.65)); box-shadow:inset 0 2px 6px rgba(0,0,0,0.45);">
+        <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+          <span style="font-size:9px; letter-spacing:.5px; color:#9CA1AA; text-transform:uppercase;">opus</span>
+          <div style="display:flex; align-items:flex-end; gap:2px; height:18px;">
+            <span style="flex:1; height:30%; background:#7FB3FF; border-radius:1px;"></span>
+            <span style="flex:1; height:55%; background:#7FB3FF; border-radius:1px;"></span>
+            <span style="flex:1; height:80%; background:#7FB3FF; border-radius:1px;"></span>
+            <span style="flex:1; height:100%; background:#7FB3FF; border-radius:1px;"></span>
+            <span style="flex:1; height:70%; background:#7FB3FF; border-radius:1px;"></span>
+            <span style="flex:1; height:45%; background:#7FB3FF; border-radius:1px;"></span>
+          </div>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+          <span style="font-size:9px; letter-spacing:.5px; color:#9CA1AA; text-transform:uppercase;">fable</span>
+          <div style="display:flex; align-items:flex-end; gap:2px; height:18px;">
+            <span style="flex:1; height:40%; background:#C99BE8; border-radius:1px;"></span>
+            <span style="flex:1; height:75%; background:#C99BE8; border-radius:1px;"></span>
+            <span style="flex:1; height:55%; background:#C99BE8; border-radius:1px;"></span>
+            <span style="flex:1; height:90%; background:#C99BE8; border-radius:1px;"></span>
+          </div>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+          <span style="font-size:9px; letter-spacing:.5px; color:#9CA1AA; text-transform:uppercase;">sonnet</span>
+          <div style="display:flex; align-items:flex-end; gap:2px; height:18px;">
+            <span style="flex:1; height:20%; background:#8FD0A0; border-radius:1px;"></span>
+            <span style="flex:1; height:30%; background:#8FD0A0; border-radius:1px;"></span>
+            <span style="flex:1; height:45%; background:#8FD0A0; border-radius:1px;"></span>
+            <span style="flex:1; height:60%; background:#8FD0A0; border-radius:1px;"></span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /z1 -->
+  </div><!-- /popover -->
+
+  <!-- caption chip -->
+  <div style="position:absolute; left:18px; bottom:16px; font-size:11px; color:rgba(255,255,255,0.7); background:rgba(0,0,0,0.32); backdrop-filter:blur(8px); padding:5px 11px; border-radius:8px;">
+    01 · 유리국밥 클래식 — 다크 그래파이트 프로스트 + 웜 국물 언더글로우 (critical)
+  </div>
+
+</body>
+</html>

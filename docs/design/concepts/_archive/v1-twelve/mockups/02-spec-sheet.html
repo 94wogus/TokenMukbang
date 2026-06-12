@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 · Spec Sheet — TokenMukbang</title>
+<style>
+  :root {
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+    --grotesk: -apple-system, Inter, sans-serif;
+
+    /* clinical light scheme */
+    --surface: #FAFAF8;
+    --raised: #FFFFFF;
+    --ink: #222428;
+    --ink-muted: #8A8F98;
+    --grid: #E4E4DF;
+    --hairline: #D8D8D2;
+    --live: #C8F000;
+    --track: #ECECE8;
+    --fill: #222428;
+
+    /* risk */
+    --calm: #222428;
+    --watch: #8A8F98;
+    --warn: #F5A623;
+    --crit: #FF3B30;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 800px;
+    height: 560px;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* subtle desktop wallpaper gradient */
+    background:
+      radial-gradient(120% 90% at 18% 8%, #d9dde4 0%, rgba(217,221,228,0) 55%),
+      radial-gradient(130% 110% at 88% 96%, #c4cad4 0%, rgba(196,202,212,0) 50%),
+      linear-gradient(155deg, #b9c0cb 0%, #9aa3b1 48%, #7e8898 100%);
+    font-family: var(--grotesk);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    color: var(--ink);
+  }
+
+  .desktop {
+    position: relative;
+    width: 800px;
+    height: 560px;
+    overflow: hidden;
+  }
+
+  /* ============ MENU BAR STRIP ============ */
+  .menubar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 18px;
+    padding: 0 14px;
+    /* translucent vibrancy over wallpaper */
+    background: rgba(250,250,248,0.40);
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    border-bottom: 1px solid rgba(120,128,140,0.28);
+    font-family: var(--mono);
+    z-index: 5;
+  }
+  .mb-left {
+    margin-right: auto;
+    display: flex; align-items: center; gap: 14px;
+    font-size: 11px; font-weight: 500;
+    color: rgba(34,36,40,0.62);
+    letter-spacing: 0.06em;
+  }
+  .mb-cell {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11.5px; font-weight: 500;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+  }
+  .mb-cell .lbl { color: rgba(34,36,40,0.55); }
+  .mb-tick {
+    font-variant-numeric: tabular-nums;
+    border-left: 1.5px solid var(--ink);
+    border-right: 1.5px solid var(--ink);
+    padding: 0 3px;
+    margin: 0 1px;
+  }
+  .mb-bang { color: var(--crit); font-weight: 700; margin-right: 2px; }
+  .mb-dot { color: var(--live); font-size: 9px; }
+
+  /* ============ POPOVER (anchored under menubar, right side) ============ */
+  .popover {
+    position: absolute;
+    top: 32px;
+    right: 18px;
+    width: 340px;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    box-shadow: 0 18px 50px rgba(20,24,30,0.30), 0 2px 8px rgba(20,24,30,0.18);
+    font-family: var(--mono);
+    color: var(--ink);
+    /* cell grid blueprint backdrop */
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 17px 17px;
+    background-blend-mode: multiply;
+  }
+  .popover::before {
+    /* keep grid faint, overlay near-opaque surface */
+    content: "";
+    position: absolute; inset: 0;
+    background: rgba(250,250,248,0.86);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .pop-inner { position: relative; z-index: 1; }
+
+  /* crop marks */
+  .cropmark {
+    position: absolute;
+    color: var(--ink-muted);
+    font-size: 12px;
+    line-height: 1;
+    z-index: 2;
+  }
+  .cm-tl { top: 5px; left: 6px; }
+  .cm-tr { top: 5px; right: 6px; }
+
+  /* header */
+  .pop-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 12px 16px 8px;
+  }
+  .doc-title {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.10em;
+    color: var(--ink);
+  }
+  .doc-title .ver { color: var(--ink-muted); font-weight: 500; }
+  .doc-clock {
+    font-size: 10.5px; color: var(--ink-muted);
+    letter-spacing: 0.06em;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+
+  .hairline { height: 1px; background: var(--hairline); margin: 0 12px; }
+
+  /* status chip */
+  .chip {
+    display: inline-flex; align-items: center;
+    font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.12em;
+    border: 1px solid currentColor;
+    padding: 1px 5px 1px 3px;
+    position: relative;
+    white-space: nowrap;
+  }
+  .chip .corner { font-size: 9px; margin-right: 2px; opacity: 0.85; }
+  .chip.calm  { color: var(--calm); }
+  .chip.watch { color: var(--watch); }
+  .chip.warn  { color: var(--warn); }
+  .chip.crit  { color: var(--crit); }
+
+  /* ===== HERO ===== */
+  .hero { padding: 11px 16px 12px; }
+  .hero-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 9px;
+  }
+  .hero-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+    color: var(--ink);
+  }
+  .hero-num {
+    display: flex; align-items: center; gap: 9px;
+    margin-bottom: 8px;
+  }
+  .hero-num .big {
+    font-size: 40px; font-weight: 500;
+    letter-spacing: 0.06em;
+    line-height: 0.9;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-num .pct { font-size: 17px; color: var(--ink-muted); align-self: flex-start; margin-top: 4px; }
+  .live-dot { color: var(--live); font-size: 15px; line-height: 1; margin-left: 2px;
+    text-shadow: 0 0 6px rgba(200,240,0,0.55); }
+
+  /* ruler gauge */
+  .ruler-gauge { margin: 2px 0 0; }
+  .rg-track {
+    position: relative;
+    height: 11px;
+    background: var(--track);
+    border: 1px solid var(--grid);
+  }
+  .rg-fill {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    background: var(--fill);
+  }
+  .rg-fill.crit { background: var(--crit); }
+  .rg-ticks {
+    position: absolute; inset: 0;
+    pointer-events: none;
+  }
+  .rg-ticks span {
+    position: absolute; top: -1px; bottom: -1px; width: 1px;
+    background: var(--ink-muted); opacity: 0.55;
+  }
+  .rg-scale {
+    display: flex; justify-content: space-between;
+    font-size: 8px; color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    margin-top: 3px;
+  }
+  .reset-row {
+    margin-top: 8px;
+    font-size: 10px; letter-spacing: 0.10em;
+    color: var(--ink-muted);
+  }
+  .reset-row b { color: var(--ink); font-weight: 600; margin-left: 6px; letter-spacing: 0.06em; }
+
+  /* ===== SECTION ===== */
+  .section { padding: 9px 16px 10px; }
+  .sec-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 7px;
+  }
+  .sec-code {
+    font-size: 9.5px; font-weight: 600; letter-spacing: 0.12em;
+    color: var(--ink-muted);
+  }
+  .sec-code .crs { color: var(--ink); }
+  .sec-ts { font-size: 9px; color: var(--ink-muted); letter-spacing: 0.06em; }
+
+  table.spec { width: 100%; border-collapse: collapse; }
+  table.spec td {
+    font-size: 10px;
+    padding: 2.5px 0;
+    vertical-align: middle;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .col-lbl { color: var(--ink-muted); width: 64px; letter-spacing: 0.06em; }
+  .col-bar { font-size: 11px; letter-spacing: -0.5px; color: var(--ink); }
+  .col-bar .empty { color: var(--track); }
+  .col-bar.crit .full { color: var(--crit); }
+  .col-pct { text-align: right; width: 38px; color: var(--ink); padding-right: 8px !important;
+    font-variant-numeric: tabular-nums; }
+  .col-reset { text-align: right; width: 56px; color: var(--ink-muted); }
+  .col-chip { text-align: right; padding-left: 6px !important; }
+  .col-model { text-align: right; width: 42px; color: var(--ink-muted); letter-spacing: 0.06em; }
+
+  /* sessions cwd */
+  .cwd { color: var(--ink); }
+  .col-cwd { width: 150px; }
+
+  /* models hard-edge stack */
+  .model-row { display: flex; align-items: center; gap: 8px; padding: 2.5px 0; }
+  .model-name { font-size: 10px; color: var(--ink-muted); letter-spacing: 0.08em; width: 56px; }
+  .model-bar {
+    height: 9px; background: var(--fill);
+    border: 0;
+  }
+  .model-tok { font-size: 9.5px; color: var(--ink); letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums; }
+
+  /* footer */
+  .pop-foot {
+    position: relative;
+    padding: 9px 16px 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .foot-mark {
+    font-size: 9px; letter-spacing: 0.14em; color: var(--ink-muted);
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .foot-mark .cm { color: var(--ink-muted); }
+  .foot-mark .bon { color: var(--ink); opacity: 0.65; }
+</style>
+</head>
+<body>
+  <div class="desktop">
+
+    <!-- ===== MENU BAR ===== -->
+    <div class="menubar">
+      <div class="mb-left">TokenMukbang</div>
+      <span class="mb-cell">
+        <span class="mb-bang">!</span><span class="lbl">5h</span><span class="mb-tick">85</span><span class="mb-dot">●</span>
+      </span>
+      <span class="mb-cell">
+        <span class="lbl">7d</span><span class="mb-tick">47</span>
+      </span>
+    </div>
+
+    <!-- ===== POPOVER ===== -->
+    <div class="popover">
+      <span class="cropmark cm-tl">⌐</span>
+      <span class="cropmark cm-tr">¬</span>
+      <div class="pop-inner">
+
+        <!-- header -->
+        <div class="pop-head">
+          <div class="doc-title">TOKENMUKBANG <span class="ver">// v1.0</span></div>
+          <div class="doc-clock">13:59:42&nbsp;◷</div>
+        </div>
+        <div class="hairline"></div>
+
+        <!-- HERO : 5h current -->
+        <div class="hero">
+          <div class="hero-top">
+            <div class="hero-label">5H-WINDOW</div>
+            <span class="chip crit"><span class="corner">⌐</span>[CRIT]</span>
+          </div>
+          <div class="hero-num">
+            <span class="big">85</span><span class="pct">%</span>
+            <span class="live-dot">●</span>
+          </div>
+          <div class="ruler-gauge">
+            <div class="rg-track">
+              <div class="rg-fill crit" style="width:85%"></div>
+              <div class="rg-ticks">
+                <span style="left:0"></span>
+                <span style="left:25%"></span>
+                <span style="left:50%"></span>
+                <span style="left:75%"></span>
+                <span style="left:calc(100% - 1px)"></span>
+              </div>
+            </div>
+            <div class="rg-scale"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+          </div>
+          <div class="reset-row">RESET IN <b>T-02:08</b></div>
+        </div>
+        <div class="hairline"></div>
+
+        <!-- SEC 01 / WINDOWS -->
+        <div class="section">
+          <div class="sec-head">
+            <div class="sec-code"><span class="crs">SEC 01</span> / WINDOWS</div>
+            <div class="sec-ts">01·13:59:42</div>
+          </div>
+          <table class="spec">
+            <tr>
+              <td class="col-lbl">5H-WIN</td>
+              <td class="col-bar crit"><span class="full">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</span><span class="empty">▓▓▓</span></td>
+              <td class="col-pct">85%</td>
+              <td class="col-reset">02:08 left</td>
+              <td class="col-chip"><span class="chip crit"><span class="corner">⌐</span>[CRIT]</span></td>
+            </tr>
+            <tr>
+              <td class="col-lbl">7D-ALL</td>
+              <td class="col-bar"><span>▓▓▓▓▓▓▓▓▓</span><span class="empty">▓▓▓▓▓▓▓▓▓▓▓</span></td>
+              <td class="col-pct">47%</td>
+              <td class="col-reset">3d&nbsp;&nbsp;&nbsp;left</td>
+              <td class="col-chip"><span class="chip watch"><span class="corner">⌐</span>[WATCH]</span></td>
+            </tr>
+            <tr>
+              <td class="col-lbl">7D-OPUS</td>
+              <td class="col-bar"><span>▓▓▓▓▓</span><span class="empty">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</span></td>
+              <td class="col-pct">24%</td>
+              <td class="col-reset">3d&nbsp;&nbsp;&nbsp;left</td>
+              <td class="col-chip"></td>
+            </tr>
+            <tr>
+              <td class="col-lbl">7D-SONN</td>
+              <td class="col-bar"><span>▓▓</span><span class="empty">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</span></td>
+              <td class="col-pct">11%</td>
+              <td class="col-reset">3d&nbsp;&nbsp;&nbsp;left</td>
+              <td class="col-chip"><span class="chip calm"><span class="corner">⌐</span>[CALM]</span></td>
+            </tr>
+          </table>
+        </div>
+        <div class="hairline"></div>
+
+        <!-- SEC 02 / SESSIONS -->
+        <div class="section">
+          <div class="sec-head">
+            <div class="sec-code"><span class="crs">SEC 02</span> / SESSIONS</div>
+            <div class="sec-ts">02·13:59:42</div>
+          </div>
+          <table class="spec">
+            <tr>
+              <td class="col-cwd cwd">~/proj/usage-widget</td>
+              <td class="col-bar"><span>▓▓▓▓▓▓▓▓</span><span class="empty">▓▓</span></td>
+              <td class="col-pct">80%</td>
+              <td class="col-model">opus</td>
+            </tr>
+            <tr>
+              <td class="col-cwd cwd">~/proj/arkraft</td>
+              <td class="col-bar"><span>▓▓▓▓▓▓▓</span><span class="empty">▓▓▓</span></td>
+              <td class="col-pct">69%</td>
+              <td class="col-model">opus</td>
+            </tr>
+            <tr>
+              <td class="col-cwd cwd">~/proj/njtransit</td>
+              <td class="col-bar"><span>▓▓</span><span class="empty">▓▓▓▓▓▓▓▓</span></td>
+              <td class="col-pct">21%</td>
+              <td class="col-model">sonn</td>
+            </tr>
+          </table>
+        </div>
+        <div class="hairline"></div>
+
+        <!-- SEC 03 / MODELS -->
+        <div class="section">
+          <div class="sec-head">
+            <div class="sec-code"><span class="crs">SEC 03</span> / MODELS <span style="color:var(--ink-muted);font-weight:500;letter-spacing:0.06em;">— TODAY'S COURSE</span></div>
+            <div class="sec-ts">03·13:59:42</div>
+          </div>
+          <div class="model-row">
+            <div class="model-name">OPUS</div>
+            <div class="model-bar" style="width:150px"></div>
+            <div class="model-tok">12.4k tok</div>
+          </div>
+          <div class="model-row">
+            <div class="model-name">SONNET</div>
+            <div class="model-bar" style="width:74px"></div>
+            <div class="model-tok">6.1k tok</div>
+          </div>
+          <div class="model-row">
+            <div class="model-name">HAIKU</div>
+            <div class="model-bar" style="width:23px"></div>
+            <div class="model-tok">1.9k tok</div>
+          </div>
+        </div>
+        <div class="hairline"></div>
+
+        <!-- footer crop end mark -->
+        <div class="pop-foot">
+          <div class="foot-mark">
+            <span class="cm">⌐</span>
+            <span>END OF REPORT</span>
+            <span class="bon">· BON APPÉTIT</span>
+            <span class="cm">¬</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

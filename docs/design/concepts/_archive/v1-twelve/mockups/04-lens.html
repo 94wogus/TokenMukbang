@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>04 — Lens (렌즈) · dark</title>
+<style>
+  :root{
+    --bg-scrim:#0C0D10;
+    --glass-lens:rgba(26,28,34,0.46);
+    --hairline:rgba(255,255,255,0.14);
+    --text-primary:#F2F3F6;
+    --text-secondary:#9AA0AD;
+    --text-tabular:#D7DBE3;
+    --acc-calm:#5B7CC4;
+    --acc-watch:#1FA6A0;
+    --acc-warning:#E8A317;
+    --acc-critical:#E5394E;
+    --mono:ui-monospace,'SF Mono',Menlo,monospace;
+    --sans:-apple-system,'SF Pro Text',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    width:800px;height:560px;
+    margin:0 auto;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--sans);
+    /* desktop wallpaper — cold optical graphite gradient */
+    background:
+      radial-gradient(1200px 700px at 22% -10%, #20242e 0%, rgba(32,36,46,0) 55%),
+      radial-gradient(900px 600px at 92% 115%, #161a22 0%, rgba(22,26,34,0) 60%),
+      linear-gradient(150deg,#0a0b0e 0%,#10131a 45%,#0a0c10 100%);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
+
+  .stage{position:relative;width:800px;height:560px;}
+
+  /* ───────────────── menu-bar strip ───────────────── */
+  .menubar{
+    position:absolute;top:24px;left:0;right:0;
+    height:26px;
+    display:flex;align-items:center;gap:18px;
+    padding:0 22px;
+    /* near-opaque dark micro-scrim — readability first */
+    background:rgba(8,9,12,0.92);
+    border-bottom:1px solid rgba(255,255,255,0.05);
+    backdrop-filter:blur(8px);
+  }
+  .menubar .left{display:flex;align-items:center;gap:16px;margin-left:auto;}
+  .mb-item{display:inline-flex;align-items:baseline;gap:6px;color:var(--text-tabular);}
+  .mb-item .lab{font-family:var(--mono);font-size:11px;color:#7e8492;letter-spacing:.3px;}
+  .mb-item .val{font-family:var(--mono);font-size:11px;font-variant-numeric:tabular-nums;}
+  /* warning-crossed 7d number — selective magnification, ~10% larger + refractive rim */
+  .mb-magnified{
+    font-size:12.2px;font-weight:600;
+    color:#fff;
+    padding:0 3px;border-radius:5px;
+    /* amber refractive hairline rim */
+    box-shadow:
+      0 0 0 1px rgba(232,163,23,0.55),
+      0 0 8px rgba(232,163,23,0.35),
+      inset 0 0 6px rgba(232,163,23,0.18);
+    transform:scale(1.06);
+    display:inline-block;
+  }
+  .mb-mark{font-family:var(--mono);font-size:11px;color:#5a606d;letter-spacing:.5px;}
+
+  /* ───────────────── popover ───────────────── */
+  .popover{
+    position:absolute;top:74px;right:40px;
+    width:340px;
+    border-radius:16px;
+    /* obsidian glass — tinted, low-translucency */
+    background:
+      linear-gradient(180deg, rgba(30,33,40,0.62) 0%, rgba(18,20,26,0.58) 100%);
+    backdrop-filter:blur(28px) saturate(120%);
+    border:1px solid var(--hairline);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.07) inset,
+      0 24px 60px rgba(0,0,0,0.55),
+      0 2px 8px rgba(0,0,0,0.4);
+    color:var(--text-primary);
+    overflow:hidden;
+  }
+  /* header */
+  .pop-head{
+    display:flex;align-items:center;
+    padding:13px 16px 12px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .pop-title{font-size:12.5px;font-weight:600;letter-spacing:.2px;color:#e7e9ee;}
+  .live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:#7e8492;letter-spacing:.4px;}
+  .live .dot{width:6px;height:6px;border-radius:50%;background:var(--acc-critical);box-shadow:0 0 7px rgba(229,57,78,0.8);}
+
+  .pop-body{padding:14px 16px 16px;}
+
+  /* ── hero loupe: the single most-dangerous gauge under the lens ── */
+  .loupe{
+    position:relative;
+    border-radius:13px;
+    padding:16px 16px 15px;
+    margin-bottom:14px;
+    background:
+      radial-gradient(120% 130% at 50% 18%, rgba(229,57,78,0.10) 0%, rgba(229,57,78,0) 55%),
+      linear-gradient(180deg, rgba(44,38,42,0.55) 0%, rgba(28,22,26,0.5) 100%);
+    /* bulged glass — magnified + crisp magenta refractive rim */
+    border:1px solid rgba(229,57,78,0.42);
+    box-shadow:
+      0 0 0 1px rgba(229,57,78,0.18),
+      0 0 22px rgba(229,57,78,0.22),
+      inset 0 1px 0 rgba(255,255,255,0.10),
+      inset 0 0 28px rgba(229,57,78,0.10);
+    transform:scale(1.012);
+  }
+  /* convex highlight arc across the loupe top */
+  .loupe::before{
+    content:"";position:absolute;inset:0;border-radius:13px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 38%);
+    pointer-events:none;
+  }
+  .loupe-top{display:flex;align-items:baseline;justify-content:space-between;}
+  .loupe-lab{font-family:var(--mono);font-size:11px;letter-spacing:1.2px;color:#c98c93;}
+  .loupe-level{font-family:var(--mono);font-size:10px;letter-spacing:.6px;color:var(--acc-critical);text-transform:uppercase;}
+  .loupe-val{
+    display:block;margin-top:6px;
+    font-family:var(--mono);font-variant-numeric:tabular-nums;
+    font-size:40px;font-weight:500;line-height:1;
+    color:#fff;
+    /* magnified number with refractive outline */
+    text-shadow:0 0 14px rgba(229,57,78,0.45);
+    transform:scale(1.0);
+  }
+  .loupe-val small{font-size:18px;color:#e9aab0;font-weight:500;}
+  /* gauge edge-rim track */
+  .loupe-track{
+    margin-top:13px;height:3px;border-radius:2px;
+    background:rgba(255,255,255,0.09);position:relative;overflow:hidden;
+  }
+  .loupe-track > i{
+    position:absolute;left:0;top:0;bottom:0;width:85%;border-radius:2px;
+    background:linear-gradient(90deg,#b32a3b,var(--acc-critical));
+    box-shadow:0 0 9px rgba(229,57,78,0.6);
+  }
+  .loupe-meta{margin-top:9px;font-family:var(--mono);font-size:10.5px;color:#a88f93;letter-spacing:.3px;}
+
+  /* ── flat / blurred safe gauges (recede) ── */
+  .flat-row{
+    display:grid;grid-template-columns:74px 40px 1fr auto;
+    align-items:center;gap:10px;
+    padding:7px 2px;
+    opacity:0.62;filter:blur(.2px);
+  }
+  .flat-row .fl-lab{font-family:var(--mono);font-size:11px;color:var(--text-secondary);letter-spacing:.2px;}
+  .flat-row .fl-val{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;color:var(--text-tabular);text-align:right;}
+  .flat-track{height:2px;border-radius:1px;background:rgba(255,255,255,0.08);position:relative;overflow:hidden;}
+  .flat-track > i{position:absolute;left:0;top:0;bottom:0;border-radius:1px;}
+  .fl-watch  > i{background:var(--acc-watch);box-shadow:0 0 4px rgba(31,166,160,0.4);}
+  .fl-calm   > i{background:var(--acc-calm);box-shadow:0 0 4px rgba(91,124,196,0.35);}
+  .flat-row .fl-flag{font-family:var(--mono);font-size:9.5px;color:#5a606d;letter-spacing:.4px;}
+
+  .divider{height:1px;background:rgba(255,255,255,0.08);margin:13px 0 11px;}
+
+  .sec-lab{font-family:var(--mono);font-size:9.5px;letter-spacing:1.4px;color:#6e7480;margin-bottom:9px;}
+
+  /* sessions */
+  .sess-row{display:grid;grid-template-columns:14px 1fr 42px 86px;align-items:center;gap:9px;padding:5px 0;}
+  .sess-row .sdot{width:7px;height:7px;border-radius:50%;}
+  .sess-row .sname{font-family:var(--mono);font-size:11.5px;color:#cdd2db;letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sess-row .sctx{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11px;color:var(--text-secondary);text-align:right;}
+  .sess-track{height:2px;border-radius:1px;background:rgba(255,255,255,0.08);position:relative;overflow:hidden;}
+  .sess-track > i{position:absolute;left:0;top:0;bottom:0;border-radius:1px;background:rgba(215,219,227,0.7);}
+
+  /* model token history — SF Mono tabular */
+  .tok-row{display:grid;grid-template-columns:60px 1fr 78px 16px;align-items:center;gap:8px;padding:4px 0;}
+  .tok-row .tlab{font-family:var(--mono);font-size:11px;color:var(--text-secondary);letter-spacing:.2px;}
+  .tok-row .tnum{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12px;color:var(--text-tabular);text-align:right;}
+  .spark{font-family:var(--mono);font-size:12px;letter-spacing:1px;color:#838997;}
+  .tok-row .ttrend{font-family:var(--mono);font-size:11px;text-align:center;color:#5a606d;}
+  .tok-row .ttrend.up{color:#9aa0ad;}
+
+  /* caption */
+  .stage-cap{
+    position:absolute;left:40px;bottom:26px;width:330px;
+    font-family:var(--mono);font-size:10px;line-height:1.55;color:#6a7080;letter-spacing:.2px;
+  }
+  .stage-cap b{color:#9aa0ad;font-weight:600;}
+  .stage-cap .chip{display:inline-block;margin-top:8px;padding:2px 8px;border-radius:5px;
+    border:1px solid rgba(255,255,255,0.1);color:#7e8492;font-size:9px;letter-spacing:.6px;}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- menu-bar strip -->
+  <div class="menubar">
+    <div class="left">
+      <span class="mb-item"><span class="lab">5h</span><span class="val">85%</span></span>
+      <span class="mb-mark">·</span>
+      <span class="mb-item"><span class="lab">7d</span><span class="num mb-magnified">47%</span></span>
+    </div>
+  </div>
+
+  <!-- popover -->
+  <div class="popover">
+    <div class="pop-head">
+      <span class="pop-title">TokenMukbang</span>
+      <span class="live"><span class="dot"></span>live</span>
+    </div>
+
+    <div class="pop-body">
+
+      <!-- HERO LOUPE — 5h 85% critical, magnified -->
+      <div class="loupe">
+        <div class="loupe-top">
+          <span class="loupe-lab">5-HOUR</span>
+          <span class="loupe-level">critical</span>
+        </div>
+        <span class="loupe-val num">85<small>%</small></span>
+        <div class="loupe-track"><i></i></div>
+        <div class="loupe-meta num">resets in 2h 08m</div>
+      </div>
+
+      <!-- flat, receding safe gauges -->
+      <div class="flat-row fl-watch">
+        <span class="fl-lab">7d</span>
+        <span class="fl-val num">47%</span>
+        <span class="flat-track"><i style="width:47%"></i></span>
+        <span class="fl-flag">watch · flat</span>
+      </div>
+      <div class="flat-row fl-calm">
+        <span class="fl-lab">7d · Sonnet</span>
+        <span class="fl-val num">11%</span>
+        <span class="flat-track"><i style="width:11%"></i></span>
+        <span class="fl-flag">calm · flat</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- sessions -->
+      <div class="sec-lab">SESSIONS</div>
+      <div class="sess-row">
+        <span class="sdot" style="background:var(--acc-critical);box-shadow:0 0 6px rgba(229,57,78,.6)"></span>
+        <span class="sname">claude-usage-widget</span>
+        <span class="sctx num">ctx 80%</span>
+        <span class="sess-track"><i style="width:80%"></i></span>
+      </div>
+      <div class="sess-row">
+        <span class="sdot" style="background:var(--acc-warning);box-shadow:0 0 6px rgba(232,163,23,.5)"></span>
+        <span class="sname">arkraft-api</span>
+        <span class="sctx num">ctx 69%</span>
+        <span class="sess-track"><i style="width:69%"></i></span>
+      </div>
+      <div class="sess-row">
+        <span class="sdot" style="background:var(--acc-calm)"></span>
+        <span class="sname">docs-site</span>
+        <span class="sctx num">ctx 21%</span>
+        <span class="sess-track"><i style="width:21%"></i></span>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- model token history -->
+      <div class="sec-lab">MODEL TOKENS · tabular</div>
+      <div class="tok-row">
+        <span class="tlab">opus</span>
+        <span class="spark">▁▂▃▅▇▆▄</span>
+        <span class="tnum num">1,284,910</span>
+        <span class="ttrend up">↑</span>
+      </div>
+      <div class="tok-row">
+        <span class="tlab">sonnet</span>
+        <span class="spark">▁▁▂▂▃▂▂</span>
+        <span class="tnum num">412,330</span>
+        <span class="ttrend">·</span>
+      </div>
+      <div class="tok-row">
+        <span class="tlab">haiku</span>
+        <span class="spark">▁▁▁▁▂▁▁</span>
+        <span class="tnum num">38,002</span>
+        <span class="ttrend">·</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- explanatory caption -->
+  <div class="stage-cap">
+    <b>Lens · 선택적 확대.</b> 게이지가 여럿이어도 유리는 <b>지금 걱정할 단 하나</b>(5h 85% critical) 위에서만 볼록해진다 — 확대 + 엣지 굴절 림 + 마젠타레드 액센트. 안전한 게이지(7d watch, Sonnet calm)는 평평·흐림으로 물러난다. 색은 위험일 때만, 그것도 엣지에만.
+    <span class="chip">SCHEME · DARK · OBSIDIAN GLASS</span>
+  </div>
+
+</div>
+</body>
+</html>

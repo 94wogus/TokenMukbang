@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>10 · Cockpit — TokenMukbang</title>
+<style>
+  :root{
+    --bezel:#0A0C0F;
+    --dial-face:#101419;
+    --tick:#222A33;
+    --needle:#F2F4F6;
+    --readout:#5FD0E0;
+    --label:#7E8A95;
+    --calm:#3FB66E;
+    --watch:#E0B341;
+    --warning:#E5803A;
+    --critical:#E0463C;
+    --mono:ui-monospace,'DSEG7',Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    width:800px;height:560px;
+    /* desktop wallpaper — cold night sky */
+    background:
+      radial-gradient(120% 90% at 20% 0%, #14202b 0%, #0b1118 45%, #06090d 100%),
+      #06090d;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--sans);
+    overflow:hidden;
+    color:var(--needle);
+    font-feature-settings:"tnum" 1;
+    -webkit-font-smoothing:antialiased;
+  }
+  .stage{position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:0;}
+
+  /* ───────── menu-bar strip ───────── */
+  .menubar{
+    width:800px;height:26px;
+    position:absolute;top:-148px;left:50%;transform:translateX(-50%);
+    background:rgba(8,11,15,0.72);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    display:flex;align-items:center;gap:18px;
+    padding:0 14px;
+    font-size:12px;
+  }
+  .menubar .left{display:flex;align-items:center;gap:20px;margin-left:auto;}
+  .mb-item{display:flex;align-items:center;gap:5px;color:var(--label);
+    font-family:var(--sans);font-weight:600;letter-spacing:.5px;font-size:11px;}
+  .mb-item .glyph{font-size:13px;line-height:1;}
+  .mb-item .lcd{font-family:var(--mono);font-size:12px;letter-spacing:0;}
+  .mb-item.crit .glyph,.mb-item.crit .lcd{color:var(--critical);
+    text-shadow:0 0 4px rgba(224,70,60,.5);}
+  .mb-item.crit{color:var(--critical);}
+  .mb-dot{width:5px;height:5px;border-radius:50%;background:var(--readout);
+    box-shadow:0 0 4px var(--readout);}
+  .mb-clock{margin-left:8px;color:#9aa5af;font-family:var(--mono);font-size:11px;}
+
+  /* ───────── popover panel ───────── */
+  .popover{
+    width:340px;
+    background:linear-gradient(180deg,#0c0f14 0%, #090b0f 100%);
+    border:1px solid #1a2129;
+    border-radius:14px;
+    box-shadow:
+      0 22px 60px rgba(0,0,0,.65),
+      inset 0 1px 0 rgba(255,255,255,.04);
+    padding:12px 12px 13px;
+    position:relative;
+    margin-top:-118px;
+  }
+  /* connector notch up to menubar */
+  .popover::before{
+    content:"";position:absolute;top:-7px;right:84px;
+    width:13px;height:13px;background:#0c0f14;
+    border-left:1px solid #1a2129;border-top:1px solid #1a2129;
+    transform:rotate(45deg);
+  }
+
+  .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px;}
+  .hdr .title{font-size:10px;letter-spacing:2px;font-weight:700;color:#aeb8c0;}
+  .hdr .title span{color:var(--readout);}
+  .hdr .meta{display:flex;align-items:center;gap:9px;font-size:9px;letter-spacing:1px;color:var(--label);}
+  .hdr .refresh{display:flex;align-items:center;gap:3px;}
+  .hdr .burnflag{display:flex;align-items:center;gap:3px;color:var(--critical);font-weight:700;}
+  .hdr .burnflag .arr{font-size:10px;}
+
+  /* ── dial cluster row ── */
+  .cluster{display:flex;gap:10px;}
+  .dials{display:flex;flex-direction:column;gap:10px;flex:1;}
+  .dialbox{
+    background:radial-gradient(120% 120% at 50% 18%, #131922 0%, #0c0f14 70%);
+    border:1px solid #1d242d;
+    border-radius:12px;
+    padding:8px;
+    position:relative;
+    overflow:hidden;
+  }
+  /* glass specular — single top highlight */
+  .dialbox::after{
+    content:"";position:absolute;inset:0;border-radius:12px;pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 22%);
+  }
+  .dialbox svg{display:block;width:100%;height:auto;}
+
+  /* ── VSI gutter ── */
+  .vsi-gutter{display:flex;flex-direction:column;gap:10px;width:74px;}
+  .vsibox{
+    flex:1;
+    background:radial-gradient(120% 120% at 50% 14%, #131922 0%, #0b0e12 70%);
+    border:1px solid #1d242d;border-radius:12px;
+    padding:8px 6px;position:relative;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .vsibox::after{
+    content:"";position:absolute;inset:0;border-radius:12px;pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,0) 24%);
+  }
+  .vsi-label{font-size:8px;letter-spacing:2px;color:var(--label);font-weight:700;margin-bottom:2px;}
+  .vsi-state{font-size:8px;letter-spacing:1px;font-weight:700;margin-top:3px;}
+  .vsi-state.over{color:var(--critical);text-shadow:0 0 5px rgba(224,70,60,.5);}
+  .vsibox.rst .vsi-val{font-family:var(--mono);font-size:11px;color:var(--readout);
+    text-shadow:0 0 4px rgba(95,208,224,.4);margin-top:auto;}
+
+  /* ── fuel strips ── */
+  .section{margin-top:11px;}
+  .sec-hdr{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+  .sec-hdr .cap{font-size:8.5px;letter-spacing:2px;color:var(--label);font-weight:700;white-space:nowrap;}
+  .sec-hdr .rule{flex:1;height:1px;background:linear-gradient(90deg,#222a33,rgba(34,42,51,0));}
+
+  .fuelrow{display:flex;align-items:center;gap:8px;margin:5px 0;}
+  .fuelrow .name{width:48px;font-size:8.5px;letter-spacing:1.5px;color:#9aa5af;font-weight:700;}
+  .fuelrow .endcap{font-size:8px;color:var(--label);font-family:var(--mono);width:8px;text-align:center;}
+  .track{
+    flex:1;height:10px;border-radius:3px;
+    background:#0a0d11;border:1px solid #1d242d;position:relative;overflow:hidden;
+    display:flex;
+  }
+  /* tick marks inside fuel gauge */
+  .track .ticks{position:absolute;inset:0;display:flex;justify-content:space-between;padding:0 1px;pointer-events:none;}
+  .track .ticks i{width:1px;background:rgba(255,255,255,.06);}
+  .fill{height:100%;border-radius:2px;position:relative;z-index:1;}
+  .fill.opus{background:linear-gradient(90deg,#2c7a4d,#3FB66E);}
+  .fill.sonnet{background:linear-gradient(90deg,#1f5d66,#5FD0E0);}
+  .fuelrow .pct{width:30px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--readout);
+    text-shadow:0 0 4px rgba(95,208,224,.35);}
+
+  /* ── sessions radar scope ── */
+  .sessrow{display:flex;align-items:center;gap:8px;padding:3px 2px;font-size:9px;}
+  .blips{display:flex;align-items:center;gap:3px;width:42px;}
+  .blip{width:5px;height:5px;border-radius:50%;background:var(--readout);}
+  .blip.b1{opacity:.28;}.blip.b2{opacity:.55;}.blip.b3{opacity:.92;box-shadow:0 0 4px var(--readout);}
+  .sessrow .sname{flex:1;color:#c2cad1;font-family:var(--mono);font-size:10px;letter-spacing:.3px;}
+  .sessrow .ctx{color:var(--label);font-size:8.5px;letter-spacing:1px;}
+  .sessrow .ctx b{color:#aeb8c0;font-family:var(--mono);font-weight:600;}
+  .sessrow .focus{color:var(--readout);font-size:8.5px;font-weight:700;letter-spacing:.5px;
+    display:flex;align-items:center;gap:2px;cursor:default;}
+
+  /* ── history plotter ── */
+  .plotter{margin-top:6px;}
+  .plotrow{display:flex;align-items:center;gap:8px;margin:3px 0;}
+  .plotrow .plabel{width:48px;font-size:8px;letter-spacing:1.5px;color:var(--label);font-weight:700;}
+  .plotrow svg{flex:1;display:block;}
+
+  .footnote{margin-top:9px;text-align:center;font-size:8px;letter-spacing:1.5px;color:#4a5660;}
+</style>
+</head>
+<body>
+  <div class="stage">
+
+    <!-- ════════ MENU BAR ════════ -->
+    <div class="menubar">
+      <div class="left">
+        <div class="mb-item crit">
+          <span class="lcd">5h</span><span class="glyph">●</span><span class="lcd">85</span>
+        </div>
+        <div class="mb-item">
+          <span class="lcd">7d</span><span class="glyph">◑</span><span class="lcd">47</span>
+        </div>
+        <div class="mb-dot" title="live"></div>
+      </div>
+      <span class="mb-clock">12:41</span>
+    </div>
+
+    <!-- ════════ POPOVER ════════ -->
+    <div class="popover">
+
+      <div class="hdr">
+        <div class="title">TOKENMUKBANG · <span>COCKPIT</span></div>
+        <div class="meta">
+          <div class="refresh">⟳ 60s</div>
+          <div class="burnflag"><span class="arr">▲</span>BURN</div>
+        </div>
+      </div>
+
+      <!-- dial cluster + VSI gutter -->
+      <div class="cluster">
+        <div class="dials">
+
+          <!-- ───── 5H DIAL (85% — redline) ───── -->
+          <div class="dialbox">
+            <svg viewBox="0 0 220 132" aria-label="5h dial 85 percent">
+              <defs>
+                <radialGradient id="face5" cx="50%" cy="35%" r="75%">
+                  <stop offset="0%" stop-color="#161d27"/>
+                  <stop offset="100%" stop-color="#0b0e13"/>
+                </radialGradient>
+              </defs>
+              <!-- dial geometry: 270° sweep, start 135° (bottom-left) to 405°/45° (bottom-right) -->
+              <!-- bezel ring -->
+              <circle cx="110" cy="80" r="62" fill="none" stroke="#05070a" stroke-width="9"/>
+              <circle cx="110" cy="80" r="62" fill="url(#face5)" stroke="#272f39" stroke-width="1.5"/>
+
+              <!-- sweep risk bands (outer arc, r=56), 270° total -->
+              <!-- green 0-50%, amber 50-75%, orange 75-90%, red 90-100% -->
+              <!-- arc path generator values precomputed for 270° sweep starting at 135deg CW -->
+              <!-- green band -->
+              <path d="M 61.69 119.30 A 56 56 0 0 1 49.50 60.65" fill="none" stroke="#3FB66E" stroke-width="5" stroke-linecap="butt"/>
+              <!-- amber band -->
+              <path d="M 49.50 60.65 A 56 56 0 0 1 110 24" fill="none" stroke="#E0B341" stroke-width="5"/>
+              <!-- orange band -->
+              <path d="M 110 24 A 56 56 0 0 1 153.49 44.78" fill="none" stroke="#E5803A" stroke-width="5"/>
+              <!-- red redline band -->
+              <path d="M 153.49 44.78 A 56 56 0 0 1 158.31 119.30" fill="none" stroke="#E0463C" stroke-width="5"/>
+
+              <!-- 10% etch ticks -->
+              <g stroke="#3a444f" stroke-width="1.6">
+                <!-- 11 ticks across 270° (every 27°) -->
+                <line x1="61.69" y1="119.30" x2="66.86" y2="113.95"/>
+                <line x1="49.50" y1="60.65" x2="56.50" y2="63.30"/>
+              </g>
+              <!-- generated tick group -->
+              <g stroke="#36404a" stroke-width="1.6">
+                <line x1="61.69" y1="119.30" x2="66.7" y2="114.1"/>
+                <line x1="51.0" y1="98.5"  x2="57.1" y2="96.4"/>
+                <line x1="48.0" y1="74.0"  x2="54.4" y2="74.9"/>
+                <line x1="53.9" y1="50.5"  x2="59.6" y2="53.6"/>
+                <line x1="68.8" y1="31.5"  x2="73.0" y2="36.4"/>
+                <line x1="110"  y1="24"    x2="110"  y2="30.4"/>
+                <line x1="151.2" y1="31.5" x2="147.0" y2="36.4"/>
+                <line x1="166.1" y1="50.5" x2="160.4" y2="53.6"/>
+                <line x1="172.0" y1="74.0" x2="165.6" y2="74.9"/>
+                <line x1="169.0" y1="98.5" x2="162.9" y2="96.4"/>
+                <line x1="158.31" y1="119.30" x2="153.3" y2="114.1"/>
+              </g>
+
+              <!-- needle: 85% -> angle = 135 + 0.85*270 = 364.5deg (measured CW from +x... ) -->
+              <!-- rotate group: needle drawn pointing up (to 12 o'clock); rotate by (85% of 270) - 135 = 94.5deg -->
+              <g transform="rotate(94.5 110 80)">
+                <line x1="110" y1="80" x2="110" y2="32" stroke="#F2F4F6" stroke-width="3" stroke-linecap="round"/>
+                <line x1="110" y1="80" x2="110" y2="96" stroke="#F2F4F6" stroke-width="3" stroke-linecap="round"/>
+              </g>
+              <circle cx="110" cy="80" r="6" fill="#0c0f14" stroke="#F2F4F6" stroke-width="1.6"/>
+              <circle cx="110" cy="80" r="2" fill="#F2F4F6"/>
+
+              <!-- top label -->
+              <text x="110" y="44" text-anchor="middle" fill="#9aa5af" font-family="-apple-system,sans-serif" font-size="9" letter-spacing="2.5" font-weight="700">5H</text>
+              <!-- central LCD readout -->
+              <text x="110" y="106" text-anchor="middle" fill="#5FD0E0" font-family="ui-monospace,'DSEG7',Menlo,monospace" font-size="22" font-weight="700" letter-spacing="1" style="text-shadow:0 0 6px rgba(95,208,224,.6)">85%</text>
+              <text x="110" y="124" text-anchor="middle" fill="#7E8A95" font-family="-apple-system,sans-serif" font-size="8" letter-spacing="1.5">RESET 02:14</text>
+            </svg>
+          </div>
+
+          <!-- ───── 7D DIAL (47% — amber) ───── -->
+          <div class="dialbox">
+            <svg viewBox="0 0 220 132" aria-label="7d dial 47 percent">
+              <defs>
+                <radialGradient id="face7" cx="50%" cy="35%" r="75%">
+                  <stop offset="0%" stop-color="#161d27"/>
+                  <stop offset="100%" stop-color="#0b0e13"/>
+                </radialGradient>
+              </defs>
+              <circle cx="110" cy="80" r="62" fill="none" stroke="#05070a" stroke-width="9"/>
+              <circle cx="110" cy="80" r="62" fill="url(#face7)" stroke="#272f39" stroke-width="1.5"/>
+
+              <path d="M 61.69 119.30 A 56 56 0 0 1 49.50 60.65" fill="none" stroke="#3FB66E" stroke-width="5"/>
+              <path d="M 49.50 60.65 A 56 56 0 0 1 110 24" fill="none" stroke="#E0B341" stroke-width="5"/>
+              <path d="M 110 24 A 56 56 0 0 1 153.49 44.78" fill="none" stroke="#E5803A" stroke-width="5"/>
+              <path d="M 153.49 44.78 A 56 56 0 0 1 158.31 119.30" fill="none" stroke="#E0463C" stroke-width="5"/>
+
+              <g stroke="#36404a" stroke-width="1.6">
+                <line x1="61.69" y1="119.30" x2="66.7" y2="114.1"/>
+                <line x1="51.0" y1="98.5"  x2="57.1" y2="96.4"/>
+                <line x1="48.0" y1="74.0"  x2="54.4" y2="74.9"/>
+                <line x1="53.9" y1="50.5"  x2="59.6" y2="53.6"/>
+                <line x1="68.8" y1="31.5"  x2="73.0" y2="36.4"/>
+                <line x1="110"  y1="24"    x2="110"  y2="30.4"/>
+                <line x1="151.2" y1="31.5" x2="147.0" y2="36.4"/>
+                <line x1="166.1" y1="50.5" x2="160.4" y2="53.6"/>
+                <line x1="172.0" y1="74.0" x2="165.6" y2="74.9"/>
+                <line x1="169.0" y1="98.5" x2="162.9" y2="96.4"/>
+                <line x1="158.31" y1="119.30" x2="153.3" y2="114.1"/>
+              </g>
+
+              <!-- needle: 47% -> rotate (0.47*270) - 135 = -8.1deg, points into amber band -->
+              <g transform="rotate(-8.1 110 80)">
+                <line x1="110" y1="80" x2="110" y2="32" stroke="#F2F4F6" stroke-width="3" stroke-linecap="round"/>
+                <line x1="110" y1="80" x2="110" y2="96" stroke="#F2F4F6" stroke-width="3" stroke-linecap="round"/>
+              </g>
+              <circle cx="110" cy="80" r="6" fill="#0c0f14" stroke="#F2F4F6" stroke-width="1.6"/>
+              <circle cx="110" cy="80" r="2" fill="#F2F4F6"/>
+
+              <text x="110" y="44" text-anchor="middle" fill="#9aa5af" font-family="-apple-system,sans-serif" font-size="9" letter-spacing="2.5" font-weight="700">7D</text>
+              <text x="110" y="106" text-anchor="middle" fill="#5FD0E0" font-family="ui-monospace,'DSEG7',Menlo,monospace" font-size="22" font-weight="700" letter-spacing="1" style="text-shadow:0 0 6px rgba(95,208,224,.55)">47%</text>
+              <text x="110" y="124" text-anchor="middle" fill="#7E8A95" font-family="-apple-system,sans-serif" font-size="8" letter-spacing="1.5">RESET 3D 04H</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- VSI gutter -->
+        <div class="vsi-gutter">
+          <!-- BURN VSI — needle above center = over-pace (red) -->
+          <div class="vsibox">
+            <div class="vsi-label">BURN</div>
+            <svg viewBox="0 0 56 150" style="width:100%;flex:1;" aria-label="burn rate VSI overpace">
+              <!-- vertical scale track -->
+              <rect x="25" y="10" width="6" height="130" rx="3" fill="#0a0d11" stroke="#1d242d"/>
+              <!-- over zone tint (top half) -->
+              <rect x="25" y="10" width="6" height="62" rx="3" fill="rgba(224,70,60,.14)"/>
+              <!-- center line -->
+              <line x1="16" y1="75" x2="40" y2="75" stroke="#3a444f" stroke-width="1.4"/>
+              <!-- scale ticks -->
+              <g stroke="#2a323b" stroke-width="1.2">
+                <line x1="20" y1="30" x2="25" y2="30"/>
+                <line x1="20" y1="52" x2="25" y2="52"/>
+                <line x1="20" y1="98" x2="25" y2="98"/>
+                <line x1="20" y1="120" x2="25" y2="120"/>
+              </g>
+              <!-- VSI needle: deflected UP (over-pace) -->
+              <g>
+                <line x1="40" y1="75" x2="14" y2="40" stroke="#E0463C" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="40" cy="75" r="4" fill="#0c0f14" stroke="#E0463C" stroke-width="1.6"/>
+                <circle cx="14" cy="40" r="2.5" fill="#E0463C"/>
+              </g>
+              <!-- up arrow marker -->
+              <text x="13" y="24" text-anchor="middle" fill="#E0463C" font-family="-apple-system,sans-serif" font-size="11" font-weight="700">▲</text>
+            </svg>
+            <div class="vsi-state over">OVER PACE</div>
+          </div>
+          <!-- RST sub-dial -->
+          <div class="vsibox rst">
+            <div class="vsi-label">RST</div>
+            <svg viewBox="0 0 56 56" style="width:46px;margin:4px auto 2px;" aria-label="reset subdial">
+              <circle cx="28" cy="28" r="20" fill="none" stroke="#1d242d" stroke-width="3"/>
+              <!-- arc showing elapsed -->
+              <path d="M 28 8 A 20 20 0 0 1 45.32 38" fill="none" stroke="#5FD0E0" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+              <line x1="28" y1="28" x2="28" y2="13" stroke="#F2F4F6" stroke-width="1.8" stroke-linecap="round" transform="rotate(58 28 28)"/>
+              <circle cx="28" cy="28" r="2.5" fill="#0c0f14" stroke="#F2F4F6" stroke-width="1.2"/>
+            </svg>
+            <div class="vsi-val">02:14</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ───── MODEL 7D fuel gauges ───── -->
+      <div class="section">
+        <div class="sec-hdr"><span class="cap">MODEL 7D · 연료게이지</span><span class="rule"></span></div>
+        <div class="fuelrow">
+          <span class="name">OPUS</span>
+          <span class="endcap">E</span>
+          <div class="track">
+            <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="fill opus" style="width:62%"></div>
+          </div>
+          <span class="endcap">F</span>
+          <span class="pct">62%</span>
+        </div>
+        <div class="fuelrow">
+          <span class="name">SONNET</span>
+          <span class="endcap">E</span>
+          <div class="track">
+            <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="fill sonnet" style="width:11%"></div>
+          </div>
+          <span class="endcap">F</span>
+          <span class="pct">11%</span>
+        </div>
+      </div>
+
+      <!-- ───── SESSIONS radar scope ───── -->
+      <div class="section">
+        <div class="sec-hdr"><span class="cap">SESSIONS · 레이더 스코프</span><span class="rule"></span></div>
+        <div class="sessrow">
+          <div class="blips"><span class="blip b1"></span><span class="blip b2"></span><span class="blip b3"></span></div>
+          <span class="sname">api-server</span>
+          <span class="ctx">CTX <b>78%</b></span>
+          <span class="focus">▸ focus</span>
+        </div>
+        <div class="sessrow">
+          <div class="blips"><span class="blip b1"></span><span class="blip b2"></span></div>
+          <span class="sname">web</span>
+          <span class="ctx">CTX <b>31%</b></span>
+          <span class="focus">▸ focus</span>
+        </div>
+        <div class="sessrow">
+          <div class="blips"><span class="blip b1"></span></div>
+          <span class="sname">infra-cli</span>
+          <span class="ctx">CTX <b>12%</b></span>
+          <span class="focus">▸ focus</span>
+        </div>
+      </div>
+
+      <!-- ───── HISTORY plotter ───── -->
+      <div class="section plotter">
+        <div class="sec-hdr"><span class="cap">HISTORY · 플로터</span><span class="rule"></span></div>
+        <div class="plotrow">
+          <span class="plabel">OPUS</span>
+          <svg viewBox="0 0 250 22" height="22" preserveAspectRatio="none" aria-label="opus history">
+            <line x1="0" y1="21" x2="250" y2="21" stroke="#1d242d" stroke-width="1"/>
+            <polyline points="0,18 18,14 36,16 54,8 72,12 90,6 108,9 126,4 144,11 162,7 180,13 198,5 216,9 234,3 250,7"
+              fill="none" stroke="#3FB66E" stroke-width="1.4" opacity=".85"/>
+          </svg>
+        </div>
+        <div class="plotrow">
+          <span class="plabel">SONNET</span>
+          <svg viewBox="0 0 250 22" height="22" preserveAspectRatio="none" aria-label="sonnet history">
+            <line x1="0" y1="21" x2="250" y2="21" stroke="#1d242d" stroke-width="1"/>
+            <polyline points="0,19 18,19 36,16 54,17 72,12 90,15 108,10 126,13 144,9 162,14 180,11 198,16 216,13 234,17 250,15"
+              fill="none" stroke="#5FD0E0" stroke-width="1.4" opacity=".8"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="footnote">— 바늘은 중립 · 위험은 밴드가 말한다 —</div>
+
+    </div>
+  </div>
+</body>
+</html>

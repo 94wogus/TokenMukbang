@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>03 · Glass Gukbap — dark</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    font-family: -apple-system, 'SF Pro Rounded', 'SF Pro Text', sans-serif;
+  }
+
+  body {
+    width: 800px;
+    height: 560px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* colorful desktop wallpaper — glass shows it through */
+    background:
+      radial-gradient(120% 90% at 12% 8%, #6a3df0 0%, rgba(106,61,240,0) 42%),
+      radial-gradient(110% 80% at 88% 14%, #2bb9e8 0%, rgba(43,185,232,0) 40%),
+      radial-gradient(130% 110% at 78% 96%, #e8467a 0%, rgba(232,70,122,0) 46%),
+      radial-gradient(120% 100% at 18% 92%, #19c08a 0%, rgba(25,192,138,0) 44%),
+      linear-gradient(135deg, #1b1f3a 0%, #2a1e44 50%, #12203a 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+  /* ---------- stage: menubar strip + popover stacked ---------- */
+  .stage {
+    width: 360px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* ================= MENUBAR STRIP ================= */
+  .menubar {
+    position: relative;
+    width: 360px;
+    height: 26px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    /* faux menubar translucency over wallpaper */
+    background: rgba(20, 22, 27, 0.34);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.16);
+    padding: 0 10px;
+    overflow: hidden;
+  }
+  /* opaque scrim capsule under the label — number always legible */
+  .mb-capsule {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 2px 9px;
+    border-radius: 7px;
+    background: #15171A;
+    box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.07);
+  }
+  .mb-capsule .lab {
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #F2F3F5;
+    letter-spacing: 0.1px;
+  }
+  .mb-capsule .lab .dim { color: #A7ACB5; font-weight: 500; }
+  .mb-capsule .sess { color: #A7ACB5; font-size: 12px; font-weight: 500; }
+  /* the signature: broth meniscus — 3px glow line under the text, critical = amber→red, warmed */
+  .meniscus {
+    position: absolute;
+    left: 8px; right: 8px; bottom: 3px;
+    height: 3px;
+    border-radius: 2px;
+    /* thin neutral scrim preserves hue over busy wallpaper */
+    background:
+      linear-gradient(90deg,
+        rgba(232,74,44,0.0) 0%,
+        rgba(232,74,44,0.95) 18%,
+        rgba(248,108,60,0.95) 50%,
+        rgba(216,71,46,0.98) 82%,
+        rgba(216,71,46,0.0) 100%);
+    box-shadow:
+      0 0 8px 1px rgba(232,74,44,0.75),
+      0 0 16px 3px rgba(232,74,44,0.40);
+  }
+  .meniscus::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 2px;
+    box-shadow: 0 -0.5px 0 rgba(0,0,0,0.35);
+  }
+
+  /* ================= POPOVER ================= */
+  .popover {
+    position: relative;
+    width: 340px;
+    border-radius: 28px;     /* 뚝배기 둥근 입 */
+    padding: 16px;
+    /* z1 frosted main panel — graphite glass */
+    background: rgba(30, 32, 36, 0.62);
+    backdrop-filter: blur(26px) saturate(150%);
+    -webkit-backdrop-filter: blur(26px) saturate(150%);
+    overflow: hidden;
+    /* edge.lens refraction rim (2px) + lift shadow; critical → rim warmed */
+    box-shadow:
+      0 0 0 1px rgba(232,74,44,0.18),
+      inset 0 0 0 1.5px rgba(255,255,255,0.10),
+      inset 0 1px 0 rgba(255,255,255,0.20),
+      0 24px 60px rgba(0,0,0,0.55),
+      0 2px 8px rgba(0,0,0,0.40);
+  }
+
+  /* z0 broth/glow plate — critical: edge-to-edge warming, rising from bottom */
+  .broth {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 78% at 50% 118%, rgba(232,74,44,0.58) 0%, rgba(232,74,44,0.30) 34%, rgba(232,74,44,0.0) 68%),
+      radial-gradient(60% 40% at 38% 30%, rgba(240,122,34,0.22) 0%, rgba(240,122,34,0.0) 70%);
+    filter: blur(6px);
+  }
+  /* warmed corners — edge.lens reaches the rim on critical */
+  .broth-edge {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    box-shadow:
+      inset 0 -22px 40px -18px rgba(232,74,44,0.50),
+      inset 18px 0 40px -28px rgba(232,74,44,0.22),
+      inset -18px 0 40px -28px rgba(232,74,44,0.22);
+    border-radius: 28px;
+  }
+
+  .pop-body { position: relative; z-index: 2; }
+
+  /* z2 raised glass "mandu" tiles */
+  .tile {
+    position: relative;
+    border-radius: 22px;
+    background: rgba(42, 45, 51, 0.55);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.16),   /* specular top */
+      inset 0 0 0 0.5px rgba(255,255,255,0.06),
+      0 6px 14px rgba(0,0,0,0.34);             /* soft drop — floating mandu */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  /* ----- hero 5h tile ----- */
+  .hero {
+    padding: 13px 15px 14px;
+    margin-bottom: 8px;
+  }
+  .hero .kicker {
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+    color: #A7ACB5;
+    margin-bottom: 6px;
+  }
+  .hero-row { display: flex; align-items: baseline; gap: 10px; }
+  /* hero number on a scrim plate — always opaque */
+  .scrim {
+    display: inline-block;
+    background: #15171A;
+    border-radius: 12px;
+    padding: 2px 12px 3px;
+    box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.08);
+  }
+  .hero .pct {
+    font-size: 46px;
+    font-weight: 600;
+    line-height: 1;
+    color: #F2F3F5;
+    letter-spacing: -1px;
+  }
+  .hero .pct .sym { font-size: 26px; font-weight: 600; color: #A7ACB5; margin-left: 1px; }
+  .hero .reset {
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    font-size: 12px;
+    color: #A7ACB5;
+    font-weight: 500;
+  }
+  .hero .reset b { color: #F2F3F5; font-weight: 600; }
+  /* 5h gauge bar */
+  .gauge {
+    margin-top: 11px;
+    height: 7px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.07);
+    overflow: hidden;
+    box-shadow: inset 0 0.5px 1px rgba(0,0,0,0.4);
+  }
+  .gauge > i {
+    display: block; height: 100%;
+    border-radius: 4px;
+  }
+  .g-crit { width: 85%; background: linear-gradient(90deg, #E84A2C, #F86C3C); box-shadow: 0 0 8px rgba(232,74,44,0.6); }
+  .g-watch { width: 47%; background: linear-gradient(90deg, #E89B2E, #F2B43C); box-shadow: 0 0 6px rgba(242,162,38,0.45); }
+  .g-calm  { width: 11%; background: linear-gradient(90deg, #5B7BD6, #7C97E0); }
+
+  /* ----- secondary windows row ----- */
+  .win-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .win {
+    flex: 1;
+    padding: 10px 12px 11px;
+    border-radius: 18px;
+    background: rgba(42, 45, 51, 0.50);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      0 4px 10px rgba(0,0,0,0.28);
+  }
+  .win .wlab {
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 7px;
+  }
+  .win .wname { font-size: 10.5px; font-weight: 600; letter-spacing: 0.6px; color: #A7ACB5; }
+  .win .wpct {
+    background: #15171A; border-radius: 8px; padding: 1px 7px;
+    font-size: 14px; font-weight: 600; color: #F2F3F5;
+    box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.07);
+  }
+
+  /* ----- section divider ----- */
+  .divider {
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 9.5px; font-weight: 700; letter-spacing: 1.6px;
+    color: #8A8F98;
+    margin: 12px 2px 8px;
+  }
+  .divider::after {
+    content: ""; flex: 1; height: 1px;
+    background: rgba(255,255,255,0.10);
+  }
+
+  /* ----- sessions ----- */
+  .session {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    margin-bottom: 7px;
+  }
+  .session .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 7px currentColor;
+  }
+  .s-hi  { color: #E84A2C; background: #E84A2C; }
+  .s-mid { color: #E89B2E; background: #E89B2E; }
+  .s-lo  { color: #5B7BD6; background: #5B7BD6; }
+  .session .sname {
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    font-size: 13px; font-weight: 600; color: #F2F3F5;
+    flex: 1;
+  }
+  .session .ctx {
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    font-size: 11.5px; color: #A7ACB5; font-weight: 500;
+    margin-right: 2px;
+  }
+  .session .ctx b { color: #F2F3F5; font-weight: 600; }
+  .session .focus {
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    font-size: 11px; font-weight: 600; color: #8FB4F0;
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+  /* tiny ctx mini-bar inside session */
+  .ctxbar {
+    width: 42px; height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden; flex-shrink: 0;
+  }
+  .ctxbar > i { display:block; height:100%; border-radius:3px; }
+
+  /* ----- model history (sediment stack) ----- */
+  .history {
+    display: flex; gap: 10px;
+    padding: 11px 13px 12px;
+  }
+  .hist-col { flex: 1; }
+  .hist-col .hname {
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.8px;
+    color: #A7ACB5; margin-bottom: 6px; display: flex; gap: 6px; align-items: baseline;
+  }
+  .hist-col .hname .hv { color:#F2F3F5; font-weight:700; }
+  /* sediment sparkline — layered bars settling like broth sediment */
+  .spark { display: flex; align-items: flex-end; gap: 2px; height: 26px; }
+  .spark > i {
+    flex: 1; border-radius: 2px 2px 1px 1px;
+    background: linear-gradient(180deg, rgba(240,169,60,0.9), rgba(232,123,34,0.55));
+  }
+  .spark.cool > i {
+    background: linear-gradient(180deg, rgba(124,151,224,0.85), rgba(91,123,214,0.45));
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+
+    <!-- ===== MENUBAR STRIP ===== -->
+    <div class="menubar">
+      <div class="mb-capsule">
+        <span class="lab tnum">5h&nbsp;<span style="color:#F86C3C">85%</span><span class="dim">&nbsp;&nbsp;7d&nbsp;47%</span></span>
+        <span class="sess tnum">3&nbsp;◐</span>
+      </div>
+      <div class="meniscus"></div>
+    </div>
+
+    <!-- ===== POPOVER ===== -->
+    <div class="popover">
+      <!-- z0 broth glow (critical) -->
+      <div class="broth"></div>
+      <div class="broth-edge"></div>
+
+      <div class="pop-body">
+
+        <!-- hero 5h tile -->
+        <div class="tile hero">
+          <div class="kicker">5-HOUR WINDOW</div>
+          <div class="hero-row">
+            <span class="scrim"><span class="pct tnum">85<span class="sym">%</span></span></span>
+            <span class="reset tnum">resets in <b>2h&nbsp;08m</b></span>
+          </div>
+          <div class="gauge"><i class="g-crit"></i></div>
+        </div>
+
+        <!-- secondary windows -->
+        <div class="win-row">
+          <div class="win">
+            <div class="wlab">
+              <span class="wname">7-DAY</span>
+              <span class="wpct tnum">47%</span>
+            </div>
+            <div class="gauge"><i class="g-watch"></i></div>
+          </div>
+          <div class="win">
+            <div class="wlab">
+              <span class="wname">7D · SONNET</span>
+              <span class="wpct tnum">11%</span>
+            </div>
+            <div class="gauge"><i class="g-calm"></i></div>
+          </div>
+        </div>
+
+        <!-- sessions -->
+        <div class="divider">SESSIONS</div>
+
+        <div class="tile session">
+          <span class="dot s-hi"></span>
+          <span class="sname">arkraft-api</span>
+          <span class="ctxbar"><i style="width:80%;background:linear-gradient(90deg,#E84A2C,#F86C3C)"></i></span>
+          <span class="ctx">ctx <b class="tnum">80%</b></span>
+          <span class="focus">↗ focus</span>
+        </div>
+
+        <div class="tile session">
+          <span class="dot s-mid"></span>
+          <span class="sname">claude-usage-widget</span>
+          <span class="ctxbar"><i style="width:69%;background:linear-gradient(90deg,#E89B2E,#F2B43C)"></i></span>
+          <span class="ctx">ctx <b class="tnum">69%</b></span>
+          <span class="focus">↗ focus</span>
+        </div>
+
+        <div class="tile session">
+          <span class="dot s-lo"></span>
+          <span class="sname">arkraft-web</span>
+          <span class="ctxbar"><i style="width:21%;background:linear-gradient(90deg,#5B7BD6,#7C97E0)"></i></span>
+          <span class="ctx">ctx <b class="tnum">21%</b></span>
+          <span class="focus">↗ focus</span>
+        </div>
+
+        <!-- model history -->
+        <div class="divider">MODEL HISTORY</div>
+        <div class="tile history">
+          <div class="hist-col">
+            <div class="hname">OPUS <span class="hv tnum">72%</span><span style="color:#8A8F98;font-weight:500"> avg</span></div>
+            <div class="spark">
+              <i style="height:18%"></i><i style="height:34%"></i><i style="height:52%"></i>
+              <i style="height:78%"></i><i style="height:96%"></i><i style="height:70%"></i>
+              <i style="height:48%"></i><i style="height:30%"></i><i style="height:44%"></i><i style="height:62%"></i>
+            </div>
+          </div>
+          <div class="hist-col">
+            <div class="hname">SONNET <span class="hv tnum">14%</span><span style="color:#8A8F98;font-weight:500"> avg</span></div>
+            <div class="spark cool">
+              <i style="height:14%"></i><i style="height:12%"></i><i style="height:22%"></i>
+              <i style="height:30%"></i><i style="height:24%"></i><i style="height:16%"></i>
+              <i style="height:12%"></i><i style="height:20%"></i><i style="height:14%"></i><i style="height:11%"></i>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
