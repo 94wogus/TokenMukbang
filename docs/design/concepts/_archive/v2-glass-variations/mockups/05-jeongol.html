@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>05. 전골 (Jeongol) — TokenMukbang</title>
+</head>
+<body style="margin:0; padding:0; width:800px; height:560px; overflow:hidden; font-family:-apple-system,'SF Pro Text',sans-serif; background:radial-gradient(120% 100% at 70% 0%, #2b2f3a 0%, #16181d 55%, #0d0e12 100%); position:relative;">
+
+  <!-- ============ DESKTOP WALLPAPER NOISE / GLOW ============ -->
+  <div style="position:absolute; top:-120px; right:-100px; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle, rgba(232,74,44,0.10) 0%, rgba(232,74,44,0) 70%); filter:blur(8px);"></div>
+  <div style="position:absolute; bottom:-160px; left:-120px; width:480px; height:480px; border-radius:50%; background:radial-gradient(circle, rgba(60,90,140,0.12) 0%, rgba(60,90,140,0) 70%);"></div>
+
+  <!-- ============ MENU BAR (~26px) ============ -->
+  <div style="position:absolute; top:0; left:0; right:0; height:26px; background:rgba(18,20,25,0.72); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:flex-end; padding:0 12px; box-sizing:border-box;">
+    <span style="color:#8a8f99; font-size:12px; margin-right:auto; font-weight:500;">&#63743;&nbsp;&nbsp;TokenMukbang</span>
+    <span style="color:#9aa0aa; font-size:12px; margin-right:14px;">Wed 12 Jun&nbsp;&nbsp;14:08</span>
+
+    <!-- menu-bar widget: scrim capsule + meniscus + bubble dots -->
+    <div style="position:relative; display:inline-flex; align-items:center; height:18px; padding:0 9px; border-radius:7px; background:rgba(21,23,26,0.92); box-shadow:0 0 0 0.5px rgba(255,255,255,0.08);">
+      <span style="color:#F2F3F5; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:0.2px;">85%</span>
+      <span style="color:#5b606a; font-size:11px; margin:0 5px;">&middot;</span>
+      <span style="color:#cfd3da; font-size:11px;">3 &#9680;</span>
+      <!-- meniscus: color=risk(critical red), bubble density=pace(gorging→dense) -->
+      <div style="position:absolute; left:3px; right:3px; bottom:-1px; height:3px; border-radius:2px; background:linear-gradient(90deg, rgba(232,74,44,0.95), rgba(216,71,46,0.9)); overflow:hidden;">
+        <div style="position:absolute; inset:0; background-image:radial-gradient(circle, rgba(255,255,255,0.85) 0.6px, transparent 0.9px); background-size:4px 3px; opacity:0.8;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ POPOVER (~340px) ============ -->
+  <div style="position:absolute; top:34px; right:18px; width:340px; border-radius:28px; overflow:hidden; box-shadow:0 24px 70px rgba(0,0,0,0.55), 0 2px 0 rgba(255,255,255,0.05) inset; background:#1E2024;">
+
+    <!-- z0 broth glow (critical red, fills floor & edges) -->
+    <div style="position:absolute; inset:0; background:radial-gradient(120% 80% at 50% 118%, rgba(232,74,44,0.60) 0%, rgba(232,74,44,0.30) 30%, rgba(232,74,44,0.06) 60%, transparent 78%);"></div>
+    <!-- z0.5 boiling surface: dense bubbles + ripple rings (pace = gorging) -->
+    <div style="position:absolute; inset:0; opacity:0.9;
+        background-image:
+          radial-gradient(circle at 18% 92%, rgba(255,200,160,0.55) 1.4px, transparent 2px),
+          radial-gradient(circle at 34% 96%, rgba(255,220,180,0.6) 2px, transparent 2.6px),
+          radial-gradient(circle at 52% 90%, rgba(255,210,170,0.5) 1.6px, transparent 2.2px),
+          radial-gradient(circle at 67% 95%, rgba(255,225,190,0.6) 2.2px, transparent 2.8px),
+          radial-gradient(circle at 82% 91%, rgba(255,205,165,0.5) 1.5px, transparent 2px),
+          radial-gradient(circle at 27% 86%, rgba(255,215,175,0.45) 1.3px, transparent 1.8px),
+          radial-gradient(circle at 44% 84%, rgba(255,230,195,0.4) 1.2px, transparent 1.7px),
+          radial-gradient(circle at 60% 87%, rgba(255,210,170,0.45) 1.6px, transparent 2.1px),
+          radial-gradient(circle at 76% 85%, rgba(255,220,180,0.4) 1.3px, transparent 1.8px);
+        background-repeat:no-repeat;"></div>
+    <!-- ripple rings (gorging = multiple) -->
+    <div style="position:absolute; left:50%; bottom:-30px; transform:translateX(-50%); width:240px; height:240px; border-radius:50%; border:1.5px solid rgba(255,200,160,0.18);"></div>
+    <div style="position:absolute; left:50%; bottom:-55px; transform:translateX(-50%); width:320px; height:320px; border-radius:50%; border:1.5px solid rgba(255,200,160,0.12);"></div>
+
+    <!-- z1 frost panel content (blurred glass over broth) -->
+    <div style="position:relative; padding:16px; box-sizing:border-box;">
+
+      <!-- header: window label + pace line -->
+      <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px;">
+        <span style="color:#A7ACB5; font-size:11px; font-weight:600; letter-spacing:1px;">5-HOUR WINDOW</span>
+        <span style="display:inline-flex; align-items:center; color:#F0A93C; font-size:11px; font-weight:600; font-variant-numeric:tabular-nums;">
+          <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#E84A2C; margin-right:5px; box-shadow:0 0 6px rgba(232,74,44,0.8);"></span>
+          과식 페이스 +28%
+        </span>
+      </div>
+
+      <!-- z2 hero tile (5h critical, boiling) -->
+      <div style="position:relative; border-radius:22px; padding:16px 18px; background:linear-gradient(180deg, rgba(42,45,51,0.96), rgba(34,37,43,0.96)); box-shadow:0 1px 0 rgba(255,255,255,0.10) inset, 0 8px 20px rgba(0,0,0,0.30); overflow:hidden;">
+        <!-- bubbles inside hero tile -->
+        <div style="position:absolute; inset:0; opacity:0.5;
+          background-image:
+            radial-gradient(circle at 12% 78%, rgba(255,150,110,0.7) 1.4px, transparent 2px),
+            radial-gradient(circle at 26% 84%, rgba(255,170,130,0.6) 1.8px, transparent 2.4px),
+            radial-gradient(circle at 82% 80%, rgba(255,160,120,0.6) 1.6px, transparent 2.2px),
+            radial-gradient(circle at 92% 86%, rgba(255,180,140,0.5) 1.4px, transparent 2px);
+          background-repeat:no-repeat;"></div>
+        <div style="position:relative; display:flex; align-items:flex-end; justify-content:center; margin-bottom:6px;">
+          <span style="color:#F2F3F5; font-family:-apple-system,'SF Pro Rounded',sans-serif; font-size:46px; font-weight:600; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:-1px; text-shadow:0 1px 8px rgba(0,0,0,0.4);">85<span style="font-size:26px; color:#cfd3da;">%</span></span>
+        </div>
+        <div style="position:relative; text-align:center; color:#A7ACB5; font-size:11px; font-variant-numeric:tabular-nums;">resets in 1h 48m</div>
+        <!-- hero progress bar -->
+        <div style="position:relative; margin-top:10px; height:6px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden;">
+          <div style="position:absolute; left:0; top:0; bottom:0; width:85%; border-radius:3px; background:linear-gradient(90deg, #F0A93C, #E84A2C);"></div>
+        </div>
+      </div>
+
+      <!-- secondary windows row -->
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <!-- 7d watch, calm pace -->
+        <div style="flex:1; border-radius:16px; padding:11px 12px; background:linear-gradient(180deg, rgba(42,45,51,0.92), rgba(34,37,43,0.92)); box-shadow:0 1px 0 rgba(255,255,255,0.08) inset;">
+          <div style="display:flex; align-items:baseline; justify-content:space-between;">
+            <span style="color:#A7ACB5; font-size:10px; font-weight:600; letter-spacing:0.5px;">7-DAY</span>
+            <span style="color:#8a8f99; font-size:9px;">잔잔</span>
+          </div>
+          <div style="color:#F2F3F5; font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; margin:2px 0 6px;">47%</div>
+          <div style="height:5px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden;">
+            <div style="height:100%; width:47%; border-radius:3px; background:#F2A226;"></div>
+          </div>
+        </div>
+        <!-- sonnet calm -->
+        <div style="flex:1; border-radius:16px; padding:11px 12px; background:linear-gradient(180deg, rgba(42,45,51,0.92), rgba(34,37,43,0.92)); box-shadow:0 1px 0 rgba(255,255,255,0.08) inset;">
+          <div style="display:flex; align-items:baseline; justify-content:space-between;">
+            <span style="color:#A7ACB5; font-size:10px; font-weight:600; letter-spacing:0.5px;">SONNET 7D</span>
+            <span style="color:#8a8f99; font-size:9px;">calm</span>
+          </div>
+          <div style="color:#F2F3F5; font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; margin:2px 0 6px;">11%</div>
+          <div style="height:5px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden;">
+            <div style="height:100%; width:11%; border-radius:3px; background:#F0A93C;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- sessions -->
+      <div style="margin-top:14px; color:#7e848e; font-size:10px; font-weight:600; letter-spacing:1px; display:flex; align-items:center;">
+        <span>SESSIONS</span>
+        <span style="flex:1; height:1px; background:rgba(255,255,255,0.08); margin-left:8px;"></span>
+      </div>
+      <div style="margin-top:8px; border-radius:16px; background:linear-gradient(180deg, rgba(42,45,51,0.90), rgba(34,37,43,0.90)); box-shadow:0 1px 0 rgba(255,255,255,0.07) inset; overflow:hidden;">
+        <!-- session row 1: 80% -->
+        <div style="display:flex; align-items:center; padding:9px 12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+          <span style="color:#E84A2C; font-size:12px; margin-right:8px;">&#9680;</span>
+          <span style="color:#E8EAED; font-size:12px; flex:1;">arkraft-api</span>
+          <div style="width:54px; height:4px; border-radius:2px; background:rgba(255,255,255,0.08); margin-right:8px; overflow:hidden;"><div style="height:100%; width:80%; background:#E84A2C; border-radius:2px;"></div></div>
+          <span style="color:#cfd3da; font-size:11px; font-variant-numeric:tabular-nums; width:34px; text-align:right;">80%</span>
+          <span style="color:#6b717c; font-size:10px; margin-left:8px;">&#8599; focus</span>
+        </div>
+        <!-- session row 2: 69% -->
+        <div style="display:flex; align-items:center; padding:9px 12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+          <span style="color:#F0A93C; font-size:12px; margin-right:8px;">&#9681;</span>
+          <span style="color:#E8EAED; font-size:12px; flex:1;">usage-widget</span>
+          <div style="width:54px; height:4px; border-radius:2px; background:rgba(255,255,255,0.08); margin-right:8px; overflow:hidden;"><div style="height:100%; width:69%; background:#F0A93C; border-radius:2px;"></div></div>
+          <span style="color:#cfd3da; font-size:11px; font-variant-numeric:tabular-nums; width:34px; text-align:right;">69%</span>
+          <span style="color:#6b717c; font-size:10px; margin-left:8px;">&#8599; focus</span>
+        </div>
+        <!-- session row 3: 21% -->
+        <div style="display:flex; align-items:center; padding:9px 12px;">
+          <span style="color:#7e848e; font-size:12px; margin-right:8px;">&#9682;</span>
+          <span style="color:#E8EAED; font-size:12px; flex:1;">notes</span>
+          <div style="width:54px; height:4px; border-radius:2px; background:rgba(255,255,255,0.08); margin-right:8px; overflow:hidden;"><div style="height:100%; width:21%; background:#7e848e; border-radius:2px;"></div></div>
+          <span style="color:#cfd3da; font-size:11px; font-variant-numeric:tabular-nums; width:34px; text-align:right;">21%</span>
+          <span style="color:#6b717c; font-size:10px; margin-left:8px;">&#8599; focus</span>
+        </div>
+      </div>
+
+      <!-- model history -->
+      <div style="margin-top:14px; color:#7e848e; font-size:10px; font-weight:600; letter-spacing:1px; display:flex; align-items:center;">
+        <span>MODEL HISTORY</span>
+        <span style="flex:1; height:1px; background:rgba(255,255,255,0.08); margin-left:8px;"></span>
+      </div>
+      <div style="margin-top:8px; display:flex; gap:16px; align-items:flex-end;">
+        <div style="flex:1;">
+          <div style="color:#9aa0aa; font-size:10px; margin-bottom:3px;">opus</div>
+          <div style="display:flex; align-items:flex-end; gap:2px; height:24px;">
+            <div style="flex:1; height:20%; background:#F0A93C; border-radius:1px; opacity:0.85;"></div>
+            <div style="flex:1; height:45%; background:#F0A93C; border-radius:1px; opacity:0.85;"></div>
+            <div style="flex:1; height:70%; background:#F07A22; border-radius:1px; opacity:0.85;"></div>
+            <div style="flex:1; height:95%; background:#E84A2C; border-radius:1px; opacity:0.85;"></div>
+            <div style="flex:1; height:80%; background:#F07A22; border-radius:1px; opacity:0.85;"></div>
+            <div style="flex:1; height:55%; background:#F0A93C; border-radius:1px; opacity:0.85;"></div>
+            <div style="flex:1; height:35%; background:#F0A93C; border-radius:1px; opacity:0.85;"></div>
+            <div style="flex:1; height:50%; background:#F0A93C; border-radius:1px; opacity:0.85;"></div>
+          </div>
+        </div>
+        <div style="flex:1;">
+          <div style="color:#9aa0aa; font-size:10px; margin-bottom:3px;">sonnet</div>
+          <div style="display:flex; align-items:flex-end; gap:2px; height:24px;">
+            <div style="flex:1; height:15%; background:#F0A93C; border-radius:1px; opacity:0.7;"></div>
+            <div style="flex:1; height:18%; background:#F0A93C; border-radius:1px; opacity:0.7;"></div>
+            <div style="flex:1; height:30%; background:#F0A93C; border-radius:1px; opacity:0.7;"></div>
+            <div style="flex:1; height:42%; background:#F0A93C; border-radius:1px; opacity:0.7;"></div>
+            <div style="flex:1; height:28%; background:#F0A93C; border-radius:1px; opacity:0.7;"></div>
+            <div style="flex:1; height:16%; background:#F0A93C; border-radius:1px; opacity:0.7;"></div>
+            <div style="flex:1; height:14%; background:#F0A93C; border-radius:1px; opacity:0.7;"></div>
+            <div style="flex:1; height:20%; background:#F0A93C; border-radius:1px; opacity:0.7;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- edge.lens rim (critical+gorging → warmed) -->
+    <div style="position:absolute; inset:0; border-radius:28px; pointer-events:none; box-shadow:0 0 0 1px rgba(255,170,120,0.16) inset, 0 0 30px rgba(232,74,44,0.18) inset;"></div>
+  </div>
+
+  <!-- ============ CAPTION ============ -->
+  <div style="position:absolute; left:22px; bottom:18px; max-width:380px; color:#cfd3da;">
+    <div style="font-size:15px; font-weight:600; color:#F2F3F5; margin-bottom:6px; font-family:-apple-system,'SF Pro Rounded',sans-serif;">05. 전골 &mdash; Boiling Hotpot</div>
+    <div style="font-size:12px; line-height:1.55; color:#9aa0aa;">
+      위험(절대%) = 국물 <b style="color:#E84A2C;">색</b>(언더글로우) &nbsp;·&nbsp; 페이스(연소율) = 끓는 <b style="color:#F0A93C;">강도</b>(기포 밀도&middot;물결).<br>
+      5h 85% critical + <b style="color:#F0A93C;">과식 +28%</b> &rarr; 격하게 부글. 7d 47% watch + 여유 &rarr; 잔잔. 두 정보를 직교 분리.
+    </div>
+  </div>
+
+</body>
+</html>

@@ -17,5 +17,8 @@ xcuserdata/
 *.usage-cache.json
 cache/
 
+# Browser/MCP tooling artifacts (mockup screenshots land here transiently)
+.playwright-mcp/
+
 # macOS
 .DS_Store

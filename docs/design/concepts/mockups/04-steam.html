@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>04 · 김 서림 (Steam)</title>
+</head>
+<body style="margin:0; width:800px; height:560px; overflow:hidden; position:relative; font-family:-apple-system,'SF Pro Text','Helvetica Neue',sans-serif; background:radial-gradient(125% 130% at 16% 6%, #241d3e 0%, #1a1730 30%, #14182e 55%, #0e1722 80%, #0a1018 100%);">
+
+  <!-- ===== colorful-but-dark wallpaper texture so glass shows through ===== -->
+  <div style="position:absolute; left:-70px; top:-50px; width:340px; height:340px; border-radius:50%; background:radial-gradient(circle, rgba(150,90,200,0.30), rgba(150,90,200,0) 70%); filter:blur(10px);"></div>
+  <div style="position:absolute; right:-50px; top:20px; width:320px; height:320px; border-radius:50%; background:radial-gradient(circle, rgba(60,140,200,0.26), rgba(60,140,200,0) 70%);"></div>
+  <div style="position:absolute; right:160px; bottom:-90px; width:380px; height:380px; border-radius:50%; background:radial-gradient(circle, rgba(220,110,60,0.22), rgba(220,110,60,0) 70%);"></div>
+  <div style="position:absolute; left:120px; bottom:30px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(80,180,160,0.18), rgba(80,180,160,0) 70%);"></div>
+
+  <!-- ===================== MENU BAR STRIP (~26px) ===================== -->
+  <div style="position:absolute; top:0; left:0; right:0; height:26px; background:rgba(14,16,22,0.62); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); display:flex; align-items:center; justify-content:flex-end; padding-right:14px; box-shadow:inset 0 -0.5px 0 rgba(255,255,255,0.08);">
+    <!-- left os hints -->
+    <div style="position:absolute; left:12px; top:0; height:26px; display:flex; align-items:center; gap:14px; color:rgba(255,255,255,0.78); font-size:12px; font-weight:600;">
+      <span style="font-size:13px;">&#63743;</span><span>Finder</span><span style="opacity:.7; font-weight:500;">File</span><span style="opacity:.7; font-weight:500;">Edit</span>
+    </div>
+
+    <!-- our menubar item: scrim capsule with a SMALL STEAM WISP rising above the % (critical = denser & red) -->
+    <div style="position:relative; display:flex; flex-direction:column; align-items:center; height:26px; justify-content:center;">
+      <!-- steam wisp rising above text (critical: red, dense) -->
+      <div style="position:absolute; top:-7px; left:14px; width:30px; height:14px; pointer-events:none;
+                  background:radial-gradient(ellipse 60% 100% at 35% 100%, rgba(240,138,90,0.55), rgba(240,138,90,0) 72%),
+                             radial-gradient(ellipse 50% 100% at 65% 100%, rgba(255,180,120,0.45), rgba(255,180,120,0) 72%);
+                  filter:blur(2.5px);
+                  -webkit-mask-image:linear-gradient(to top, #000 8%, transparent 95%); mask-image:linear-gradient(to top, #000 8%, transparent 95%);"></div>
+      <div style="background:rgba(19,21,25,0.94); border-radius:7px; padding:2px 9px 3px; display:flex; align-items:center; gap:7px; font-family:'SF Mono',ui-monospace,monospace; font-size:12px; font-weight:600; color:#F2F3F5; letter-spacing:.2px;">
+        <span>5h <span style="color:#F08A5A;">85%</span></span>
+        <span style="opacity:.35;">·</span>
+        <span style="color:#A7ACB5;">3&#9680;</span>
+      </div>
+    </div>
+    <span style="margin-left:14px; color:rgba(255,255,255,0.7); font-size:12px;">100% &#9201;  Mon 9:41</span>
+  </div>
+
+  <!-- caption for menubar signature -->
+  <div style="position:absolute; top:30px; left:558px; width:230px; color:rgba(255,255,255,0.42); font-size:10px; line-height:1.35; text-align:right;">
+    메뉴바 시그니처 — % 위로 작은 김 한 줄기<br>(critical일수록 진하고 붉게)
+  </div>
+
+  <!-- ===================== POPOVER (~340px) ===================== -->
+  <div style="position:absolute; top:54px; right:22px; width:340px; border-radius:26px; overflow:hidden; box-shadow:0 26px 64px rgba(0,0,0,0.55), 0 2px 0 rgba(255,255,255,0.07) inset; border:1px solid rgba(255,255,255,0.10);">
+
+    <!-- z0 broth UNDERGLOW (inherited, pushed to background / dim) -->
+    <div style="position:absolute; inset:0; background:
+        radial-gradient(120% 70% at 50% 118%, rgba(232,74,44,0.34) 0%, rgba(232,74,44,0.10) 40%, rgba(232,74,44,0) 70%);"></div>
+
+    <!-- z1 frosted graphite panel -->
+    <div style="position:absolute; inset:0; background:rgba(28,30,34,0.82); backdrop-filter:blur(26px) saturate(135%); -webkit-backdrop-filter:blur(26px) saturate(135%);"></div>
+
+    <!-- ===== z3 STEAM PLUME — the HERO. critical = thick, red-ember, fills upper panel ===== -->
+    <div style="position:absolute; top:0; left:0; right:0; height:150px; pointer-events:none;
+                -webkit-mask-image:linear-gradient(to top, #000 0%, #000 22%, transparent 96%); mask-image:linear-gradient(to top, #000 0%, #000 22%, transparent 96%);">
+      <div style="position:absolute; left:30px; top:8px; width:120px; height:130px;
+                  background:radial-gradient(ellipse 70% 100% at 50% 100%, rgba(240,138,90,0.50), rgba(240,138,90,0) 70%);
+                  filter:blur(16px);"></div>
+      <div style="position:absolute; left:110px; top:-6px; width:150px; height:150px;
+                  background:radial-gradient(ellipse 65% 100% at 50% 100%, rgba(232,74,44,0.42), rgba(232,74,44,0) 68%);
+                  filter:blur(20px);"></div>
+      <div style="position:absolute; left:190px; top:12px; width:130px; height:128px;
+                  background:radial-gradient(ellipse 70% 100% at 50% 100%, rgba(255,180,120,0.40), rgba(255,180,120,0) 70%);
+                  filter:blur(15px);"></div>
+      <div style="position:absolute; left:70px; top:18px; width:200px; height:110px;
+                  background:radial-gradient(ellipse 80% 100% at 50% 100%, rgba(255,210,170,0.22), rgba(255,210,170,0) 72%);
+                  filter:blur(22px);"></div>
+    </div>
+
+    <!-- ===== condensation droplets on top inner glass (critical: many + a streak) ===== -->
+    <div style="position:absolute; top:9px; left:18px; width:5px; height:5px; border-radius:50%; background:radial-gradient(circle at 35% 30%, rgba(255,255,255,0.55), rgba(255,255,255,0.05) 70%); box-shadow:0 1px 1px rgba(0,0,0,0.3);"></div>
+    <div style="position:absolute; top:14px; left:44px; width:3px; height:3px; border-radius:50%; background:radial-gradient(circle at 35% 30%, rgba(255,255,255,0.5), rgba(255,255,255,0.04) 70%);"></div>
+    <div style="position:absolute; top:8px; right:40px; width:4px; height:4px; border-radius:50%; background:radial-gradient(circle at 35% 30%, rgba(255,255,255,0.5), rgba(255,255,255,0.05) 70%); box-shadow:0 1px 1px rgba(0,0,0,0.3);"></div>
+    <div style="position:absolute; top:12px; right:70px; width:3px; height:3px; border-radius:50%; background:radial-gradient(circle at 35% 30%, rgba(255,255,255,0.45), rgba(255,255,255,0.04) 70%);"></div>
+    <!-- condensation streak (run-down) -->
+    <div style="position:absolute; top:11px; right:41px; width:2px; height:16px; border-radius:2px; background:linear-gradient(to bottom, rgba(255,255,255,0.28), rgba(255,255,255,0));"></div>
+
+    <!-- edge.lens rim -->
+    <div style="position:absolute; inset:0; border-radius:26px; box-shadow:inset 0 0 0 1.5px rgba(255,255,255,0.16); pointer-events:none;"></div>
+
+    <!-- ============ POPOVER CONTENT ============ -->
+    <div style="position:relative; padding:18px 16px 14px;">
+
+      <!-- 5-HOUR hero tile (critical) -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:7px;">
+        <span style="color:#A7ACB5; font-size:11px; font-weight:600; letter-spacing:1.2px;">5-HOUR WINDOW</span>
+        <span style="display:inline-flex; align-items:center; gap:5px; color:#F08A5A; font-size:10px; font-weight:700; letter-spacing:.6px;"><span style="width:7px; height:7px; border-radius:50%; background:#E84A2C; box-shadow:0 0 7px 1px rgba(232,74,44,0.85);"></span>CRITICAL</span>
+      </div>
+      <div style="position:relative; background:rgba(19,21,25,0.92); border-radius:18px; padding:14px 16px 13px; box-shadow:0 1px 0 rgba(255,255,255,0.10) inset, 0 6px 14px rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.07);">
+        <div style="display:flex; align-items:baseline; gap:10px;">
+          <span style="font-family:'SF Pro Rounded','SF Pro Text',-apple-system; font-size:46px; font-weight:600; color:#F2F3F5; line-height:1; letter-spacing:-1px; font-variant-numeric:tabular-nums;">85<span style="font-size:26px; color:#C9CDD4;">%</span></span>
+          <span style="margin-left:auto; color:#A7ACB5; font-size:11px; font-weight:500;">resets in <span style="color:#E3E5E8; font-weight:600;">1h 48m</span></span>
+        </div>
+        <!-- gauge -->
+        <div style="margin-top:11px; height:7px; border-radius:4px; background:rgba(255,255,255,0.08); overflow:hidden;">
+          <div style="width:85%; height:100%; border-radius:4px; background:linear-gradient(90deg, #F2A226, #F07A22 55%, #E84A2C);"></div>
+        </div>
+      </div>
+
+      <!-- thin steam wisp BETWEEN tiles (in the empty gap, not over numbers) -->
+      <div style="position:relative; height:14px; margin:2px 0;">
+        <div style="position:absolute; left:90px; top:-4px; width:160px; height:22px;
+                    background:radial-gradient(ellipse 60% 100% at 50% 100%, rgba(255,180,120,0.18), rgba(255,180,120,0) 72%);
+                    filter:blur(8px);
+                    -webkit-mask-image:linear-gradient(to top, #000 10%, transparent 95%); mask-image:linear-gradient(to top, #000 10%, transparent 95%);"></div>
+      </div>
+
+      <!-- two secondary windows -->
+      <div style="display:flex; gap:10px; margin-bottom:14px;">
+        <div style="flex:1; background:rgba(19,21,25,0.78); border-radius:14px; padding:10px 12px; border:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex; justify-content:space-between; align-items:baseline;">
+            <span style="color:#A7ACB5; font-size:10px; font-weight:600; letter-spacing:.8px;">7-DAY</span>
+            <span style="color:#F2C04A; font-size:15px; font-weight:600; font-family:'SF Pro Rounded',-apple-system; font-variant-numeric:tabular-nums;">47%</span>
+          </div>
+          <div style="margin-top:7px; height:5px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden;"><div style="width:47%; height:100%; background:linear-gradient(90deg,#F2C04A,#F2A226);"></div></div>
+          <div style="margin-top:4px; color:#7E838C; font-size:9px;">watch</div>
+        </div>
+        <div style="flex:1; background:rgba(19,21,25,0.78); border-radius:14px; padding:10px 12px; border:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex; justify-content:space-between; align-items:baseline;">
+            <span style="color:#A7ACB5; font-size:10px; font-weight:600; letter-spacing:.8px;">SONNET</span>
+            <span style="color:#8FD4C0; font-size:15px; font-weight:600; font-family:'SF Pro Rounded',-apple-system; font-variant-numeric:tabular-nums;">11%</span>
+          </div>
+          <div style="margin-top:7px; height:5px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden;"><div style="width:11%; height:100%; background:linear-gradient(90deg,#6FB8A6,#8FD4C0);"></div></div>
+          <div style="margin-top:4px; color:#7E838C; font-size:9px;">calm · 김 거의 없음</div>
+        </div>
+      </div>
+
+      <!-- SESSIONS -->
+      <div style="color:#7E838C; font-size:10px; font-weight:600; letter-spacing:1.4px; margin-bottom:7px;">SESSIONS</div>
+      <div style="background:rgba(19,21,25,0.78); border-radius:14px; padding:4px 0; border:1px solid rgba(255,255,255,0.06); margin-bottom:13px;">
+        <!-- row -->
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 13px; border-bottom:1px solid rgba(255,255,255,0.05);">
+          <span style="color:#F08A5A; font-size:13px;">&#9680;</span>
+          <span style="color:#E3E5E8; font-size:13px; font-weight:500; flex:1;">arkraft-api</span>
+          <div style="width:46px; height:5px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden;"><div style="width:80%; height:100%; background:linear-gradient(90deg,#F2A226,#E84A2C);"></div></div>
+          <span style="color:#A7ACB5; font-size:11px; width:46px; text-align:right; font-variant-numeric:tabular-nums;">ctx 80%</span>
+          <span style="color:#6FA8E0; font-size:11px; font-weight:500;">&#8599;</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 13px; border-bottom:1px solid rgba(255,255,255,0.05);">
+          <span style="color:#F2C04A; font-size:13px;">&#9681;</span>
+          <span style="color:#E3E5E8; font-size:13px; font-weight:500; flex:1;">usage-widget</span>
+          <div style="width:46px; height:5px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden;"><div style="width:69%; height:100%; background:linear-gradient(90deg,#F2C04A,#F2A226);"></div></div>
+          <span style="color:#A7ACB5; font-size:11px; width:46px; text-align:right; font-variant-numeric:tabular-nums;">ctx 69%</span>
+          <span style="color:#6FA8E0; font-size:11px; font-weight:500;">&#8599;</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 13px;">
+          <span style="color:#8FD4C0; font-size:13px;">&#9682;</span>
+          <span style="color:#E3E5E8; font-size:13px; font-weight:500; flex:1;">docs-site</span>
+          <div style="width:46px; height:5px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden;"><div style="width:21%; height:100%; background:linear-gradient(90deg,#6FB8A6,#8FD4C0);"></div></div>
+          <span style="color:#A7ACB5; font-size:11px; width:46px; text-align:right; font-variant-numeric:tabular-nums;">ctx 21%</span>
+          <span style="color:#6FA8E0; font-size:11px; font-weight:500;">&#8599;</span>
+        </div>
+      </div>
+
+      <!-- MODEL HISTORY -->
+      <div style="color:#7E838C; font-size:10px; font-weight:600; letter-spacing:1.4px; margin-bottom:8px;">MODEL HISTORY</div>
+      <div style="display:flex; gap:18px; align-items:flex-end;">
+        <div style="flex:1;">
+          <div style="display:flex; align-items:flex-end; gap:3px; height:26px;">
+            <div style="flex:1;height:18%;background:#5B606A;border-radius:1px;"></div><div style="flex:1;height:38%;background:#7E838C;border-radius:1px;"></div><div style="flex:1;height:60%;background:#A7ACB5;border-radius:1px;"></div><div style="flex:1;height:92%;background:#F2A226;border-radius:1px;"></div><div style="flex:1;height:74%;background:#F2C04A;border-radius:1px;"></div><div style="flex:1;height:50%;background:#A7ACB5;border-radius:1px;"></div><div style="flex:1;height:30%;background:#7E838C;border-radius:1px;"></div><div style="flex:1;height:20%;background:#5B606A;border-radius:1px;"></div><div style="flex:1;height:42%;background:#7E838C;border-radius:1px;"></div><div style="flex:1;height:64%;background:#A7ACB5;border-radius:1px;"></div>
+          </div>
+          <div style="margin-top:5px; color:#7E838C; font-size:9px; letter-spacing:.5px;">opus</div>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex; align-items:flex-end; gap:3px; height:26px;">
+            <div style="flex:1;height:14%;background:#5B606A;border-radius:1px;"></div><div style="flex:1;height:14%;background:#5B606A;border-radius:1px;"></div><div style="flex:1;height:26%;background:#7E838C;border-radius:1px;"></div><div style="flex:1;height:40%;background:#8FD4C0;border-radius:1px;"></div><div style="flex:1;height:26%;background:#7E838C;border-radius:1px;"></div><div style="flex:1;height:16%;background:#5B606A;border-radius:1px;"></div><div style="flex:1;height:14%;background:#5B606A;border-radius:1px;"></div><div style="flex:1;height:22%;background:#6FB8A6;border-radius:1px;"></div><div style="flex:1;height:14%;background:#5B606A;border-radius:1px;"></div><div style="flex:1;height:18%;background:#5B606A;border-radius:1px;"></div>
+          </div>
+          <div style="margin-top:5px; color:#7E838C; font-size:9px; letter-spacing:.5px;">sonnet</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== WIDGET (top-down bowl + rising steam) ===================== -->
+  <div style="position:absolute; bottom:26px; left:26px; width:172px; border-radius:24px; overflow:hidden; background:rgba(24,26,30,0.82); backdrop-filter:blur(22px) saturate(135%); -webkit-backdrop-filter:blur(22px) saturate(135%); box-shadow:0 20px 48px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.10);">
+    <!-- broth underglow -->
+    <div style="position:absolute; inset:0; background:radial-gradient(80% 60% at 50% 70%, rgba(232,74,44,0.28), rgba(232,74,44,0) 65%);"></div>
+    <!-- rising steam plume above bowl -->
+    <div style="position:absolute; top:8px; left:0; right:0; height:60px; -webkit-mask-image:linear-gradient(to top,#000 10%,transparent 92%); mask-image:linear-gradient(to top,#000 10%,transparent 92%);">
+      <div style="position:absolute; left:48px; top:6px; width:76px; height:60px; background:radial-gradient(ellipse 60% 100% at 50% 100%, rgba(240,138,90,0.45), rgba(240,138,90,0) 70%); filter:blur(11px);"></div>
+      <div style="position:absolute; left:70px; top:0; width:60px; height:60px; background:radial-gradient(ellipse 60% 100% at 50% 100%, rgba(232,74,44,0.34), rgba(232,74,44,0) 68%); filter:blur(13px);"></div>
+    </div>
+    <div style="position:relative; padding:20px 14px 16px; display:flex; flex-direction:column; align-items:center;">
+      <!-- frost bowl disc with % -->
+      <div style="width:104px; height:104px; border-radius:50%; background:radial-gradient(circle at 50% 42%, rgba(45,48,54,0.95), rgba(25,27,31,0.95)); box-shadow:inset 0 2px 6px rgba(255,255,255,0.10), inset 0 -6px 16px rgba(232,74,44,0.30), 0 4px 12px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; position:relative;">
+        <!-- rim arc -->
+        <div style="position:absolute; inset:6px; border-radius:50%; border:2px solid transparent; border-top-color:#F08A5A; border-right-color:#E84A2C; transform:rotate(-42deg);"></div>
+        <span style="font-family:'SF Pro Rounded',-apple-system; font-size:30px; font-weight:600; color:#F2F3F5; letter-spacing:-1px; font-variant-numeric:tabular-nums;">85<span style="font-size:17px;color:#C9CDD4;">%</span></span>
+      </div>
+      <span style="margin-top:12px; color:#A7ACB5; font-size:11px;">resets 1h 48m</span>
+    </div>
+  </div>
+
+  <!-- caption strip under widget -->
+  <div style="position:absolute; bottom:6px; left:26px; width:172px; text-align:center; color:rgba(255,255,255,0.40); font-size:9px;">위젯 (정적) — 그릇 위 정지한 김</div>
+
+  <!-- legend: steam intensity across risk levels -->
+  <div style="position:absolute; bottom:96px; left:222px; width:160px; color:rgba(255,255,255,0.55); font-size:10px; line-height:1.7;">
+    <div style="font-weight:700; color:rgba(255,255,255,0.7); margin-bottom:6px; letter-spacing:.5px;">위험 = 김의 양·온도</div>
+    <div style="display:flex; align-items:center; gap:7px;"><span style="width:24px;height:8px;border-radius:4px;background:rgba(255,255,255,0.10);"></span> calm · 김 거의 없음</div>
+    <div style="display:flex; align-items:center; gap:7px;"><span style="width:24px;height:8px;border-radius:4px;background:rgba(255,227,184,0.45);"></span> watch · 옅은 한 가닥</div>
+    <div style="display:flex; align-items:center; gap:7px;"><span style="width:24px;height:8px;border-radius:4px;background:rgba(255,184,119,0.6);"></span> warning · 주황 plume</div>
+    <div style="display:flex; align-items:center; gap:7px;"><span style="width:24px;height:8px;border-radius:4px;background:linear-gradient(90deg,#F08A5A,#E84A2C);"></span> critical · 자욱·붉게</div>
+  </div>
+
+  <!-- concept label -->
+  <div style="position:absolute; bottom:30px; left:222px; width:170px; color:rgba(255,255,255,0.34); font-size:10px; line-height:1.45;">
+    04 · 김 서림 (Steam)<br>프로스트 글래스 + 국물 언더글로우는 유지, <b style="color:rgba(255,255,255,0.55);">김</b>이 주인공.
+  </div>
+
+</body>
+</html>

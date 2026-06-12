@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>03. 맑은 유리 (Clear Broth) — mockup</title>
+</head>
+<body style="margin:0;padding:0;width:800px;height:560px;overflow:hidden;font-family:-apple-system,'SF Pro Display','SF Pro Text',system-ui,sans-serif;
+  background:
+    radial-gradient(900px 600px at 22% 14%, #2b3a47 0%, #1a232c 46%, #0e151c 100%),
+    linear-gradient(135deg,#10171f 0%,#0b1119 100%);
+  position:relative;">
+
+  <!-- faint cool wallpaper streaks to prove near-clear glass transparency -->
+  <div style="position:absolute;top:120px;left:-40px;width:520px;height:6px;background:linear-gradient(90deg,transparent,#3a5566 55%,transparent);opacity:.22;transform:rotate(-8deg);"></div>
+  <div style="position:absolute;top:330px;left:90px;width:680px;height:4px;background:linear-gradient(90deg,transparent,#46627a 50%,transparent);opacity:.18;transform:rotate(-6deg);"></div>
+  <div style="position:absolute;top:470px;left:40px;width:600px;height:5px;background:linear-gradient(90deg,transparent,#2f4a5c 50%,transparent);opacity:.16;transform:rotate(-7deg);"></div>
+
+  <!-- ============ MENU BAR (~26px) ============ -->
+  <div style="position:absolute;top:0;left:0;right:0;height:26px;
+    background:linear-gradient(180deg,rgba(20,27,35,.82),rgba(14,20,28,.78));
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid rgba(255,255,255,.06);
+    display:flex;align-items:center;justify-content:flex-end;padding:0 14px;box-sizing:border-box;">
+
+    <span style="font-size:11px;color:#7c8595;letter-spacing:.4px;margin-right:auto;padding-left:2px;">●  ●  ●</span>
+    <span style="font-size:11px;color:#9ca4b0;letter-spacing:.4px;margin-right:16px;">Wed 14:47</span>
+
+    <!-- menu-bar widget: opaque scrim capsule + 2px sharp meniscus -->
+    <div style="position:relative;display:inline-flex;flex-direction:column;align-items:stretch;">
+      <div style="display:inline-flex;align-items:center;gap:7px;
+        background:#10131a;border:1px solid rgba(255,255,255,.07);
+        border-radius:7px;padding:2px 9px;">
+        <span style="font-size:12.5px;font-weight:600;color:#f4f6f9;font-variant-numeric:tabular-nums;letter-spacing:.2px;">85%</span>
+        <span style="font-size:11px;color:#5e6671;">·</span>
+        <span style="font-size:12px;color:#c0c6cf;font-variant-numeric:tabular-nums;">3 ◐</span>
+      </div>
+      <!-- 2px critical meniscus, sharp + deep red -->
+      <div style="height:2px;margin:1px 2px 0;border-radius:2px;
+        background:linear-gradient(90deg,rgba(199,58,44,.25),#dc4030 55%,rgba(199,58,44,.45));
+        box-shadow:0 0 5px rgba(220,64,48,.55);"></div>
+    </div>
+  </div>
+
+  <!-- pointer notch toward menu-bar item -->
+  <div style="position:absolute;top:27px;right:96px;width:14px;height:14px;
+    background:rgba(25,28,33,.72);transform:rotate(45deg);
+    border-left:1px solid rgba(255,255,255,.10);border-top:1px solid rgba(255,255,255,.10);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);"></div>
+
+  <!-- ============ POPOVER (~340px) ============ -->
+  <div style="position:absolute;top:34px;right:22px;width:340px;
+    border-radius:26px;overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,.55), 0 2px 0 rgba(255,255,255,.04) inset;
+    border:1px solid rgba(255,255,255,.30);">  <!-- sharp 1px crystal rim (edge.lens) -->
+
+    <!-- z1 near-clear panel: weak blur, low alpha, cool blue-grey -->
+    <div style="position:relative;
+      background:linear-gradient(180deg,rgba(25,28,33,.58),rgba(18,22,28,.62));
+      backdrop-filter:blur(10px) saturate(118%);-webkit-backdrop-filter:blur(10px) saturate(118%);
+      padding:16px;box-sizing:border-box;">
+
+      <!-- z0 clear-broth plate: critical = deep red liquid pooled in BOTTOM HALF -->
+      <div style="position:absolute;inset:0;pointer-events:none;z-index:0;
+        background:linear-gradient(0deg,
+          rgba(199,58,44,.40) 0%,
+          rgba(199,58,44,.30) 22%,
+          rgba(199,58,44,.12) 42%,
+          rgba(199,58,44,0) 56%);"></div>
+      <!-- subtle meniscus line where the broth surface sits -->
+      <div style="position:absolute;left:0;right:0;bottom:44%;height:1px;z-index:0;
+        background:linear-gradient(90deg,transparent,rgba(220,64,48,.5),transparent);"></div>
+
+      <div style="position:relative;z-index:1;">
+
+        <!-- 5-HOUR hero tile (z2 crystal) -->
+        <div style="font-size:10px;letter-spacing:1.4px;color:#9ca4b0;font-weight:600;margin:0 0 7px 2px;">5-HOUR WINDOW</div>
+        <div style="position:relative;border-radius:20px;overflow:hidden;
+          background:linear-gradient(180deg,rgba(35,39,46,.70),rgba(28,32,39,.64));
+          border:1px solid rgba(255,255,255,.07);
+          box-shadow:0 6px 14px rgba(0,0,0,.30), 0 1px 0 rgba(255,255,255,.22) inset;
+          padding:14px 16px;">
+          <!-- sharp 1px specular top -->
+          <div style="position:absolute;top:0;left:14px;right:14px;height:1px;background:rgba(255,255,255,.32);"></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;">
+            <span style="font-size:42px;font-weight:600;color:#f4f6f9;font-variant-numeric:tabular-nums;letter-spacing:-1px;line-height:1;">85<span style="font-size:24px;font-weight:500;color:#c0c6cf;">%</span></span>
+            <span style="font-size:11.5px;color:#9ca4b0;font-variant-numeric:tabular-nums;">resets in 0h 42m</span>
+          </div>
+          <!-- critical gauge -->
+          <div style="margin-top:11px;height:6px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden;">
+            <div style="width:85%;height:100%;border-radius:4px;
+              background:linear-gradient(90deg,#c73a2c,#dc4030);box-shadow:0 0 8px rgba(220,64,48,.6);"></div>
+          </div>
+        </div>
+
+        <!-- two secondary windows -->
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <!-- 7D 47% watch -->
+          <div style="flex:1;border-radius:14px;padding:10px 12px;
+            background:rgba(35,39,46,.55);border:1px solid rgba(255,255,255,.06);">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;">
+              <span style="font-size:10px;letter-spacing:.8px;color:#9ca4b0;font-weight:600;">7-DAY</span>
+              <span style="font-size:15px;font-weight:600;color:#eef0f3;font-variant-numeric:tabular-nums;">47%</span>
+            </div>
+            <div style="margin-top:7px;height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;">
+              <div style="width:47%;height:100%;border-radius:3px;background:linear-gradient(90deg,#e6b24e,#f0ba50);"></div>
+            </div>
+          </div>
+          <!-- SONNET 11% calm (near-colorless) -->
+          <div style="flex:1;border-radius:14px;padding:10px 12px;
+            background:rgba(35,39,46,.55);border:1px solid rgba(255,255,255,.06);">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;">
+              <span style="font-size:10px;letter-spacing:.8px;color:#9ca4b0;font-weight:600;">SONNET 7D</span>
+              <span style="font-size:15px;font-weight:600;color:#eef0f3;font-variant-numeric:tabular-nums;">11%</span>
+            </div>
+            <div style="margin-top:7px;height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;">
+              <div style="width:11%;height:100%;border-radius:3px;background:linear-gradient(90deg,#7fb4c9,#86bdd4);opacity:.6;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SESSIONS -->
+        <div style="display:flex;align-items:center;gap:8px;margin:15px 2px 8px;">
+          <span style="font-size:10px;letter-spacing:1.4px;color:#9ca4b0;font-weight:600;">SESSIONS</span>
+          <span style="flex:1;height:1px;background:rgba(255,255,255,.08);"></span>
+        </div>
+
+        <!-- session rows (z2) -->
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <!-- 80 -->
+          <div style="display:flex;align-items:center;border-radius:13px;padding:9px 12px;
+            background:rgba(35,39,46,.58);border:1px solid rgba(255,255,255,.06);">
+            <span style="color:#e6b24e;font-size:13px;margin-right:9px;">◐</span>
+            <span style="font-size:12.5px;color:#eef0f3;font-weight:500;flex:1;">arkraft-api</span>
+            <span style="font-size:11.5px;color:#c0c6cf;font-variant-numeric:tabular-nums;margin-right:12px;">ctx 80%</span>
+            <span style="font-size:11px;color:#7fb4c9;">↗ focus</span>
+          </div>
+          <!-- 69 -->
+          <div style="display:flex;align-items:center;border-radius:13px;padding:9px 12px;
+            background:rgba(35,39,46,.58);border:1px solid rgba(255,255,255,.06);">
+            <span style="color:#e07a38;font-size:13px;margin-right:9px;">◑</span>
+            <span style="font-size:12.5px;color:#eef0f3;font-weight:500;flex:1;">usage-widget</span>
+            <span style="font-size:11.5px;color:#c0c6cf;font-variant-numeric:tabular-nums;margin-right:12px;">ctx 69%</span>
+            <span style="font-size:11px;color:#7fb4c9;">↗ focus</span>
+          </div>
+          <!-- 21 -->
+          <div style="display:flex;align-items:center;border-radius:13px;padding:9px 12px;
+            background:rgba(35,39,46,.58);border:1px solid rgba(255,255,255,.06);">
+            <span style="color:#86bdd4;font-size:13px;margin-right:9px;">◔</span>
+            <span style="font-size:12.5px;color:#eef0f3;font-weight:500;flex:1;">docs-site</span>
+            <span style="font-size:11.5px;color:#c0c6cf;font-variant-numeric:tabular-nums;margin-right:12px;">ctx 21%</span>
+            <span style="font-size:11px;color:#7fb4c9;">↗ focus</span>
+          </div>
+        </div>
+
+        <!-- MODEL HISTORY -->
+        <div style="display:flex;align-items:center;gap:8px;margin:15px 2px 9px;">
+          <span style="font-size:10px;letter-spacing:1.4px;color:#9ca4b0;font-weight:600;">MODEL HISTORY</span>
+          <span style="flex:1;height:1px;background:rgba(255,255,255,.08);"></span>
+        </div>
+        <div style="display:flex;gap:18px;padding:0 2px 2px;align-items:flex-end;">
+          <div style="display:flex;align-items:flex-end;gap:8px;">
+            <span style="font-size:10.5px;color:#9ca4b0;width:38px;">opus</span>
+            <span style="display:flex;align-items:flex-end;gap:2px;height:18px;">
+              <i style="width:3px;height:5px;background:#6b7480;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:9px;background:#7a8390;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:13px;background:#8b94a1;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:18px;background:#aab2bf;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:15px;background:#9aa3b0;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:10px;background:#828b98;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:6px;background:#717a87;display:inline-block;border-radius:1px;"></i>
+            </span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px;">
+            <span style="font-size:10.5px;color:#9ca4b0;width:42px;">sonnet</span>
+            <span style="display:flex;align-items:flex-end;gap:2px;height:18px;">
+              <i style="width:3px;height:4px;background:#5e6671;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:4px;background:#5e6671;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:7px;background:#6b7480;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:10px;background:#7a8390;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:7px;background:#6b7480;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:4px;background:#5e6671;display:inline-block;border-radius:1px;"></i>
+              <i style="width:3px;height:4px;background:#5e6671;display:inline-block;border-radius:1px;"></i>
+            </span>
+          </div>
+        </div>
+
+      </div><!-- /z1 content -->
+    </div><!-- /z1 panel -->
+  </div><!-- /popover -->
+
+  <!-- caption -->
+  <div style="position:absolute;left:24px;bottom:18px;max-width:300px;">
+    <div style="font-size:15px;font-weight:600;color:#eef0f3;letter-spacing:.3px;">03. 맑은 유리 — Clear Broth</div>
+    <div style="font-size:11.5px;color:#7c8595;margin-top:5px;line-height:1.55;">
+      near-clear 유리 · 쿨 뉴트럴 모노크롬 · 위험 = 맑은 육수의 <b style="color:#dc4030;">농도</b>.
+      calm은 거의 무색 워터, critical은 잔 바닥에 고인 진한 레드 육수. 림은 샤프한 1px 크리스털 엣지.
+    </div>
+    <div style="font-size:10.5px;color:#5e6671;margin-top:8px;">cool-dark 권장 (맑은 틴트 농도 단계가 가장 또렷)</div>
+  </div>
+
+</body>
+</html>

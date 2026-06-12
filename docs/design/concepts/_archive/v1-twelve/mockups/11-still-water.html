@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Still Water — mockup</title>
+<style>
+  :root{
+    --ground:#F4F2EC;
+    --ink:#23211C;
+    --hairline:#DBD7CC;
+    --muted:#8A857A;
+    --calm:#5B7B7A;     /* teal-slate */
+    --watch:#C8923D;    /* amber */
+    --critical:#A23A2E; /* oxide red */
+    --mono:ui-monospace,'SF Mono',Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  body{
+    width:800px;height:560px;
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+    /* calm desktop backdrop — muted dawn neutral */
+    background:#C9C7BE;
+    font-family:var(--sans);
+  }
+
+  /* ── Menu-bar strip ── */
+  .menubar{
+    position:absolute;top:0;left:0;right:0;height:26px;
+    background:rgba(236,234,227,0.86);
+    border-bottom:1px solid #C0BEB4;
+    display:flex;align-items:center;justify-content:flex-end;
+    padding:0 18px;
+  }
+  .mb-clock{
+    font-family:var(--sans);font-size:12px;color:#3A382F;
+    margin-right:auto;letter-spacing:.02em;opacity:.75;
+  }
+  .mb-usage{
+    font-family:var(--mono);font-size:12px;
+    color:#3A382F;          /* near system text, neutral */
+    letter-spacing:.04em;font-variant-numeric:tabular-nums;
+  }
+  .mb-usage .crit{ color:var(--critical); }  /* only critical 5h % warmed */
+  .mb-usage .sep{ display:inline-block;width:18px; }
+
+  /* ── Popover ── */
+  .popover{
+    position:absolute;top:34px;right:18px;
+    width:340px;
+    background:var(--ground);
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    padding:26px 24px 22px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .title{
+    font-family:var(--sans);
+    font-size:13px;font-weight:400;
+    letter-spacing:.06em;
+    color:var(--muted);
+    margin-bottom:26px;
+  }
+
+  /* ── Capsule gauges ── */
+  .gauge{ margin-bottom:22px; }
+  .gauge:last-of-type{ margin-bottom:6px; }
+  .g-label{
+    font-family:var(--sans);font-size:11.5px;letter-spacing:.05em;
+    color:var(--muted);margin-bottom:8px;
+  }
+  .g-row{ display:flex;align-items:center;gap:12px; }
+  .track{
+    flex:1;height:7px;border-radius:99px;
+    background:var(--hairline);overflow:hidden;
+  }
+  .fill{ height:100%;border-radius:99px; }
+  .fill.calm{ background:var(--calm); }
+  .fill.watch{ background:var(--watch); }
+  .fill.crit{ background:var(--critical); }
+  .g-val{
+    font-family:var(--mono);font-size:13px;letter-spacing:.02em;
+    color:var(--ink);min-width:38px;text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+  .g-val.bold{ font-weight:700;color:var(--critical); } /* the single bold: live critical % */
+  .g-state{
+    font-family:var(--sans);font-size:10.5px;letter-spacing:.07em;
+    color:var(--muted);min-width:54px;text-align:right;
+    text-transform:lowercase;
+  }
+
+  /* ── Hairline divider ── */
+  .rule{ height:1px;background:var(--hairline);margin:18px 0; }
+
+  /* ── Sessions ── */
+  .session{ margin-bottom:16px; }
+  .session:last-child{ margin-bottom:4px; }
+  .s-row{
+    display:flex;align-items:baseline;justify-content:space-between;
+  }
+  .s-name{
+    font-family:var(--sans);font-size:12.5px;letter-spacing:.01em;
+    color:var(--ink);
+  }
+  .s-reset{
+    font-family:var(--mono);font-size:11px;letter-spacing:.02em;
+    color:var(--muted);font-variant-numeric:tabular-nums;
+  }
+  /* 1px context underline — length = context-window fill */
+  .ctx{
+    height:1px;background:var(--calm);margin-top:6px;border-radius:99px;
+    opacity:.7;
+  }
+  .ctx.track{ background:var(--hairline);height:1px;opacity:1;border-radius:99px; }
+  .ctx-wrap{ margin-top:6px;height:1px;background:var(--hairline);border-radius:99px; }
+  .ctx-fill{ height:1px;background:var(--calm);opacity:.85;border-radius:99px; }
+
+  /* ── Sparkbar (model history) ── */
+  .spark-label{
+    font-family:var(--sans);font-size:11px;letter-spacing:.05em;
+    color:var(--muted);margin-bottom:9px;
+  }
+  .spark{ display:flex;align-items:flex-end;gap:3px;height:24px; }
+  .spark span{
+    flex:1;background:var(--hairline);border-radius:1px;opacity:.85;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Menu-bar strip -->
+  <div class="menubar">
+    <span class="mb-clock">Fri 12 Jun  2:47 PM</span>
+    <span class="mb-usage">5h&nbsp;<span class="crit">85%</span><span class="sep"></span>7d&nbsp;47%</span>
+  </div>
+
+  <!-- Popover -->
+  <div class="popover">
+    <div class="title">Still Water</div>
+
+    <!-- 5-hour : critical, warmed -->
+    <div class="gauge">
+      <div class="g-label">5-hour</div>
+      <div class="g-row">
+        <div class="track"><div class="fill crit" style="width:85%"></div></div>
+        <div class="g-val bold">85%</div>
+        <div class="g-state">critical</div>
+      </div>
+    </div>
+
+    <!-- 7-day : watch, still calm-toned -->
+    <div class="gauge">
+      <div class="g-label">7-day</div>
+      <div class="g-row">
+        <div class="track"><div class="fill watch" style="width:47%"></div></div>
+        <div class="g-val">47%</div>
+        <div class="g-state">watch</div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <!-- Sessions -->
+    <div class="session">
+      <div class="s-row">
+        <span class="s-name">arkraft-api</span>
+        <span class="s-reset">3h ago</span>
+      </div>
+      <div class="ctx-wrap"><div class="ctx-fill" style="width:34%"></div></div>
+    </div>
+
+    <div class="session">
+      <div class="s-row">
+        <span class="s-name">token-mukbang</span>
+        <span class="s-reset">12m ago</span>
+      </div>
+      <div class="ctx-wrap"><div class="ctx-fill" style="width:61%"></div></div>
+    </div>
+
+    <div class="session">
+      <div class="s-row">
+        <span class="s-name">claude-usage-widget</span>
+        <span class="s-reset">just now</span>
+      </div>
+      <div class="ctx-wrap"><div class="ctx-fill" style="width:11%"></div></div>
+    </div>
+
+    <div class="rule"></div>
+
+    <!-- Sparkbar: model history (whisper-low contrast) -->
+    <div class="spark-label">models · Sonnet 11%</div>
+    <div class="spark">
+      <span style="height:18%"></span>
+      <span style="height:31%"></span>
+      <span style="height:14%"></span>
+      <span style="height:46%"></span>
+      <span style="height:28%"></span>
+      <span style="height:62%"></span>
+      <span style="height:39%"></span>
+      <span style="height:22%"></span>
+      <span style="height:13%"></span>
+      <span style="height:34%"></span>
+      <span style="height:52%"></span>
+      <span style="height:74%"></span>
+      <span style="height:41%"></span>
+      <span style="height:26%"></span>
+      <span style="height:16%"></span>
+    </div>
+  </div>
+
+</body>
+</html>

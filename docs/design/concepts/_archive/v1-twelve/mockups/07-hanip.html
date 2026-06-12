@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>07 · 한입 (Hanip) — 클레이모픽 밥상</title>
+<style>
+  :root{
+    /* dark dining scheme (report-recommended) */
+    --canvas:#241C16;          /* roasted espresso */
+    --surface:#332A22;         /* dark clay dish base */
+    --surface-rim:#4A3B2C;     /* ember-lit exposed rim */
+    --clay-shadow:rgba(22,15,10,.60);
+    --clay-highlight:rgba(90,75,58,.35);
+    --text-primary:#F1E7D7;    /* warm oat (numbers on chip) */
+    --text-secondary:#B7A287;  /* toasted tan (labels) */
+    --chip-matte:#1C1610;
+    /* doneness ramp (dark) */
+    --calm:#7FB089;
+    --watch:#F0C06A;
+    --warning:#F0954A;
+    --critical:#E85A47;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    width:800px;height:560px;margin:0 auto;
+    display:flex;align-items:center;justify-content:center;
+    /* warm desktop backdrop */
+    background:
+      radial-gradient(120% 90% at 50% 0%, #3a2c20 0%, #2a2018 42%, #1b140e 100%);
+    font-family:-apple-system,'SF Pro Rounded','Hanken Grotesk',sans-serif;
+    color:var(--text-primary);
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;font-weight:700;letter-spacing:-.01em}
+
+  /* ─────────── desktop stage ─────────── */
+  .stage{position:relative;width:760px;height:520px}
+
+  /* menubar strip */
+  .menubar{
+    position:absolute;top:0;left:0;right:0;height:26px;
+    display:flex;align-items:center;gap:14px;
+    padding:0 14px;
+    background:rgba(20,15,11,.66);
+    backdrop-filter:blur(8px);
+    border-radius:9px;
+    border:1px solid rgba(255,250,241,.05);
+    box-shadow:0 1px 0 rgba(255,250,241,.04) inset;
+  }
+  .mb-spacer{flex:1}
+  .mb-cluster{display:flex;align-items:center;gap:9px}
+  .mb-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:radial-gradient(circle at 32% 30%, #ff8a72 0%, var(--critical) 55%, #b8392a 100%);
+    box-shadow:0 0 6px rgba(232,90,71,.7), 0 0 1px rgba(232,90,71,.9);
+  }
+  .mb-txt{font-size:12px;color:#d9cdbb;display:flex;gap:11px;align-items:center}
+  .mb-txt .lbl{color:#9c8a72;font-weight:600;margin-right:2px}
+  .mb-icon{font-size:11px;color:#7c6a54}
+
+  /* popover anchored under the menubar cluster */
+  .popover{
+    position:absolute;top:34px;right:0;width:340px;
+    background:
+      radial-gradient(130% 80% at 28% 0%, #2c2218 0%, var(--canvas) 60%) ,
+      var(--canvas);
+    border-radius:22px;
+    padding:16px 16px 15px;
+    border:1px solid rgba(255,250,241,.05);
+    box-shadow:
+      0 20px 50px -12px rgba(0,0,0,.62),
+      0 2px 0 rgba(255,250,241,.04) inset,
+      0 -18px 30px -20px rgba(0,0,0,.5) inset;
+  }
+  /* little pointer */
+  .popover::before{
+    content:"";position:absolute;top:-7px;right:78px;
+    width:14px;height:14px;background:#2a2018;
+    border-left:1px solid rgba(255,250,241,.05);
+    border-top:1px solid rgba(255,250,241,.05);
+    transform:rotate(45deg);
+  }
+
+  /* top status row */
+  .status{
+    display:flex;align-items:center;gap:8px;
+    margin-bottom:13px;
+  }
+  .status .glyph{font-size:14px}
+  .status .txt{font-size:13px;color:var(--text-secondary);font-weight:600}
+  .status .txt b{color:var(--text-primary);font-weight:700}
+  .status .gear{margin-left:auto;color:#6f5d48;font-size:13px}
+  .status .digest{
+    margin-left:6px;width:7px;height:7px;border-radius:50%;
+    background:var(--watch);box-shadow:0 0 5px rgba(240,192,106,.6);
+  }
+
+  /* clay tableware row */
+  .table{display:flex;gap:14px;align-items:flex-end;margin-bottom:6px}
+
+  /* ── generic clay gauge: puffed double inner-shadow ── */
+  .gauge{
+    position:relative;overflow:hidden;
+    background:var(--surface-rim); /* exposed rim shows where empty */
+    box-shadow:
+      /* double inner shadow = puffed clay (light top-left, dark bottom-right) */
+      6px 6px 14px var(--clay-shadow) inset,
+      -6px -6px 12px var(--clay-highlight) inset,
+      /* shallow drop = sitting on the table */
+      0 7px 14px -6px rgba(0,0,0,.55);
+  }
+  /* food fill rises from bottom; height = usage % */
+  .fill{
+    position:absolute;left:0;right:0;bottom:0;
+    border-radius:0;
+  }
+  /* matte chip + number, centered on fill */
+  .chip{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:var(--chip-matte);
+    border-radius:11px;
+    padding:5px 11px;
+    box-shadow:0 2px 6px rgba(0,0,0,.45), 0 0 0 1px rgba(255,250,241,.04);
+    display:flex;flex-direction:column;align-items:center;line-height:1;
+  }
+  .chip .pct{font-size:21px;color:var(--text-primary)}
+  .chip .cap{font-size:8.5px;color:#8d7a62;font-weight:700;letter-spacing:.04em;margin-top:3px;text-transform:uppercase}
+
+  /* empty-bowl gleam: specular highlight on exposed rim, stronger when emptier */
+  .gleam{
+    position:absolute;left:0;right:0;top:0;pointer-events:none;
+    background:
+      radial-gradient(70% 55% at 30% 16%, rgba(255,243,222,.30) 0%, rgba(255,243,222,0) 60%);
+  }
+
+  /* 5h — rice bowl (fixed-diameter circle) */
+  .bowl{width:138px;height:138px;border-radius:50%}
+  .bowl .fill{
+    height:85%;
+    border-radius:0 0 50% 50%/0 0 60px 60px;
+    background:linear-gradient(0deg,#b8392a 0%, var(--critical) 70%, #ff7a64 100%);
+  }
+  /* critical sizzle grain overlay */
+  .bowl .sizzle{
+    position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;opacity:.5;
+    background-image:
+      radial-gradient(rgba(255,255,255,.55) .6px, transparent .7px),
+      radial-gradient(rgba(0,0,0,.5) .5px, transparent .6px);
+    background-size:5px 5px, 7px 7px;
+    background-position:0 0, 2px 3px;
+    /* only over the food fill area */
+    -webkit-mask:linear-gradient(0deg,#000 85%,transparent 85%);
+            mask:linear-gradient(0deg,#000 85%,transparent 85%);
+  }
+  .bowl .gleam{height:46%}
+
+  /* 7d — wide plate (fixed-height rounded rect) */
+  .plate{flex:1;height:138px;border-radius:30px}
+  .plate .fill{
+    height:47%;
+    border-radius:0 0 30px 30px;
+    background:linear-gradient(0deg,#caa047 0%, var(--watch) 75%, #ffd98a 100%);
+  }
+  .plate .gleam{height:62%}
+
+  /* sub-caption under tableware */
+  .subcaps{display:flex;gap:14px;margin:2px 0 14px}
+  .subcaps .c1{width:138px;text-align:center}
+  .subcaps .c2{flex:1;text-align:center}
+  .subcaps span{font-size:11px;color:var(--text-secondary);font-weight:600}
+  .subcaps b{color:#d6c4ab}
+
+  /* section divider label */
+  .sect{
+    display:flex;align-items:center;gap:8px;
+    font-size:10px;color:#7c6a54;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;margin:4px 0 9px;
+  }
+  .sect::after{content:"";flex:1;height:1px;background:rgba(255,250,241,.07)}
+
+  /* bento (model history) — fixed grid of compartments */
+  .bento{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:7px;
+    padding:7px;border-radius:15px;
+    background:var(--surface);
+    box-shadow:
+      4px 4px 10px var(--clay-shadow) inset,
+      -4px -4px 9px var(--clay-highlight) inset;
+    margin-bottom:15px;
+  }
+  .cell{
+    position:relative;height:44px;border-radius:10px;overflow:hidden;
+    background:var(--surface-rim);
+    box-shadow:2px 2px 5px rgba(0,0,0,.4) inset;
+    display:flex;align-items:flex-end;
+  }
+  .cell .pour{position:absolute;left:0;right:0;bottom:0}
+  .cell .nm{position:relative;z-index:2;width:100%;text-align:center;
+    font-size:9px;font-weight:700;color:#efe3d1;padding-bottom:5px;
+    text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  .cell .pct{position:relative;z-index:2;width:100%;text-align:center;
+    font-size:10px;color:#efe3d1;position:absolute;top:5px;left:0;
+    text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  .cell.empty{opacity:.45}
+  .cell.empty .nm{color:#7c6a54}
+
+  /* side dishes (sessions) */
+  .sides{display:flex;flex-direction:column;gap:9px}
+  .side{display:flex;align-items:center;gap:9px;font-size:12px}
+  .side .dot{width:7px;height:7px;border-radius:2px;flex:none}
+  .side .name{color:#d6c4ab;font-weight:600;width:118px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .side .ctx{color:#8d7a62;font-size:11px;font-weight:600;margin-left:auto}
+  .side .bar{
+    width:96px;height:8px;border-radius:5px;flex:none;overflow:hidden;
+    background:var(--surface-rim);
+    box-shadow:1px 1px 3px rgba(0,0,0,.45) inset;
+  }
+  .side .bar i{display:block;height:100%;border-radius:5px}
+  .more{font-size:10.5px;color:#6f5d48;font-weight:600;margin-top:9px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="stage">
+
+    <!-- ───── menubar strip ───── -->
+    <div class="menubar">
+      <span class="mb-icon">&#63743;</span>
+      <span class="mb-icon" style="font-size:12px">&#9728;</span>
+      <span class="mb-spacer"></span>
+      <span class="mb-cluster">
+        <span class="mb-dot"></span>
+        <span class="mb-txt">
+          <span><span class="lbl">5h</span><span class="num">85%</span></span>
+          <span><span class="lbl">7d</span><span class="num">47%</span></span>
+        </span>
+      </span>
+    </div>
+
+    <!-- ───── popover = clay tableware ───── -->
+    <div class="popover">
+
+      <div class="status">
+        <span class="glyph">&#127834;</span>
+        <span class="txt">소화 중 · <b class="num">2h8m</b> 남음</span>
+        <span class="digest"></span>
+        <span class="gear">&#9881;</span>
+      </div>
+
+      <!-- 5h rice bowl + 7d wide plate -->
+      <div class="table">
+        <div class="gauge bowl">
+          <div class="fill"></div>
+          <div class="sizzle"></div>
+          <div class="gleam"></div>
+          <div class="chip">
+            <span class="pct num">85%</span>
+            <span class="cap">5h</span>
+          </div>
+        </div>
+
+        <div class="gauge plate">
+          <div class="fill"></div>
+          <div class="gleam"></div>
+          <div class="chip">
+            <span class="pct num">47%</span>
+            <span class="cap">7d</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="subcaps">
+        <div class="c1"><span>완식까지 <b class="num">2h8m</b></span></div>
+        <div class="c2"><span>반환까지 <b class="num">4d</b></span></div>
+      </div>
+
+      <!-- bento = model history -->
+      <div class="sect">벤또 · 모델 히스토리</div>
+      <div class="bento">
+        <div class="cell">
+          <span class="pct num">64%</span>
+          <div class="pour" style="height:64%;background:linear-gradient(0deg,#d18a3a,#f0954a)"></div>
+          <span class="nm">Opus</span>
+        </div>
+        <div class="cell">
+          <span class="pct num">11%</span>
+          <div class="pour" style="height:11%;background:linear-gradient(0deg,#5f9469,#7fb089)"></div>
+          <span class="nm">Sonnet</span>
+        </div>
+        <div class="cell">
+          <span class="pct num">38%</span>
+          <div class="pour" style="height:38%;background:linear-gradient(0deg,#caa047,#f0c06a)"></div>
+          <span class="nm">Haiku</span>
+        </div>
+        <div class="cell empty">
+          <span class="nm" style="padding-bottom:0;margin:auto">·</span>
+        </div>
+      </div>
+
+      <!-- side dishes = sessions -->
+      <div class="sect">반찬 · 세션</div>
+      <div class="sides">
+        <div class="side">
+          <span class="dot" style="background:var(--critical)"></span>
+          <span class="name">arkraft-api</span>
+          <div class="bar"><i style="width:80%;background:linear-gradient(90deg,#b8392a,#e85a47)"></i></div>
+          <span class="ctx num">80%</span>
+        </div>
+        <div class="side">
+          <span class="dot" style="background:var(--warning)"></span>
+          <span class="name">claude-usage-widget</span>
+          <div class="bar"><i style="width:69%;background:linear-gradient(90deg,#d18a3a,#f0954a)"></i></div>
+          <span class="ctx num">69%</span>
+        </div>
+        <div class="side">
+          <span class="dot" style="background:var(--calm)"></span>
+          <span class="name">dotfiles</span>
+          <div class="bar"><i style="width:21%;background:linear-gradient(90deg,#5f9469,#7fb089)"></i></div>
+          <span class="ctx num">21%</span>
+        </div>
+      </div>
+      <div class="more">+2 더</div>
+
+    </div>
+  </div>
+</body>
+</html>

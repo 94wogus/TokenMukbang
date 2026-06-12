@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Quantometer — dark</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    --canvas: #0B0D10;
+    --panel: #15181D;
+    --hair: #1E222A;
+    --txt1: #E6E9EF;
+    --txt2: #9AA3B2;
+    --txt3: #5C6473;
+    --track: #1E222A;
+    --calm: #3BB273;
+    --watch: #E0A82E;
+    --warning: #E8731C;
+    --critical: #E5484D;
+    /* muted ink for the grayscale gauges */
+    --muted: #4A515E;
+    --muted-strong: #5E6675;
+  }
+  body {
+    width: 800px; height: 560px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--sans);
+    /* desktop backdrop */
+    background:
+      radial-gradient(1200px 700px at 70% -10%, #20262f 0%, #141820 38%, #0a0c10 100%);
+    overflow: hidden;
+  }
+  .num { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+
+  /* ── stage: menu-bar strip stacked over the popover ───────────────── */
+  .stage {
+    display: flex; flex-direction: column; align-items: center;
+    filter: drop-shadow(0 24px 48px rgba(0,0,0,0.55));
+  }
+
+  /* ── menu bar strip ───────────────────────────────────────────────── */
+  .menubar {
+    width: 340px; height: 26px;
+    background: rgba(18,21,26,0.72);
+    -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    border: 1px solid var(--hair);
+    border-bottom: none;
+    border-radius: 7px 7px 0 0;
+    display: flex; align-items: center; justify-content: center;
+    gap: 18px;
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.3px;
+  }
+  .mb-item { display: flex; align-items: center; gap: 5px; }
+  .mb-lbl { color: var(--txt2); }
+  .mb-glyph { font-family: var(--mono); font-size: 12px; line-height: 1; letter-spacing: -1px; }
+  .mb-pct { color: var(--txt1); font-variant-numeric: tabular-nums; }
+  .mb-glyph.crit { color: var(--critical); text-shadow: 0 0 6px rgba(229,72,77,0.85), 0 0 12px rgba(229,72,77,0.45); }
+  .mb-pct.crit { color: var(--critical); }
+  .mb-glyph.muted { color: var(--watch); opacity: 0.45; }
+  .mb-pct.muted { color: var(--txt2); }
+
+  /* ── popover ──────────────────────────────────────────────────────── */
+  .popover {
+    width: 340px;
+    background: var(--canvas);
+    border: 1px solid var(--hair);
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+  }
+
+  /* header */
+  .pop-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .pop-title {
+    font-family: var(--sans); font-size: 11px; font-weight: 600;
+    letter-spacing: 1.4px; color: var(--txt2);
+  }
+  .pop-clock { font-family: var(--mono); font-size: 11px; color: var(--txt3); font-variant-numeric: tabular-nums; }
+  .pop-clock .spin { color: var(--txt2); margin-right: 4px; }
+
+  /* 2x2 gauge cluster */
+  .cluster {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    padding: 14px 14px 12px;
+    gap: 6px;
+    background: var(--panel);
+    margin: 0;
+  }
+  .gauge-cell {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 6px 0 4px;
+  }
+  .g-lbl {
+    font-family: var(--sans); font-size: 10px; font-weight: 600;
+    letter-spacing: 1px; color: var(--txt2); margin-bottom: 2px;
+  }
+  .g-ring { position: relative; width: 78px; height: 78px; }
+  .g-ring svg { display: block; transform: rotate(135deg); }
+  .g-pct {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 20px; font-variant-numeric: tabular-nums;
+    color: var(--txt1); letter-spacing: -0.5px;
+  }
+  .g-pct.muted { color: var(--txt1); }
+  .g-pct.crit  { color: var(--critical); }
+  .g-reset {
+    font-family: var(--sans); font-size: 9px; letter-spacing: 0.5px;
+    color: var(--txt3); margin-top: 2px;
+  }
+  .g-reset .num { font-size: 9px; color: var(--txt3); }
+  /* critical cell badge */
+  .g-cell-crit .g-lbl { color: var(--critical); }
+
+  /* status ribbon */
+  .ribbon {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    border-top: 1px solid var(--hair);
+    border-bottom: 1px solid var(--hair);
+    background: var(--canvas);
+    font-family: var(--sans); font-size: 11px;
+  }
+  .ribbon .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--critical); box-shadow: 0 0 6px rgba(229,72,77,0.7); flex: none; }
+  .ribbon .copy { color: var(--txt2); letter-spacing: 0.2px; }
+  .ribbon .copy b { color: var(--critical); font-weight: 600; }
+  .ribbon .glyph { margin-left: auto; font-size: 13px; filter: drop-shadow(0 0 5px rgba(229,72,77,0.55)); }
+
+  /* section label */
+  .sec-lbl {
+    font-family: var(--sans); font-size: 10px; font-weight: 600;
+    letter-spacing: 1.2px; color: var(--txt3);
+    padding: 10px 14px 4px;
+  }
+
+  /* sessions */
+  .sessions { padding: 0 14px 6px; }
+  .sess-row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--hair);
+  }
+  .sess-row:last-child { border-bottom: none; }
+  .sess-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .sess-dot.on  { background: var(--calm); }
+  .sess-dot.off { background: transparent; border: 1px solid var(--txt3); }
+  .sess-name {
+    font-family: var(--mono); font-size: 12px; color: var(--txt1);
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .sess-name.dim { color: var(--txt2); }
+  .sess-spark { flex: none; }
+  .sess-pct {
+    font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums;
+    color: var(--txt2); width: 34px; text-align: right;
+  }
+
+  /* model history */
+  .history { padding: 2px 14px 12px; }
+  .hist-row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 4px 0;
+  }
+  .hist-name {
+    font-family: var(--mono); font-size: 11px; color: var(--txt2);
+    width: 50px; letter-spacing: 0.3px;
+  }
+  .hist-bar {
+    flex: 1; height: 7px; border-radius: 1px;
+    background: var(--track);
+    overflow: hidden; position: relative;
+  }
+  .hist-fill { height: 100%; border-radius: 1px; }
+  .hist-fill.active { background: var(--accent, var(--calm)); }
+  .hist-fill.gray   { background: var(--muted); }
+  .hist-tag {
+    font-family: var(--sans); font-size: 9px; letter-spacing: 0.4px;
+    color: var(--txt3); width: 52px; text-align: right;
+  }
+  .hist-tag.on { color: var(--calm); }
+</style>
+</head>
+<body>
+  <div class="stage">
+
+    <!-- ── menu-bar strip ─────────────────────────────────────────── -->
+    <div class="menubar">
+      <div class="mb-item">
+        <span class="mb-lbl">5h</span>
+        <span class="mb-glyph crit">▕█</span>
+        <span class="mb-pct crit num">85%</span>
+      </div>
+      <div class="mb-item">
+        <span class="mb-lbl">7d</span>
+        <span class="mb-glyph muted">▕▍</span>
+        <span class="mb-pct muted num">47%</span>
+      </div>
+    </div>
+
+    <!-- ── popover ────────────────────────────────────────────────── -->
+    <div class="popover">
+
+      <!-- header -->
+      <div class="pop-head">
+        <span class="pop-title">QUANTOMETER</span>
+        <span class="pop-clock"><span class="spin">⟳</span><span class="num">14:59</span></span>
+      </div>
+
+      <!-- 2×2 radial micro-gauge cluster -->
+      <div class="cluster">
+
+        <!-- 5H — critical, full-saturation red (signature) -->
+        <div class="gauge-cell g-cell-crit">
+          <div class="g-lbl">5H</div>
+          <div class="g-ring">
+            <svg width="78" height="78" viewBox="0 0 78 78">
+              <!-- 270° track: r=34, circumference = 2πr ≈ 213.6; arc = 75% = 160.2 -->
+              <circle cx="39" cy="39" r="34" fill="none" stroke="#1E222A" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="160.2 213.6" />
+              <!-- fill 85% of the 270° arc = 136.2 -->
+              <circle cx="39" cy="39" r="34" fill="none" stroke="#E5484D" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="136.2 213.6"
+                style="filter: drop-shadow(0 0 4px rgba(229,72,77,0.55));" />
+            </svg>
+            <div class="g-pct crit num">85%</div>
+          </div>
+          <div class="g-reset">reset <span class="num">2h11m</span></div>
+        </div>
+
+        <!-- 7D — watch, muted gray -->
+        <div class="gauge-cell">
+          <div class="g-lbl">7D</div>
+          <div class="g-ring">
+            <svg width="78" height="78" viewBox="0 0 78 78">
+              <circle cx="39" cy="39" r="34" fill="none" stroke="#1E222A" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="160.2 213.6" />
+              <!-- 47% of 270° arc = 75.3 -->
+              <circle cx="39" cy="39" r="34" fill="none" stroke="#4A515E" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="75.3 213.6" />
+            </svg>
+            <div class="g-pct muted num">47%</div>
+          </div>
+          <div class="g-reset">reset <span class="num">4d03h</span></div>
+        </div>
+
+        <!-- OPUS — muted (idle window) -->
+        <div class="gauge-cell">
+          <div class="g-lbl">OPUS</div>
+          <div class="g-ring">
+            <svg width="78" height="78" viewBox="0 0 78 78">
+              <circle cx="39" cy="39" r="34" fill="none" stroke="#1E222A" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="160.2 213.6" />
+              <!-- 33% of 270° arc = 52.9 -->
+              <circle cx="39" cy="39" r="34" fill="none" stroke="#4A515E" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="52.9 213.6" />
+            </svg>
+            <div class="g-pct muted num">33%</div>
+          </div>
+          <div class="g-reset">reset <span class="num">6d12h</span></div>
+        </div>
+
+        <!-- SONNET — calm, muted gray -->
+        <div class="gauge-cell">
+          <div class="g-lbl">SONNET</div>
+          <div class="g-ring">
+            <svg width="78" height="78" viewBox="0 0 78 78">
+              <circle cx="39" cy="39" r="34" fill="none" stroke="#1E222A" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="160.2 213.6" />
+              <!-- 11% of 270° arc = 17.6 -->
+              <circle cx="39" cy="39" r="34" fill="none" stroke="#4A515E" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="17.6 213.6" />
+            </svg>
+            <div class="g-pct muted num">11%</div>
+          </div>
+          <div class="g-reset">reset <span class="num">6d12h</span></div>
+        </div>
+
+      </div>
+
+      <!-- status ribbon (personality, 1 line) -->
+      <div class="ribbon">
+        <span class="dot"></span>
+        <span class="copy">배 터지기 직전 — <b>5H 윈도우 과식 경고</b></span>
+        <span class="glyph">🍚</span>
+      </div>
+
+      <!-- sessions -->
+      <div class="sec-lbl">SESSIONS</div>
+      <div class="sessions">
+        <div class="sess-row">
+          <span class="sess-dot on"></span>
+          <span class="sess-name">arkraft-api</span>
+          <svg class="sess-spark" width="48" height="14" viewBox="0 0 48 14">
+            <polyline fill="none" stroke="#5E6675" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"
+              points="0,12 8,11 16,8 24,7 32,4 40,3 48,2" />
+          </svg>
+          <span class="sess-pct num">80%</span>
+        </div>
+        <div class="sess-row">
+          <span class="sess-dot on"></span>
+          <span class="sess-name">claude-widget</span>
+          <svg class="sess-spark" width="48" height="14" viewBox="0 0 48 14">
+            <polyline fill="none" stroke="#5E6675" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"
+              points="0,12 8,10 16,9 24,7 32,6 40,5 48,4" />
+          </svg>
+          <span class="sess-pct num">69%</span>
+        </div>
+        <div class="sess-row">
+          <span class="sess-dot off"></span>
+          <span class="sess-name dim">scratch</span>
+          <svg class="sess-spark" width="48" height="14" viewBox="0 0 48 14">
+            <polyline fill="none" stroke="#3E4452" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"
+              points="0,12 8,12 16,11 24,11 32,12 40,10 48,11" />
+          </svg>
+          <span class="sess-pct num">21%</span>
+        </div>
+      </div>
+
+      <!-- model history -->
+      <div class="sec-lbl">MODEL HISTORY</div>
+      <div class="history">
+        <div class="hist-row">
+          <span class="hist-name">opus</span>
+          <div class="hist-bar"><div class="hist-fill active" style="width:44%; --accent:#3BB273;"></div></div>
+          <span class="hist-tag on">active</span>
+        </div>
+        <div class="hist-row">
+          <span class="hist-name">sonnet</span>
+          <div class="hist-bar"><div class="hist-fill gray" style="width:26%;"></div></div>
+          <span class="hist-tag">idle</span>
+        </div>
+        <div class="hist-row">
+          <span class="hist-name">haiku</span>
+          <div class="hist-bar"><div class="hist-fill gray" style="width:13%;"></div></div>
+          <span class="hist-tag">idle</span>
+        </div>
+      </div>
+
+    </div><!-- /popover -->
+
+  </div><!-- /stage -->
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>01 · Grotesk Gauge</title>
+<style>
+  :root {
+    /* light scheme — paper-white annual report (primary per spec) */
+    --surface:        #F7F6F2;
+    --surface-raised: #FFFFFF;
+    --text-primary:   #1A1A1D;
+    --text-secondary: #5C5C60;
+    --text-tertiary:  #9A9A9E;
+    --hairline:       #D8D6CF;
+    --hairline-strong:#B9B7AE;
+    --vermilion:      #C0392B;
+
+    --grotesk: -apple-system, 'Helvetica Neue', Inter, sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 800px;
+    height: 560px;
+    overflow: hidden;
+  }
+
+  body {
+    /* soft desktop wallpaper gradient */
+    background:
+      radial-gradient(1200px 700px at 22% 18%, #cfd8e6 0%, rgba(207,216,230,0) 55%),
+      radial-gradient(1000px 800px at 85% 90%, #e7dfe9 0%, rgba(231,223,233,0) 50%),
+      linear-gradient(140deg, #b9c4d6 0%, #c8c2d2 48%, #d6cdd0 100%);
+    font-family: var(--grotesk);
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 0;
+  }
+
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+  /* ───────────────────────── menu bar strip ───────────────────────── */
+  .menubar {
+    width: 800px;
+    height: 26px;
+    background: rgba(245, 245, 247, 0.62);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-bottom: 0.5px solid rgba(0,0,0,0.10);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 18px;
+    padding: 0 14px;
+    font-size: 12px;
+    box-shadow: 0 0.5px 0 rgba(255,255,255,0.5) inset;
+  }
+  .menubar .left {
+    margin-right: auto;
+    color: rgba(30,30,32,0.78);
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .menubar .left .apple { font-size: 13px; }
+  .menubar .left .mtitle { font-weight: 600; }
+  .menubar .gauge {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    color: rgba(20,20,22,0.85);
+  }
+  .menubar .gauge .lbl {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: rgba(40,40,44,0.62);
+    font-weight: 400;
+  }
+  .menubar .gauge .num {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .menubar .gauge .num.crit {
+    color: var(--vermilion);
+    font-weight: 700;
+  }
+  .menubar .clock {
+    color: rgba(20,20,22,0.78);
+    font-size: 12px;
+    letter-spacing: 0.01em;
+  }
+
+  /* ───────────────────────── popover ───────────────────────── */
+  .stage {
+    flex: 1;
+    width: 800px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .popover {
+    position: relative;
+    width: 340px;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 20px 22px 14px;
+    box-shadow:
+      0 18px 50px rgba(20,22,30,0.30),
+      0 2px 8px rgba(20,22,30,0.18),
+      0 0 0 0.5px rgba(0,0,0,0.06);
+    color: var(--text-primary);
+  }
+  /* little pointer up to the menubar */
+  .popover::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    right: 40px;
+    width: 16px;
+    height: 16px;
+    background: var(--surface);
+    transform: rotate(45deg);
+    border-radius: 3px;
+    box-shadow: -0.5px -0.5px 0 rgba(0,0,0,0.05);
+  }
+
+  .label-caps {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* hero */
+  .hero {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .hero .label-caps { padding-bottom: 2px; }
+  .hero .pct {
+    font-size: 58px;
+    line-height: 0.9;
+    font-weight: 700;       /* critical = bold */
+    color: var(--vermilion);/* critical = vermilion */
+    letter-spacing: -0.02em;
+  }
+  .hero .pct .sign { font-size: 30px; font-weight: 600; }
+
+  /* rules */
+  .rule        { height: 0.5px; background: var(--hairline); border: 0; margin: 9px 0; }
+  .rule.watch  { height: 0.75px; background: var(--hairline-strong); }
+  .rule.warn   { height: 1px; background: var(--text-primary); }
+  .rule.crit   { height: 1.5px; background: var(--vermilion); }
+  .rule.section{ height: 1px; background: var(--hairline-strong); margin: 11px 0; }
+
+  /* a dotted-leader row */
+  .row {
+    display: flex;
+    align-items: baseline;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  .row .k { color: var(--text-secondary); }
+  .row .leader {
+    flex: 1;
+    margin: 0 6px;
+    overflow: hidden;
+    color: var(--text-tertiary);
+    letter-spacing: 1px;
+    font-size: 11px;
+    transform: translateY(-1px);
+  }
+  .row .leader::before {
+    content: "····························································································";
+  }
+  .row .v { color: var(--text-primary); }
+
+  .resets { color: var(--text-secondary); }
+  .resets .v { color: var(--text-secondary); }
+
+  /* seven-day / sonnet hero rows */
+  .winrow {
+    display: flex;
+    align-items: baseline;
+    font-size: 13px;
+  }
+  .winrow .k {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .winrow .leader {
+    flex: 1; margin: 0 7px; overflow: hidden;
+    color: var(--text-tertiary); letter-spacing: 1px; font-size: 11px;
+    transform: translateY(-1px);
+  }
+  .winrow .leader::before {
+    content: "····························································································";
+  }
+  .winrow .v { font-weight: 500; }              /* watch = medium */
+  .winrow.calm .v { font-weight: 400; }
+
+  /* sessions */
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+  .sec-head .count {
+    font-size: 12.5px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .session {
+    display: flex;
+    align-items: baseline;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .session .k { color: var(--text-primary); }
+  .session .leader {
+    flex: 1; margin: 0 6px; overflow: hidden;
+    color: var(--text-tertiary); letter-spacing: 1px; font-size: 11px;
+    transform: translateY(-1px);
+  }
+  .session .leader::before {
+    content: "····························································································";
+  }
+  .session .ctx { color: var(--text-primary); width: 34px; text-align: right; }
+  .session .dot { color: var(--text-tertiary); margin: 0 5px; }
+  .session .tok { color: var(--text-secondary); width: 40px; text-align: right; }
+  .session.warn .k,
+  .session.warn .ctx,
+  .session.warn .tok { font-weight: 700; color: var(--vermilion); }
+
+  /* token history */
+  .hist-row {
+    display: flex;
+    align-items: baseline;
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+  .hist-row .k { color: var(--text-primary); text-transform: lowercase; }
+  .hist-row .leader {
+    flex: 1; margin: 0 6px; overflow: hidden;
+    color: var(--text-tertiary); letter-spacing: 1px; font-size: 11px;
+    transform: translateY(-1px);
+  }
+  .hist-row .leader::before {
+    content: "····························································································";
+  }
+  .hist-row .v { color: var(--text-primary); }
+  .underbar {
+    height: 3px;
+    background: var(--hairline-strong);
+    margin: 1px 0 7px;
+    border-radius: 1px;
+  }
+
+  /* footer */
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .footer .menu { color: var(--text-secondary); }
+
+  .mono { font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+  <!-- menu bar strip -->
+  <div class="menubar">
+    <div class="left">
+      <span class="apple"></span>
+      <span class="mtitle">TokenMukbang</span>
+      <span>File</span><span>Window</span><span>Help</span>
+    </div>
+    <span class="gauge tnum mono"><span class="lbl">5H</span><span class="num crit">85</span></span>
+    <span class="gauge tnum mono"><span class="lbl">7D</span><span class="num">47</span></span>
+    <span class="clock tnum">Thu 12 Jun&nbsp;&nbsp;9:41</span>
+  </div>
+
+  <!-- popover -->
+  <div class="stage">
+    <div class="popover">
+
+      <!-- hero: five-hour window, critical -->
+      <div class="hero">
+        <span class="label-caps">five-hour window</span>
+        <span class="pct tnum mono">85<span class="sign">%</span></span>
+      </div>
+      <!-- critical = vermilion solid rule across the row -->
+      <hr class="rule crit">
+      <div class="row resets">
+        <span class="k">resets in</span>
+        <span class="leader"></span>
+        <span class="v tnum mono">2h 08m</span>
+      </div>
+
+      <hr class="rule section">
+
+      <!-- seven-day, watch -->
+      <div class="winrow">
+        <span class="k">seven-day</span>
+        <span class="leader"></span>
+        <span class="v tnum mono">47%</span>
+      </div>
+      <hr class="rule watch">
+
+      <!-- sonnet seven-day, calm -->
+      <div class="winrow calm" style="margin-top:7px;">
+        <span class="k">sonnet · 7d</span>
+        <span class="leader"></span>
+        <span class="v tnum mono">11%</span>
+      </div>
+      <hr class="rule">
+
+      <hr class="rule section">
+
+      <!-- active sessions -->
+      <div class="sec-head">
+        <span class="label-caps">active sessions</span>
+        <span class="count tnum mono">3</span>
+      </div>
+      <div class="session warn">
+        <span class="k">claude-usage-widget</span>
+        <span class="leader"></span>
+        <span class="ctx tnum mono">80%</span>
+        <span class="dot">·</span>
+        <span class="tok tnum mono">160k</span>
+      </div>
+      <div class="session">
+        <span class="k">arkraft</span>
+        <span class="leader"></span>
+        <span class="ctx tnum mono">69%</span>
+        <span class="dot">·</span>
+        <span class="tok tnum mono">138k</span>
+      </div>
+      <div class="session">
+        <span class="k">njtransit</span>
+        <span class="leader"></span>
+        <span class="ctx tnum mono">21%</span>
+        <span class="dot">·</span>
+        <span class="tok tnum mono">42k</span>
+      </div>
+
+      <hr class="rule section">
+
+      <!-- token history (7d) -->
+      <div class="label-caps" style="margin-bottom:6px;">token history (7d)</div>
+      <div class="hist-row">
+        <span class="k">opus</span>
+        <span class="leader"></span>
+        <span class="v tnum mono">1.42M</span>
+      </div>
+      <div class="underbar" style="width:100%;"></div>
+      <div class="hist-row">
+        <span class="k">fable</span>
+        <span class="leader"></span>
+        <span class="v tnum mono">610k</span>
+      </div>
+      <div class="underbar" style="width:43%;"></div>
+      <div class="hist-row">
+        <span class="k">sonnet</span>
+        <span class="leader"></span>
+        <span class="v tnum mono">228k</span>
+      </div>
+      <div class="underbar" style="width:16%;"></div>
+
+      <hr class="rule">
+
+      <!-- footer: mukbang microcopy at the edge -->
+      <div class="footer">
+        <span>TokenMukbang · 완식까지 15%</span>
+        <span class="menu">⏶ menu</span>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
