@@ -47,20 +47,18 @@ struct SessionRowView: View {
                 Text(session.projectName)
                     .font(DS.bodyFont)
                     .lineLimit(1).truncationMode(.tail)
+                    .layoutPriority(1)          // let the name take the row's free width
                 Spacer(minLength: DS.row)
-                // ctx% — neutral text (the dot already says the state); right column.
+                // ctx% — neutral text (the dot already says the state). The tty was glance-
+                // altitude noise → moved to the tooltip (design-critique r3).
                 Text(session.contextFraction.map { "ctx \(Formatting.percent(fraction: $0))" } ?? "ctx —")
                     .font(DS.captionFont.monospacedDigit())
                     .foregroundStyle(.secondary)
                     .frame(width: 58, alignment: .trailing)
-                Text(session.tty ?? "—")
-                    .font(DS.captionFont.monospacedDigit())
-                    .foregroundStyle(.tertiary)
-                    .frame(width: 56, alignment: .trailing)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("Focus this session's terminal window")
+        .help("터미널 포커스 · \(session.tty ?? "tty 없음")")
     }
 }

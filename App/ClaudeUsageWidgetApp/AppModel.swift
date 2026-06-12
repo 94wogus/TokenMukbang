@@ -8,8 +8,8 @@ import ClaudeUsageKit
 final class AppModel: ObservableObject {
     @Published private(set) var snapshot: UsageSnapshot?
     @Published private(set) var isRefreshing = false
-    /// Active dashboard layout (Classic / Compact / Focus).
-    @Published var layout: DashboardLayout = .classic
+    /// Active dashboard tab (Dashboard / History / Settings).
+    @Published var layout: DashboardLayout = .dashboard
     /// The floating Agent Watchers overlay controller (F1–F5).
     let overlay = OverlayController()
 

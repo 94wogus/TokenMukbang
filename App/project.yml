@@ -9,6 +9,11 @@ packages:
   ClaudeUsageKit:
     # The shared core lives in the SPM package at the repo root.
     path: ..
+  MenuBarExtraAccess:
+    # Reaches the underlying NSStatusItem from SwiftUI MenuBarExtra so we can KVO
+    # the button's effectiveAppearance (wallpaper-aware) → adaptive menu-bar color.
+    url: https://github.com/orchetect/MenuBarExtraAccess
+    from: "1.0.0"
 
 settings:
   base:
@@ -31,6 +36,8 @@ targets:
     dependencies:
       - package: ClaudeUsageKit
         product: ClaudeUsageKit
+      - package: MenuBarExtraAccess
+        product: MenuBarExtraAccess
       - target: UsageWidgetExtension
         embed: true
     info:

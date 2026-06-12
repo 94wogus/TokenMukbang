@@ -4,9 +4,11 @@ import ClaudeUsageKit
 /// The Settings space: theme (4 presets + custom), thresholds, notifications (D1–D3).
 struct SettingsView: View {
     @ObservedObject var model: AppModel
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        // Wider inter-group spacing gives the stacked cards a clear rhythm (design-critique r3).
+        VStack(alignment: .leading, spacing: 14) {
             // D1 — Theme
             section("테마") {
                 DSSegmented(selection: $model.settings.theme,
@@ -20,12 +22,21 @@ struct SettingsView: View {
                         hexColorPicker("Accent", \.accentHex)
                     }
                 } else {
-                    HStack(spacing: 6) {
-                        ForEach([model.settings.palette.calmHex, model.settings.palette.watchHex,
-                                 model.settings.palette.warningHex, model.settings.palette.criticalHex,
-                                 model.settings.palette.accentHex], id: \.self) { hex in
-                            Circle().fill(Color(hex: hex)).frame(width: 14, height: 14)
-                        }
+                    // Risk-ramp preview (calm→critical) — a meaningful preview of the chosen
+                    // theme, not a row of toy dots (design-critique r2).
+                    HStack(spacing: 8) {
+                        Capsule()
+                            .fill(LinearGradient(colors: [
+                                Color(hex: model.settings.palette.calmHex),
+                                Color(hex: model.settings.palette.watchHex),
+                                Color(hex: model.settings.palette.warningHex),
+                                Color(hex: model.settings.palette.criticalHex),
+                            ], startPoint: .leading, endPoint: .trailing))
+                            .frame(height: 8)
+                            .overlay(Capsule().strokeBorder(.white.opacity(0.15), lineWidth: 0.5))
+                        Circle().fill(Color(hex: model.settings.palette.accentHex))
+                            .frame(width: 10, height: 10)
+                            .help("강조색")
                     }
                 }
             }
@@ -63,11 +74,17 @@ struct SettingsView: View {
         }
     }
 
+    /// Each settings group sits in a GlassTile so Settings shares the dashboard's card
+    /// aesthetic (design-critique: unify Settings/History into card containers).
     @ViewBuilder
-    private func section(_ title: String, @ViewBuilder _ content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: DS.intra) {
-            Text(title).dsEyebrow()
-            content()
+    private func section<C: View>(_ title: String, @ViewBuilder _ content: @escaping () -> C) -> some View {
+        GlassTile(scheme: scheme) {
+            VStack(alignment: .leading, spacing: DS.intra) {
+                Text(title).dsEyebrow()
+                content()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(DS.section)
         }
     }
 

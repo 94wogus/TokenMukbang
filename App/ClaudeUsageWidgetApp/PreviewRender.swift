@@ -101,9 +101,75 @@ enum PopoverRenderer {
         for scheme in [ColorScheme.light, .dark] {
             let tag = scheme == .dark ? "dark" : "light"
             renderMenuBar(to: "\(dir)/menubar-\(tag).png", scheme: scheme)
-            render(to: "\(dir)/classic-\(tag).png", layout: .classic, scheme: scheme)
+            render(to: "\(dir)/dashboard-\(tag).png", layout: .dashboard, scheme: scheme)
             render(to: "\(dir)/history-\(tag).png", layout: .history, scheme: scheme)
-            render(to: "\(dir)/settings-\(tag).png", layout: .settings, scheme: scheme)
+        }
+    }
+}
+
+/// FAITHFUL capture — renders the real SwiftUI view through AppKit's `cacheDisplay`
+/// inside an off-screen NSWindow (so `.regularMaterial`/blur draw for real, unlike
+/// `ImageRenderer` which flattens materials). No screen-recording permission needed.
+/// A wallpaper backdrop sits behind the popover so glass has something to blur.
+/// This is the verification tool: what it shows ≈ the live app.
+@MainActor
+enum WindowSnapshot {
+    /// Stand-in wallpapers to prove the glass adapts to the backdrop (not fixed hex).
+    private enum Backdrop: String, CaseIterable {
+        case black, white, colorful, neutralDark, neutralLight
+        var view: AnyView {
+            switch self {
+            case .black:  return AnyView(Color.black)
+            case .white:  return AnyView(Color(white: 0.96))
+            case .colorful: return AnyView(LinearGradient(
+                colors: [Color(red: 0.20, green: 0.10, blue: 0.40), Color(red: 0.05, green: 0.30, blue: 0.45),
+                         Color(red: 0.55, green: 0.18, blue: 0.30)],
+                startPoint: .topLeading, endPoint: .bottomTrailing))
+            // HONEST tests — a plain, muted desktop (what most users actually have behind the
+            // popover), so the render isn't over-flattered by a colorful wallpaper.
+            case .neutralDark:  return AnyView(Color(red: 0.13, green: 0.14, blue: 0.16))
+            case .neutralLight: return AnyView(Color(red: 0.86, green: 0.86, blue: 0.84))
+            }
+        }
+        var scheme: ColorScheme { (self == .white || self == .neutralLight) ? .light : .dark }
+    }
+
+    static func renderAll(dir: String) {
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        // (a) adaptation proof — dashboard over each backdrop (incl. honest plain desktops).
+        for bg in Backdrop.allCases {
+            render(to: "\(dir)/live-bg-\(bg.rawValue).png", layout: .dashboard, backdrop: bg)
+        }
+        // (b) every tab over the colorful wallpaper — for IA / redundancy / tab-structure critique.
+        let tabs: [(String, DashboardLayout)] = [
+            ("dashboard", .dashboard), ("history", .history),
+        ]
+        for (name, layout) in tabs {
+            render(to: "\(dir)/live-tab-\(name).png", layout: layout, backdrop: .colorful)
+        }
+    }
+
+    private static func render(to path: String, layout: DashboardLayout, backdrop: Backdrop) {
+        let model = AppModel(previewSnapshot: PreviewData.snapshot, tokenEvents: PreviewData.tokenEvents)
+        model.layout = layout
+        let root = ZStack(alignment: .top) {
+            backdrop.view.ignoresSafeArea()             // the "wallpaper" the glass blends with
+            MenuContentView(model: model).padding(.top, 28)
+        }
+        .frame(width: 392, height: 760)
+        .environment(\.colorScheme, backdrop.scheme)
+
+        let host = NSHostingView(rootView: root)
+        host.frame = NSRect(x: 0, y: 0, width: 392, height: 760)
+        let window = NSWindow(contentRect: host.frame, styleMask: [.borderless],
+                              backing: .buffered, defer: false)
+        window.appearance = NSAppearance(named: backdrop.scheme == .dark ? .darkAqua : .aqua)
+        window.contentView = host
+        host.layoutSubtreeIfNeeded()
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        if let png = rep.representation(using: .png, properties: [:]) {
+            try? png.write(to: URL(fileURLWithPath: path))
         }
     }
 }

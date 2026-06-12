@@ -4,6 +4,46 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed — 메뉴바 팝오버 IA 재구성 + 라이브 피드백 (2026-06-12, ADR-0017)
+실제 앱 실행 + 네이티브 컨벤션 리서치(Control Center·iStat Menus·Stats·Itsycal 등) 반영:
+- **하단 탭바 폐기 → 상단 `현황 | 기록` 세그먼트 토글**(위치 고정 → 탭 점프 제거). `DashboardLayout` 3→2 케이스.
+- **Settings → 별도 macOS 설정 창(⌘,)**. 헤더 기어가 연다(accessory 앱이라 활성화 정책을 잠깐 `.regular`로
+  올렸다 창 닫히면 `.accessory` 복귀). 팝오버는 content-sized + `maxHeight` 캡.
+- **게이지 히트램프 그라데이션 복원**(`RiskTone.gaugeRamp`) — 단색 폐기, calm→…→현재 티어로 *데워지는*
+  amber→red 램프(개념 목업 04-steam의 의미 복원).
+- **자체 베이스 워시**(`Steam.baseWash`) — 팝오버가 데스크톱 벽지에 의존하지 않고 자기 색/깊이를 가짐(밋밋함 해결).
+  라이트모드 국물 글로우 alpha ~절반(밝은 배경 peach stain 방지). 검증 도구에 *평범한 데스크톱*(neutralDark/Light)
+  백드롭 추가 — 컬러풀 벽지로 과대포장하던 렌더를 정직하게.
+
+### Changed — 디자인 크리틱 반영 (자체 비평 루프, 2026-06-12)
+병렬 디자인-크리틱 에이전트(IA·계층·색·네이티브)를 *충실 렌더*(TMK_SNAPSHOT, 실제 material/blur)
+위에 돌려 두 라운드 반영:
+- **탭 5→3 통합**: 중복 뷰모드였던 Compact/Focus 제거 → 진짜 목적지 셋(**Dashboard / History / Settings**).
+  `DashboardLayout` 재정의(+SF Symbol). MODEL HISTORY는 History 탭에만(대시보드 중복 제거).
+- **중복 제거**: 페이스 경고/에러 배너를 전 탭 → 대시보드 한정. 헤더 `Max`를 고스트(아웃라인) 칩으로 강등.
+- **색 통일·탈채도**: `RiskTone.color`를 desaturate + L\*-밴딩으로 — calm 틸그린 / watch 앰버골드 /
+  warning 오커 / **critical 쿨 크림슨 `#C23B4E`**(토마토수프 오렌지레드 폐기). 모델 식별 팔레트도 탈채도.
+- **김/국물 절제**: 김 plume alpha **≤0.22 캡**, 국물 0.62→0.40 + *바닥 그라디언트*로 가둠(검은 배경 범람 수정).
+  게이지 fill에 density ramp(시작 옅게→선단 엠버) 추가.
+- **네이티브 폴리시**: 하단 크롬 축소(탭바=SF Symbol+라벨 세그먼트, 액션=아이콘 전용 한 줄). 종료 빨강 중립화
+  (빨강은 위험 채널 전용). GlassTile 보더/스페큘러 scheme-적응 + 그림자 부드럽게. 코너 28/22→18/14.
+  Settings 섹션을 GlassTile 카드로 묶음.
+- 빌드 green(app+widget) · `swift test` 77/77.
+
+### Changed — 김 서림(Steam) 비주얼 방향 (ADR-0016, supersedes "Liquid Vitals")
+- **디자인 방향 전환**: 멀티에이전트 리서치(v1 12종·v2 유리국밥 변주 6종, `docs/design/concepts/`) 끝
+  **김 서림(Steam)** 채택 — 위험을 hue가 아니라 *김의 밀도·높이·빛깔*로. 정본 `docs/design/STEAM_DESIGN.md`,
+  계획 `STEAM_IMPLEMENTATION_PLAN.md`, 결정 ADR-0016. `DESIGN_SYSTEM.md`("Liquid Vitals") supersede.
+- **토큰(S1)**: `RiskTone.steamTint`(김 plume 색·alpha) + `brothGlow`(z0 언더글로우) + `enum Steam`
+  표면 토큰(frostPanel/frostTile/scrimNumber/ink/edgeLens/hairline/condensation). `RiskTone`(ADR-0015) 상속.
+- **컴포넌트(S2)**: `App/Shared/SteamComponents.swift` — `BrothGlow`·`SteamPlume`(상단 fade 마스크)·
+  `Condensation`·`GlassTile` + `.steamBackground(level:isOver:scheme:)`.
+- **팝오버(S4)**: 히어로/모니터링/세션을 솟은 `GlassTile` 3겹으로 + z3 김 + z0 broth. 위험↑일수록 김 짙어짐,
+  숫자/게이지는 레이어 위 가독 불변.
+- **위젯(S5)**: `containerBackground`를 정적 김(broth+프로스트+김 한 프레임, ADR-0003)으로.
+- **메뉴바(S3)**: 기존 "5h/7d 둘 다 + 색 %" 라벨 유지 + warning↑일 때만 텍스트 *뒤* 은은한 김 haze(윤곽 아님).
+- 빌드 green(app+widget) · `swift test` 77/77.
+
 ### Fixed / Added — per-model History breakdown
 - **Fable mapping (bug)**: `claude-fable-5` wasn't matched by `ModelCast.forModel` (only
   opus/sonnet/haiku) → ~24% of recent tokens were uncategorized and invisible to the model
