@@ -118,9 +118,9 @@ substitute a fake:
   injectable dir; ADR-0011) + `HistoryAnalytics` (`Sparkline.series` bucketing, `HistoryFilter`
   by ModelCast + timeframe; `Timeframe` 24h/7d/30d/90d + `HistoryFilter.tokenEvents`)
   + `JSONLParser`/`TokenHistory` (절대 토큰 소비량을
-  `~/.claude/projects/*.jsonl`에서 파싱·집계 — by day/model/project/**cast**, heaviest day,
-  top project; `HistoryMetric` 토큰량/사용률 토글; ADR-0012). 모델별 브레이크다운은 토큰량
-  (Opus 우세) 또는 API 사용률%(`UsageSnapshot.modelWindows` = opus/sonnet 버킷) 두 관점.
+  `~/.claude/projects/*.jsonl`에서 파싱·집계 — by day/model/project/**cast**, `byDayCast`(일별 모델
+  세그먼트), `summary`(신선/재가열·캐시적중·전기간 대비 Δ), heaviest day, top project; ADR-0012).
+  History는 **CLI 토큰**만 다룬다 — API 사용률%는 계정 전체(웹 포함) 메트릭이라 섞지 않는다.
 - **`Settings/`** — `AppSettings` (Codable: `Theme` 4 presets + custom `ThemePalette`,
   `RiskThresholds`, `NotificationSettings`) + `SettingsStore` (JSON persistence, injectable dir).
 - **`Notifications/`** — `NotificationDecider` (edge-triggered: compares previous vs current

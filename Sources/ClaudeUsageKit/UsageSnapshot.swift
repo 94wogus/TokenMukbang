@@ -78,12 +78,4 @@ public struct UsageSnapshot: Codable, Sendable, Equatable {
     public var headlineWindow: Window? {
         windows.max { $0.utilization < $1.utilization }
     }
-
-    /// Windows tied to a specific model cast (e.g. `seven_day_opus`, `seven_day_sonnet`)
-    /// — the per-model **utilization** breakdown. The overall `five_hour`/`seven_day`
-    /// windows are excluded (they aren't model-specific). Which buckets exist depends on
-    /// the account/plan; some return only a subset.
-    public var modelWindows: [Window] {
-        windows.filter { ModelCast.forModel($0.kind) != nil }
-    }
 }

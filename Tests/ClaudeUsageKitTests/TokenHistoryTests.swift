@@ -82,24 +82,21 @@ final class TokenHistoryTests: XCTestCase {
         XCTAssertEqual(stacks[1].total, 10)
     }
 
-    func testSnapshotModelWindows() {
-        func w(_ kind: String, _ util: Double) -> UsageSnapshot.Window {
-            UsageSnapshot.Window(kind: kind, label: kind, utilization: util,
-                                 resetsAt: Date(), riskHex: "#000", riskLabel: "")
+    func testSummaryActiveCachedAndDelta() {
+        let now = Date(timeIntervalSince1970: 100 * 24 * 3600)   // day 100
+        func ev(_ daysAgo: Double, _ active: Int, _ cached: Int) -> TokenEvent {
+            TokenEvent(timestamp: now.addingTimeInterval(-daysAgo * 86400), model: "claude-opus-4-8",
+                       inputTokens: active, outputTokens: 0, cacheReadTokens: cached,
+                       cacheCreationTokens: 0, project: "p")
         }
-        let snap = UsageSnapshot(capturedAt: Date(), planLabel: nil,
-            windows: [w("five_hour", 3), w("seven_day", 56),
-                      w("seven_day_sonnet", 20), w("seven_day_opus", 40)],
-            sessions: [], error: nil)
-        // Only the model-specific windows (opus/sonnet) — not five_hour/seven_day.
-        XCTAssertEqual(Set(snap.modelWindows.map(\.kind)),
-                       ["seven_day_sonnet", "seven_day_opus"])
-    }
-
-    func testHistoryMetricCases() {
-        XCTAssertEqual(HistoryMetric.allCases.count, 2)
-        XCTAssertEqual(HistoryMetric.tokens.label, "토큰량")
-        XCTAssertEqual(HistoryMetric.utilization.label, "사용률")
+        // This week: active 100, cached 900. Previous week (8 days ago): active 50.
+        let events = [ev(1, 100, 900), ev(8, 50, 0)]
+        let s = TokenHistory.summary(events, timeframe: .week, now: now)
+        XCTAssertEqual(s.active, 100)
+        XCTAssertEqual(s.cached, 900)
+        XCTAssertEqual(s.total, 1000)
+        XCTAssertEqual(s.cacheHitRate, 0.9, accuracy: 0.0001)
+        XCTAssertEqual(s.deltaPercent ?? 0, 100, accuracy: 0.0001)   // 100 vs prev 50 = +100%
     }
 
     func testHeaviestDayAndTopProject() throws {

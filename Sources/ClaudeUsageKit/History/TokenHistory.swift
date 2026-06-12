@@ -94,6 +94,36 @@ public enum TokenHistory {
         events.reduce(0) { $0 + $1.consumedTokens }
     }
 
+    /// A timeframe's headline numbers: fresh (active) vs reheated (cached) tokens,
+    /// the cache-hit rate, and the trend vs the previous same-length period. This is
+    /// the "merge" that surfaces the cache_read volume the stacked bars deliberately
+    /// exclude — without dragging in the (account-wide, different-meaning) API util %.
+    public struct Summary: Sendable, Equatable {
+        public let active: Int            // consumed = input + output + cache_creation
+        public let cached: Int            // cache_read (reheated leftovers)
+        public let deltaPercent: Double?  // active vs previous period; nil if no prior data
+        public init(active: Int, cached: Int, deltaPercent: Double?) {
+            self.active = active; self.cached = cached; self.deltaPercent = deltaPercent
+        }
+        public var total: Int { active + cached }
+        public var cacheHitRate: Double { total > 0 ? Double(cached) / Double(total) : 0 }
+    }
+
+    /// Summarize the current timeframe (active/cached/hit-rate) and compare its active
+    /// total to the immediately preceding window of the same length for a trend %.
+    public static func summary(_ all: [TokenEvent], timeframe: Timeframe, now: Date) -> Summary {
+        let current = HistoryFilter.tokenEvents(all, timeframe: timeframe, cast: nil, now: now)
+        let active = current.reduce(0) { $0 + $1.consumedTokens }
+        let cached = current.reduce(0) { $0 + $1.cacheReadTokens }
+        let prevEnd = now.addingTimeInterval(-timeframe.span)
+        let prevStart = prevEnd.addingTimeInterval(-timeframe.span)
+        let prevActive = all
+            .filter { $0.timestamp >= prevStart && $0.timestamp < prevEnd }
+            .reduce(0) { $0 + $1.consumedTokens }
+        let delta = prevActive > 0 ? (Double(active - prevActive) / Double(prevActive)) * 100 : nil
+        return Summary(active: active, cached: cached, deltaPercent: delta)
+    }
+
     /// The day with the most tokens consumed.
     public static func heaviestDay(_ events: [TokenEvent], calendar: Calendar = TokenHistory.utcCalendar) -> DayBucket? {
         byDay(events, calendar: calendar).max { $0.tokens < $1.tokens }

@@ -32,8 +32,6 @@ final class AppModel: ObservableObject {
     @Published var historyModelFilter: ModelCast?
     /// History-browser timeframe (24h / 7d / 30d / 90d).
     @Published var historyTimeframe: Timeframe = .week
-    /// How the breakdown measures models: token volume vs API utilization %.
-    @Published var historyMetric: HistoryMetric = .tokens
 
     /// Token events under the current History filter (timeframe + model) — single
     /// filtering seam reused by the buckets/heaviest/top computations.
@@ -53,8 +51,10 @@ final class AppModel: ObservableObject {
     var historyCastTotals: [TokenHistory.CastTotal] { TokenHistory.byCast(timeframeTokenEvents) }
     /// Daily token consumption split into per-model segments (the stacked bar chart).
     var historyDayStacks: [TokenHistory.DayStack] { TokenHistory.byDayCast(timeframeTokenEvents) }
-    /// Per-model **utilization** windows from the latest snapshot (Opus/Sonnet buckets).
-    var historyModelWindows: [UsageSnapshot.Window] { snapshot?.modelWindows ?? [] }
+    /// Active/cached/cache-hit + trend-vs-previous-period summary for the timeframe.
+    var historySummary: TokenHistory.Summary {
+        TokenHistory.summary(tokenEvents, timeframe: historyTimeframe, now: Date())
+    }
 
     /// Daily token-consumption buckets for the History browser.
     var historyTokenBuckets: [TokenHistory.DayBucket] { TokenHistory.byDay(filteredTokenEvents) }

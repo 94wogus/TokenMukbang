@@ -55,11 +55,9 @@ enum PreviewData {
 @MainActor
 enum PopoverRenderer {
     /// Render the popover for a layout + scheme to a PNG (no window needed).
-    static func render(to path: String, layout: DashboardLayout, scheme: ColorScheme,
-                       metric: HistoryMetric = .tokens) {
+    static func render(to path: String, layout: DashboardLayout, scheme: ColorScheme) {
         let model = AppModel(previewSnapshot: PreviewData.snapshot, tokenEvents: PreviewData.tokenEvents)
         model.layout = layout
-        model.historyMetric = metric
         let bg = scheme == .dark ? Color(red: 0.12, green: 0.12, blue: 0.13)
                                  : Color(red: 0.93, green: 0.93, blue: 0.94)
         let view = MenuContentView(model: model)
@@ -104,8 +102,7 @@ enum PopoverRenderer {
             let tag = scheme == .dark ? "dark" : "light"
             renderMenuBar(to: "\(dir)/menubar-\(tag).png", scheme: scheme)
             render(to: "\(dir)/classic-\(tag).png", layout: .classic, scheme: scheme)
-            render(to: "\(dir)/history-\(tag).png", layout: .history, scheme: scheme, metric: .tokens)
-            render(to: "\(dir)/history-util-\(tag).png", layout: .history, scheme: scheme, metric: .utilization)
+            render(to: "\(dir)/history-\(tag).png", layout: .history, scheme: scheme)
             render(to: "\(dir)/settings-\(tag).png", layout: .settings, scheme: scheme)
         }
     }

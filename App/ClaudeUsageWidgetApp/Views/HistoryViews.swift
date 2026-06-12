@@ -36,9 +36,10 @@ struct UsageGraphView: View {
     }
 }
 
-/// History browser: per-model breakdown (token volume OR API utilization %) + the
-/// daily token chart. The metric toggle exists because the two answer different
-/// questions — Opus dominates token volume, while the API util view shows Sonnet.
+/// History browser: a token summary (active/cached/hit-rate + trend) over a daily
+/// chart **stacked by model**, with a per-model legend. Purely token-based — the API
+/// utilization % is a different, account-wide metric and lives in the live views, not
+/// here (TokenEater does the same).
 struct HistoryBrowserView: View {
     @ObservedObject var model: AppModel
     @Environment(\.colorScheme) private var scheme
@@ -46,31 +47,19 @@ struct HistoryBrowserView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.row) {
             Text("식단 기록").dsEyebrow()
-            // Timeframe (24h/7d/30d/90d) + metric (토큰량 / 사용률) toggles.
             DSSegmented(selection: $model.historyTimeframe, options: Timeframe.allCases) { $0.label }
-            DSSegmented(selection: $model.historyMetric, options: HistoryMetric.allCases) { $0.label }
 
-            switch model.historyMetric {
-            case .tokens:      tokenBreakdown
-            case .utilization: utilizationBreakdown
+            let totals = model.historyCastTotals
+            if model.tokenEvents.isEmpty {
+                emptyState("아직 식사 기록이 없습니다. 잠시 후 다시 보세요.")
+            } else if totals.isEmpty {
+                emptyState("이 기간엔 먹은 기록이 없어요.")
+            } else {
+                HistorySummaryView(summary: model.historySummary)
+                ModelLegend(totals: totals, scheme: scheme)
+                StackedTokenBarChart(stacks: model.historyDayStacks)
+                tokenFooter
             }
-        }
-    }
-
-    // MARK: 토큰량 — per-model consumed-token volume + daily chart
-
-    @ViewBuilder
-    private var tokenBreakdown: some View {
-        let totals = model.historyCastTotals
-        if model.tokenEvents.isEmpty {
-            emptyState("아직 식사 기록이 없습니다. 잠시 후 다시 보세요.")
-        } else if totals.isEmpty {
-            emptyState("이 기간엔 먹은 기록이 없어요.")
-        } else {
-            // Legend (color · model · total) + daily bars stacked by model.
-            ModelLegend(totals: totals, scheme: scheme)
-            StackedTokenBarChart(stacks: model.historyDayStacks)
-            tokenFooter
         }
     }
 
@@ -87,44 +76,6 @@ struct HistoryBrowserView: View {
         .font(DS.captionFont).foregroundStyle(.tertiary).labelStyle(.titleAndIcon)
     }
 
-    // MARK: 사용률 — per-model API limit %, risk-colored, with sparklines
-
-    @ViewBuilder
-    private var utilizationBreakdown: some View {
-        let windows = model.historyModelWindows
-        if windows.isEmpty {
-            emptyState("이 계정/플랜은 API가 모델별 한도(%)를 따로 주지 않아요. ‘토큰량’으로 보세요.")
-        } else {
-            VStack(spacing: DS.intra) {
-                ForEach(windows, id: \.kind) { utilBar($0) }
-            }
-            VStack(alignment: .leading, spacing: DS.intra) {
-                ForEach(windows, id: \.kind) { utilSparkline($0) }
-            }
-            .padding(.top, 2)
-        }
-    }
-
-    private func utilBar(_ w: UsageSnapshot.Window) -> BreakdownBar {
-        BreakdownBar(
-            label: ModelCast.forModel(w.kind)?.modelName ?? w.label,
-            valueText: "\(Int(w.utilization.rounded()))%",
-            fraction: min(1, w.utilization / 100),
-            color: RiskTone.color(level: w.riskLevel, over: w.isOver, scheme: scheme)
-        )
-    }
-
-    @ViewBuilder
-    private func utilSparkline(_ w: UsageSnapshot.Window) -> some View {
-        let color = RiskTone.color(level: w.riskLevel, over: w.isOver, scheme: scheme)
-        VStack(alignment: .leading, spacing: 1) {
-            Text(ModelCast.forModel(w.kind)?.modelName ?? w.label)
-                .font(DS.captionFont).foregroundStyle(.secondary)
-            MiniSparkline(values: model.sparkline(forKind: w.kind).map(\.value), color: color)
-                .frame(height: 26)
-        }
-    }
-
     private func emptyState(_ text: String) -> some View {
         Text(text)
             .font(DS.bodyFont).foregroundStyle(.secondary)
@@ -134,35 +85,37 @@ struct HistoryBrowserView: View {
     }
 }
 
-/// One labeled horizontal bar in the per-model breakdown (label · gauge · value).
-private struct BreakdownBar: View {
-    let label: String
-    let valueText: String
-    let fraction: Double
-    let color: Color
-    var selected: Bool = false
-    var dimmed: Bool = false
-    @Environment(\.colorScheme) private var scheme
+/// Summary header: hero "active" tokens + 신선/재가열(cached)/캐시적중 breakdown and a
+/// trend badge vs the previous period. Surfaces the cache_read volume the stacked bars
+/// exclude — the merge that replaces the (confusing, account-wide) API util toggle.
+struct HistorySummaryView: View {
+    let summary: TokenHistory.Summary
 
     var body: some View {
-        HStack(spacing: DS.intra) {
-            Text(label)
-                .font(selected ? DS.bodyFont.weight(.semibold) : DS.bodyFont)
-                .foregroundStyle(selected ? Color(.labelColor) : .secondary)
-                .frame(width: 56, alignment: .leading)
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(scheme == .light ? DS.gaugeTrackLight : DS.gaugeTrackDark)
-                    Capsule().fill(color).frame(width: max(3, geo.size.width * max(0, min(1, fraction))))
-                }
+        HStack(alignment: .firstTextBaseline, spacing: DS.row) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(Formatting.tokenCount(summary.active))
+                    .font(DS.heroFont).foregroundStyle(Color(.labelColor))
+                Text("신선 토큰").dsEyebrow()
             }
-            .frame(height: 8)
-            Text(valueText)
-                .font(DS.valueFont).foregroundStyle(Color(.labelColor))
-                .frame(width: 52, alignment: .trailing)
+            Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                if let d = summary.deltaPercent { deltaBadge(d) }
+                Text("재가열 \(Formatting.tokenCount(summary.cached)) · 캐시 \(Int((summary.cacheHitRate * 100).rounded()))%")
+                    .font(DS.captionFont.monospacedDigit()).foregroundStyle(.tertiary)
+            }
         }
-        .opacity(dimmed ? 0.4 : 1)
-        .contentShape(Rectangle())
+    }
+
+    private func deltaBadge(_ percent: Double) -> some View {
+        let up = percent >= 0
+        return HStack(spacing: 3) {
+            Image(systemName: up ? "arrow.up.right" : "arrow.down.right").font(.system(size: 8, weight: .bold))
+            Text("\(up ? "+" : "")\(Int(percent.rounded()))%").font(DS.captionFont.monospacedDigit().weight(.semibold))
+        }
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 6).padding(.vertical, 2)
+        .background(.quaternary.opacity(0.5), in: Capsule())
     }
 }
 
@@ -243,32 +196,3 @@ struct StackedTokenBarChart: View {
     }
 }
 
-/// Daily token-consumption bar chart with on-hover day/total detail (C2).
-struct TokenBarChart: View {
-    let buckets: [TokenHistory.DayBucket]
-    var color: Color = .accentColor
-    @State private var hovered: Int?
-
-    var body: some View {
-        let maxTokens = max(1, buckets.map(\.tokens).max() ?? 1)
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .bottom, spacing: 2) {
-                ForEach(Array(buckets.enumerated()), id: \.element.id) { idx, bucket in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(hovered == idx ? color : color.opacity(0.55))
-                        .frame(height: max(2, CGFloat(bucket.tokens) / CGFloat(maxTokens) * 64))
-                        .onHover { hovered = $0 ? idx : nil }
-                }
-            }
-            .frame(height: 64)
-            // Hover detail (or the heaviest bucket by default).
-            if let i = hovered, i < buckets.count {
-                Text("\(historyDayFmt.string(from: buckets[i].day)) · \(fmtTokens(buckets[i].tokens)) 토큰")
-                    .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
-            } else {
-                Text("막대에 마우스를 올리면 일별 상세")
-                    .font(.caption2).foregroundStyle(.tertiary)
-            }
-        }
-    }
-}

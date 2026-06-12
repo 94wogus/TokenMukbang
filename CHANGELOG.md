@@ -9,14 +9,14 @@ All notable changes to this project are documented here.
   opus/sonnet/haiku) → ~24% of recent tokens were uncategorized and invisible to the model
   filter. Added `ModelCast.fable` (미식가); unmapped models now fall into an explicit "기타" bucket.
 - **Per-model breakdown (Kit)**: `TokenHistory.byCast` (consumed tokens per cast, 기타 incl.) +
-  `UsageSnapshot.modelWindows` (the API's per-model utilization buckets) + `HistoryMetric`
-  (토큰량 / 사용률) toggle. Token volume is Opus-dominant; API utilization% is where Sonnet shows —
-  the two answer different questions, so the History browser toggles between them.
-- **History UI redesign**: the daily bar chart is now **stacked by model** (`TokenHistory.byDayCast`
-  → `StackedTokenBarChart`) so each day's bar shows its model composition, with a compact legend
-  (color · model · total). 토큰량/사용률 toggle; 사용률 mode = per-model API limit % bars + sparklines.
-  Model-identity colors via `DS.modelColor`. Replaces the old combined picker.
-- +7 Kit tests (byCast, byDayCast, modelWindows, HistoryMetric, fable mapping). `swift test` 78/78 green.
+  `byDayCast` (per-day model segments) + `summary` (active/cached + cache-hit + Δ vs previous period).
+- **History UI redesign**: the daily bar chart is now **stacked by model** (`StackedTokenBarChart`) so
+  each day's bar shows its model composition, over a summary header (신선/재가열 tokens + 캐시 적중률 +
+  trend badge) and a per-model legend (color · model · total). Model-identity colors via `DS.modelColor`.
+  Purely token-based — the API utilization % is a different, **account-wide** metric (covers claude.ai
+  web etc., not just CLI), so it's not mixed into the per-CLI-model History (TokenEater does the same).
+  Replaces the old combined picker.
+- +7 Kit tests (byCast, byDayCast, summary, fable mapping). `swift test` 77/77 green.
 
 ### Changed — UI redesign ("Liquid Vitals, Instrument-Grade" design system)
 - **Design system** (`docs/design/DESIGN_RESEARCH.md` + `docs/design/DESIGN_SYSTEM.md`):
