@@ -51,6 +51,8 @@ final class AppModel: ObservableObject {
 
     /// Per-model token-volume breakdown (Opus/Sonnet/Haiku/Fable/기타) in the timeframe.
     var historyCastTotals: [TokenHistory.CastTotal] { TokenHistory.byCast(timeframeTokenEvents) }
+    /// Daily token consumption split into per-model segments (the stacked bar chart).
+    var historyDayStacks: [TokenHistory.DayStack] { TokenHistory.byDayCast(timeframeTokenEvents) }
     /// Per-model **utilization** windows from the latest snapshot (Opus/Sonnet buckets).
     var historyModelWindows: [UsageSnapshot.Window] { snapshot?.modelWindows ?? [] }
 

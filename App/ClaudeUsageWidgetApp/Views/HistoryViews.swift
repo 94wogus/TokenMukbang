@@ -67,41 +67,9 @@ struct HistoryBrowserView: View {
         } else if totals.isEmpty {
             emptyState("이 기간엔 먹은 기록이 없어요.")
         } else {
-            let maxTokens = max(1, totals.map(\.tokens).max() ?? 1)
-            VStack(spacing: DS.intra) {
-                ForEach(totals) { tokenBar($0, maxTokens: maxTokens) }
-            }
-            tokenChartOrEmpty
-        }
-    }
-
-    private func tokenBar(_ t: TokenHistory.CastTotal, maxTokens: Int) -> some View {
-        let selected = model.historyModelFilter == t.cast && t.cast != nil
-        let dimmed = model.historyModelFilter != nil && model.historyModelFilter != t.cast
-        return BreakdownBar(
-            label: t.cast?.modelName ?? "기타",
-            valueText: fmtTokens(t.tokens),
-            fraction: Double(t.tokens) / Double(maxTokens),
-            color: DS.modelColor(t.cast, scheme: scheme),
-            selected: selected, dimmed: dimmed
-        )
-        .onTapGesture {
-            guard let c = t.cast else { return }   // 기타 can't be isolated
-            model.historyModelFilter = (model.historyModelFilter == c) ? nil : c
-        }
-    }
-
-    @ViewBuilder
-    private var tokenChartOrEmpty: some View {
-        let buckets = model.historyTokenBuckets
-        if buckets.isEmpty {
-            // A model is selected but it ate 0 tokens this timeframe — the key
-            // "Sonnet looks empty" case made explicit instead of just blank.
-            emptyState("이 기간 \(model.historyModelFilter?.modelName ?? "") 사용 0 — 턴은 있어도 토큰이 적을 수 있어요.")
-        } else {
-            // Daily chart takes the selected model's color, or the accent when showing all.
-            let chartColor = model.historyModelFilter.map { DS.modelColor($0, scheme: scheme) } ?? Color.accentColor
-            TokenBarChart(buckets: buckets, color: chartColor)
+            // Legend (color · model · total) + daily bars stacked by model.
+            ModelLegend(totals: totals, scheme: scheme)
+            StackedTokenBarChart(stacks: model.historyDayStacks)
             tokenFooter
         }
     }
@@ -195,6 +163,83 @@ private struct BreakdownBar: View {
         }
         .opacity(dimmed ? 0.4 : 1)
         .contentShape(Rectangle())
+    }
+}
+
+/// A compact legend for the stacked chart: a color swatch · model name · total tokens
+/// per model in the timeframe (the per-model numbers, without big bars).
+struct ModelLegend: View {
+    let totals: [TokenHistory.CastTotal]
+    let scheme: ColorScheme
+
+    private var grandTotal: Int { max(1, totals.reduce(0) { $0 + $1.tokens }) }
+
+    var body: some View {
+        // Two-up flow so up to 5 models stay compact.
+        let cols = [GridItem(.flexible(), spacing: DS.row), GridItem(.flexible(), spacing: DS.row)]
+        LazyVGrid(columns: cols, alignment: .leading, spacing: 4) {
+            ForEach(totals) { t in
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(DS.modelColor(t.cast, scheme: scheme))
+                        .frame(width: 9, height: 9)
+                    Text(t.cast?.modelName ?? "기타").font(DS.captionFont).foregroundStyle(.secondary)
+                    Spacer(minLength: 2)
+                    Text(fmtTokens(t.tokens)).font(DS.captionFont.monospacedDigit())
+                        .foregroundStyle(Color(.labelColor))
+                }
+            }
+        }
+    }
+}
+
+/// Daily consumed-token bars **stacked by model** — each day's bar shows its model
+/// composition (Opus/Sonnet/Haiku/Fable/기타), so the mix is read straight off the bar.
+struct StackedTokenBarChart: View {
+    let stacks: [TokenHistory.DayStack]
+    @Environment(\.colorScheme) private var scheme
+    @State private var hovered: Int?
+
+    var body: some View {
+        let maxTotal = max(1, stacks.map(\.total).max() ?? 1)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .bottom, spacing: 2) {
+                ForEach(Array(stacks.enumerated()), id: \.element.id) { idx, st in
+                    dayBar(st, idx: idx, maxTotal: maxTotal)
+                }
+            }
+            .frame(height: 64, alignment: .bottom)
+            hoverDetail
+        }
+    }
+
+    private func dayBar(_ st: TokenHistory.DayStack, idx: Int, maxTotal: Int) -> some View {
+        let dim = hovered != nil && hovered != idx
+        return VStack(spacing: 0.5) {
+            ForEach(st.segments) { seg in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(DS.modelColor(seg.cast, scheme: scheme))
+                    .frame(height: max(1, CGFloat(seg.tokens) / CGFloat(maxTotal) * 60))
+            }
+        }
+        .opacity(dim ? 0.45 : 1)
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .onHover { hovered = $0 ? idx : nil }
+    }
+
+    @ViewBuilder
+    private var hoverDetail: some View {
+        if let i = hovered, i < stacks.count {
+            let st = stacks[i]
+            let parts = st.segments.map { "\($0.cast?.modelName ?? "기타") \(fmtTokens($0.tokens))" }
+            Text("\(historyDayFmt.string(from: st.day)) · \(parts.joined(separator: "  "))")
+                .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+        } else {
+            Text("막대에 마우스를 올리면 그날 모델 구성")
+                .font(.caption2).foregroundStyle(.tertiary)
+        }
     }
 }
 

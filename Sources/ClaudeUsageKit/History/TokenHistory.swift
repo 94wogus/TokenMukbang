@@ -55,6 +55,34 @@ public enum TokenHistory {
             .sorted { $0.tokens > $1.tokens }
     }
 
+    /// One day's consumed tokens broken into per-model segments (for a stacked bar).
+    public struct DayStack: Sendable, Equatable, Identifiable {
+        public let day: Date
+        public let segments: [CastTotal]   // canonical model order, only non-zero
+        public var total: Int { segments.reduce(0) { $0 + $1.tokens } }
+        public var id: Date { day }
+        public init(day: Date, segments: [CastTotal]) { self.day = day; self.segments = segments }
+    }
+
+    /// Consumed tokens per day, each day split into model segments in a stable order
+    /// (Opus→Sonnet→Haiku→Fable→기타) so the stacked bars line up across days.
+    public static func byDayCast(_ events: [TokenEvent], calendar: Calendar = TokenHistory.utcCalendar) -> [DayStack] {
+        let order: [ModelCast?] = ModelCast.allCases.map { Optional($0) } + [nil]
+        var byDay: [Date: [ModelCast?: Int]] = [:]
+        for e in events {
+            let day = calendar.startOfDay(for: e.timestamp)
+            byDay[day, default: [:]][e.cast, default: 0] += e.consumedTokens
+        }
+        return byDay.map { day, totals in
+            let segs = order.compactMap { c -> CastTotal? in
+                guard let t = totals[c], t > 0 else { return nil }
+                return CastTotal(cast: c, tokens: t)
+            }
+            return DayStack(day: day, segments: segs)
+        }
+        .sorted { $0.day < $1.day }
+    }
+
     /// Total tokens per project.
     public static func byProject(_ events: [TokenEvent]) -> [String: Int] {
         var totals: [String: Int] = [:]

@@ -64,6 +64,24 @@ final class TokenHistoryTests: XCTestCase {
         XCTAssertEqual(casts.first { $0.cast == nil }?.id, "기타")
     }
 
+    func testByDayCastStacks() {
+        let day0 = Date(timeIntervalSince1970: 0)                 // 1970-01-01 UTC
+        let day1 = Date(timeIntervalSince1970: 86_400)            // 1970-01-02 UTC
+        func ev(_ d: Date, _ model: String, _ tok: Int) -> TokenEvent {
+            TokenEvent(timestamp: d, model: model, inputTokens: tok, outputTokens: 0,
+                       cacheReadTokens: 0, cacheCreationTokens: 0, project: "p")
+        }
+        let events = [ev(day0, "claude-opus-4-8", 100), ev(day0, "claude-sonnet-4-6", 30),
+                      ev(day0, "claude-fable-5", 20), ev(day1, "claude-opus-4-8", 10)]
+        let stacks = TokenHistory.byDayCast(events)
+        XCTAssertEqual(stacks.count, 2)
+        // Day 0 segments in canonical order Opus→Sonnet→Fable, total 150.
+        XCTAssertEqual(stacks[0].segments.map(\.cast), [.opus, .sonnet, .fable])
+        XCTAssertEqual(stacks[0].total, 150)
+        XCTAssertEqual(stacks[1].segments.map(\.cast), [.opus])
+        XCTAssertEqual(stacks[1].total, 10)
+    }
+
     func testSnapshotModelWindows() {
         func w(_ kind: String, _ util: Double) -> UsageSnapshot.Window {
             UsageSnapshot.Window(kind: kind, label: kind, utilization: util,
