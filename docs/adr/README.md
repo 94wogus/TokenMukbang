@@ -28,6 +28,7 @@
 | [0014](0014-dispatch-source-reactive-file-watch.md) | DispatchSource 반응형 파일 와처 | Accepted | 2026-06-11 | 자격 파일 변경을 `FileWatcher`(DispatchSource)로 즉시 감지→refresh (폴링 보완) |
 | [0015](0015-app-side-scheme-branched-risk-color.md) | 위험색은 앱 UI 계층에서 scheme 분기 해석 | Accepted | 2026-06-11 | Kit 은 risk 레벨만 emit, 앱 `RiskTone` 이 라이트/다크별 `Color` 해석 (디자인 시스템) |
 | [0016](0016-steam-visual-direction.md) | 비주얼 방향 "김 서림(Steam)" 채택 | Accepted | 2026-06-12 | 멀티에이전트 리서치(v1 12종·v2 6종) 끝 김 서림 채택, `DESIGN_SYSTEM`(Liquid Vitals) 대체 → `STEAM_DESIGN.md` |
+| [0017](0017-menu-bar-popover-ia.md) | 메뉴바 팝오버 IA: 하단 탭 폐기 | Accepted | 2026-06-12 | 네이티브 컨벤션 리서치 끝 하단 탭바 폐기 → 상단 `현황\|기록` 토글 + 기어→별도 ⌘, 설정 창 |
 
 > 위 표의 "한 줄 요약"만 훑어도 어떤 결정이 어디 있는지 보이게 유지한다 — 결정이 바뀌면 해당 행의
 > ADR을 찾아 supersede/수정하고 이 표를 갱신한다.

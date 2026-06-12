@@ -34,11 +34,31 @@ struct UsageWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: UsageProvider()) { entry in
             UsageWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(for: .widget) { SteamWidgetBackground(entry: entry) }
         }
         .configurationDisplayName("Claude Usage")
         .description("Live Claude usage limits and active sessions.")
         .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+/// 위젯 김 서림 배경 — z0 broth + 프로스트 패널 + 상단 정적 김 한 프레임(애니 없음, ADR-0003).
+struct SteamWidgetBackground: View {
+    let entry: UsageEntry
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let w = entry.snapshot?.headlineWindow
+        let level = w?.riskLevel ?? "calm"
+        let over = w?.isOver ?? false
+        ZStack {
+            Steam.frostPanel(scheme)
+            BrothGlow(level: level, isOver: over, scheme: scheme)
+            VStack(spacing: 0) {
+                SteamPlume(level: level, isOver: over, scheme: scheme).frame(height: 110)
+                Spacer(minLength: 0)
+            }
+        }
     }
 }
 

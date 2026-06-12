@@ -18,9 +18,10 @@ public enum MukbangCopy {
         "\(Formatting.percent(utilization)) 완식"
     }
 
-    /// Reset countdown as digestion: `소화 중... 2h 13m`.
+    /// Reset countdown as digestion: `소화 중 · 2h 13m`. (Middot, not `...` — the ellipsis
+    /// read as a truncation bug on the hero card, design-critique r4.)
     public static func reset(to date: Date, from now: Date) -> String {
-        "소화 중... \(Formatting.countdown(to: date, from: now))"
+        "소화 중 · \(Formatting.countdown(to: date, from: now))"
     }
 
     /// One-line status for the popover/menu, given a zone.

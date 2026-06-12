@@ -1,5 +1,11 @@
 # TokenMukbang — Design System ("Liquid Vitals, Instrument-Grade")
 
+> ⚠️ **SUPERSEDED (2026-06-12).** 비주얼 방향이 **김 서림(Steam)**으로 교체됐다 — 정본은
+> [`STEAM_DESIGN.md`](STEAM_DESIGN.md), 결정은 [ADR-0016](../adr/0016-steam-visual-direction.md).
+> 단, 이 문서의 **하부 메커니즘은 김 서림이 상속**한다: 위험색 앱-측 resolver(`RiskTone`, ADR-0015),
+> 6pt `GaugeBar`, scrim·우측 값 컬럼, `DSSegmented`, tabular 숫자. 아래는 그 상속분 레퍼런스로
+> 유효하되 **팔레트·시그니처·z-stack은 STEAM_DESIGN이 우선**한다.
+
 > **TL;DR:** The implementation-facing rules distilled from `DESIGN_RESEARCH.md`. One
 > threshold drives every surface; depth = material + tint (no shadows / hard borders);
 > numbers are right-aligned `.monospacedDigit`; gauge + number always travel together;

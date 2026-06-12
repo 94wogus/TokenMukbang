@@ -46,7 +46,8 @@ struct HistoryBrowserView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.row) {
-            Text("식단 기록").dsEyebrow()
+            // Timeframe is the only top control — the "식단 기록" eyebrow was redundant with
+            // the History tab label (design-critique: cross-tab redundancy).
             DSSegmented(selection: $model.historyTimeframe, options: Timeframe.allCases) { $0.label }
 
             let totals = model.historyCastTotals
@@ -55,10 +56,22 @@ struct HistoryBrowserView: View {
             } else if totals.isEmpty {
                 emptyState("이 기간엔 먹은 기록이 없어요.")
             } else {
-                HistorySummaryView(summary: model.historySummary)
-                ModelLegend(totals: totals, scheme: scheme)
-                StackedTokenBarChart(stacks: model.historyDayStacks)
-                tokenFooter
+                // Wrapped in GlassTiles so History shares the dashboard/Settings card
+                // aesthetic (design-critique: unify into card containers).
+                GlassTile(scheme: scheme) {
+                    HistorySummaryView(summary: model.historySummary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(DS.section)
+                }
+                GlassTile(scheme: scheme) {
+                    VStack(alignment: .leading, spacing: DS.row) {
+                        Text("모델 구성").dsEyebrow()
+                        ModelLegend(totals: totals, scheme: scheme)
+                        StackedTokenBarChart(stacks: model.historyDayStacks)
+                        tokenFooter
+                    }
+                    .padding(DS.section)
+                }
             }
         }
     }
@@ -73,7 +86,7 @@ struct HistoryBrowserView: View {
                 Label("대식 프로젝트 \(tp.project) · \(fmtTokens(tp.tokens)) 토큰", systemImage: "trophy")
             }
         }
-        .font(DS.captionFont).foregroundStyle(.tertiary).labelStyle(.titleAndIcon)
+        .font(DS.captionFont).foregroundStyle(.secondary).labelStyle(.titleAndIcon)
     }
 
     private func emptyState(_ text: String) -> some View {
@@ -128,16 +141,20 @@ struct ModelLegend: View {
     private var grandTotal: Int { max(1, totals.reduce(0) { $0 + $1.tokens }) }
 
     var body: some View {
-        // Two-up flow so up to 5 models stay compact.
-        let cols = [GridItem(.flexible(), spacing: DS.row), GridItem(.flexible(), spacing: DS.row)]
-        LazyVGrid(columns: cols, alignment: .leading, spacing: 4) {
+        // Single-column list (swatch · name · right-aligned value) — the old 2-up grid let
+        // small values collide and orphan-wrap (design-critique r4).
+        VStack(alignment: .leading, spacing: 4) {
             ForEach(totals) { t in
-                HStack(spacing: 5) {
+                HStack(spacing: 6) {
                     RoundedRectangle(cornerRadius: 2)
                         .fill(DS.modelColor(t.cast, scheme: scheme))
                         .frame(width: 9, height: 9)
-                    Text(t.cast?.modelName ?? "기타").font(DS.captionFont).foregroundStyle(.secondary)
-                    Spacer(minLength: 2)
+                    // Name carries its model chroma (matches the dashboard status words) so the
+                    // label and its swatch agree at a glance (design-critique r3).
+                    Text(t.cast?.modelName ?? "기타")
+                        .font(DS.captionFont.weight(.medium))
+                        .foregroundStyle(DS.modelColor(t.cast, scheme: scheme))
+                    Spacer(minLength: 8)
                     Text(fmtTokens(t.tokens)).font(DS.captionFont.monospacedDigit())
                         .foregroundStyle(Color(.labelColor))
                 }
@@ -161,7 +178,9 @@ struct StackedTokenBarChart: View {
                     dayBar(st, idx: idx, maxTotal: maxTotal)
                 }
             }
-            .frame(height: 64, alignment: .bottom)
+            .frame(height: 92, alignment: .bottom)        // taller so the chart reads as data, not a strip
+            // Baseline rule so the bars sit on the floor, not float (design-critique r2).
+            Rectangle().fill(Color(.separatorColor)).frame(height: 1)
             hoverDetail
         }
     }
@@ -172,7 +191,7 @@ struct StackedTokenBarChart: View {
             ForEach(st.segments) { seg in
                 RoundedRectangle(cornerRadius: 1)
                     .fill(DS.modelColor(seg.cast, scheme: scheme))
-                    .frame(height: max(1, CGFloat(seg.tokens) / CGFloat(maxTotal) * 60))
+                    .frame(height: max(1, CGFloat(seg.tokens) / CGFloat(maxTotal) * 88))
             }
         }
         .opacity(dim ? 0.45 : 1)
