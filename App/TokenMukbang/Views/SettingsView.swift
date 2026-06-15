@@ -35,9 +35,10 @@ struct SettingsView: View {
             case .alerts: alertsTab
             }
         }
-        // Theme atmosphere applies here too: wash the window + tint the cards (\.themeMood).
+        // No own background — the shell already washes the whole window; a second baseWash here
+        // read as an extra container around Settings only (user 2026-06-15). Just ensure the cards
+        // tint to the selected theme via the env.
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(selectedMood.baseWash.ignoresSafeArea())
         .environment(\.themeMood, selectedMood)
     }
 
