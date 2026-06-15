@@ -21,12 +21,6 @@ enum SettingsTab: String, CaseIterable, Hashable, Identifiable {
 struct SettingsView: View {
     @ObservedObject var model: AppModel
     @Environment(\.colorScheme) private var scheme
-    @State private var tab: SettingsTab
-
-    init(model: AppModel, initialTab: SettingsTab = .appearance) {
-        self.model = model
-        self._tab = State(initialValue: initialTab)
-    }
 
     private let gridColumns = [GridItem(.flexible(), spacing: 10),
                                GridItem(.flexible(), spacing: 10),
@@ -34,9 +28,9 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            DSSegmented(selection: $tab, options: SettingsTab.allCases) { $0.label }
+            DSSegmented(selection: $model.settingsTab, options: SettingsTab.allCases) { $0.label }
 
-            switch tab {
+            switch model.settingsTab {
             case .appearance: appearanceTab
             case .alerts: alertsTab
             }
@@ -50,6 +44,9 @@ struct SettingsView: View {
     // MARK: - Appearance tab
 
     private var appearanceTab: some View {
+        // One controls card (theme gallery + custom accent + glass slider) and the preview as its
+        // own single card — the preview is no longer wrapped in a second GlassTile (that glass-on-
+        // glass nesting was the redundant container, user 2026-06-15).
         VStack(alignment: .leading, spacing: 12) {
             section("Theme", icon: "paintpalette.fill") {
                 LazyVGrid(columns: gridColumns, spacing: 12) {
@@ -71,14 +68,13 @@ struct SettingsView: View {
                         Text("Accent color").font(.caption)
                     }
                 }
-            }
 
-            section("Preview", icon: "eye.fill") {
-                livePreview
-            }
-
-            section("Glass", icon: "square.on.square.dashed") {
-                Text("Popover background blur").font(.caption2).foregroundStyle(.tertiary)
+                Divider().padding(.vertical, 4)
+                HStack(spacing: 6) {
+                    Image(systemName: "square.on.square.dashed").font(.system(size: 9, weight: .bold))
+                    Text("Glass").dsEyebrow()
+                }
+                .foregroundStyle(.secondary)
                 HStack(spacing: 8) {
                     Image(systemName: "circle.dotted").font(.system(size: 11))
                         .foregroundStyle(.tertiary).help("More see-through")
@@ -87,8 +83,19 @@ struct SettingsView: View {
                     Image(systemName: "square.fill").font(.system(size: 11))
                         .foregroundStyle(.secondary).help("More frosted")
                 }
-                Text("Updates the popover live while it's open.")
+                Text("Window background blur — updates live.")
                     .font(.system(size: 9)).foregroundStyle(.tertiary)
+            }
+
+            // Preview = a single card (the hero), with a plain eyebrow above — no outer GlassTile.
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 5) {
+                    Image(systemName: "eye.fill").font(.system(size: 9, weight: .bold))
+                    Text("Preview").dsEyebrow()
+                }
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 2)
+                livePreview
             }
         }
     }

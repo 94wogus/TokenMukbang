@@ -10,46 +10,62 @@ struct MenuContentView: View {
     @Environment(\.colorScheme) private var scheme
     /// Force the displayed tab — used by the headless renderer to capture each tab.
     var forcedLayout: DashboardLayout? = nil
+    /// When true (the live window), the content region FILLS a fixed-height window (overflow
+    /// scrolls). When false, the view is intrinsic — used to MEASURE the dashboard height so the
+    /// window can be fixed to it (see StatusItemController.measureWindowHeight).
+    var fillsWindow: Bool = true
     private let now = Date()
 
     private var effectiveLayout: DashboardLayout { forcedLayout ?? model.layout }
 
     var body: some View {
-        // Single column: top nav (Now | History | Settings) + content + footer. The window sizes
-        // to this content — no fixed-height/anchor gymnastics (that was the borderless-panel era,
-        // ADR-0018). Extra top padding clears the transparent titlebar's traffic-light buttons.
-        VStack(spacing: DS.row) { topArea; footer }
-            .frame(width: 360)
-            .padding(.horizontal, DS.outer)
-            .padding(.bottom, DS.outer)
-            .padding(.top, 26)
-            .environment(\.themeMood, mood)   // theme atmosphere flows to GlassTiles + cards
-            .steamBackground(level: headlineLevel, isOver: headlineOver, scheme: scheme, mood: mood)
-            .tint(Color(hex: model.settings.palette.accentHex))
-    }
-
-    /// Header + tab toggle + the active tab's content (everything above the footer).
-    private var topArea: some View {
+        // Header + tab nav (fixed at top) · content (fills, SCROLLS on overflow) · footer (fixed at
+        // bottom). The window is a FIXED height (sized to the dashboard) so switching tabs NEVER
+        // resizes it — best practice for menu-bar dropdowns (resize-per-tab was what made everything
+        // move "diagonally", user 2026-06-15). Settings (taller) scrolls within the same height.
         VStack(spacing: DS.row) {
             header
-
             DSSegmented(selection: $model.layout, options: DashboardLayout.allCases) { $0.label }
                 .padding(.horizontal, 2)
+            contentRegion
+            footer
+        }
+        .frame(width: 360, alignment: .top)
+        .frame(maxHeight: fillsWindow ? .infinity : nil, alignment: .top)
+        .padding(.horizontal, DS.outer)
+        .padding(.bottom, DS.outer)
+        .padding(.top, 26)
+        .environment(\.themeMood, mood)   // theme atmosphere flows to GlassTiles + cards
+        .steamBackground(level: headlineLevel, isOver: headlineOver, scheme: scheme, mood: mood)
+        .tint(Color(hex: model.settings.palette.accentHex))
+    }
 
-            VStack(alignment: .leading, spacing: DS.section) {
-                if effectiveLayout == .settings {
-                    // Settings doesn't depend on the live snapshot, so it shows immediately.
-                    SettingsView(model: model)
-                } else if let snapshot = model.snapshot {
-                    content(snapshot)
-                } else {
-                    ProgressView().controlSize(.small)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 10)
-                }
+    /// The active tab's content. In the live window it's wrapped in a ScrollView that fills the
+    /// fixed middle region (so a tall tab like Settings scrolls instead of forcing a window resize);
+    /// in measuring mode it's intrinsic.
+    @ViewBuilder
+    private var contentRegion: some View {
+        let inner = VStack(alignment: .leading, spacing: DS.section) {
+            if effectiveLayout == .settings {
+                SettingsView(model: model)              // snapshot-independent
+            } else if let snapshot = model.snapshot {
+                tabBody(effectiveLayout, snapshot)
+            } else {
+                ProgressView().controlSize(.small)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 10)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 2)
+
+        if fillsWindow {
+            ScrollView { inner }
+                .frame(maxHeight: .infinity)
+                .scrollIndicators(.never)
+                .scrollClipDisabled()         // don't clip card shadows at the edges
+        } else {
+            inner
         }
     }
 
@@ -89,7 +105,7 @@ struct MenuContentView: View {
     }
 
     @ViewBuilder
-    private func content(_ snapshot: UsageSnapshot) -> some View {
+    private func tabBody(_ layout: DashboardLayout, _ snapshot: UsageSnapshot) -> some View {
         // Error always surfaces (it blocks all tabs); the pace warning is dashboard-only
         // so History/Settings aren't cluttered by it (design-critique: cross-tab redundancy).
         if let error = snapshot.error {
@@ -99,10 +115,10 @@ struct MenuContentView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
 
-        switch effectiveLayout {
+        switch layout {
         case .dashboard: dashboardLayout(snapshot)
         case .history: HistoryBrowserView(model: model)
-        case .settings: EmptyView()   // handled in topArea (snapshot-independent)
+        case .settings: EmptyView()   // handled above (snapshot-independent)
         }
     }
 

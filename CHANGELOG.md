@@ -4,6 +4,17 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed — 메인 창 구조를 사이드바(좌측 레일 + 디테일)로 (2026-06-15, ADR-0019 갱신)
+상단 탭 구조가 성격·높이가 다른 섹션을 한 컨테이너에 욱여넣어 탭 전환 시 리사이즈/정렬이 충돌(인디케이터가
+"대각선"으로 이동)하던 문제를 **구조적으로 해결** — macOS 사이드바 앱 패턴으로 전환(전문가 컨벤션 리서치):
+- **`AppShellView`**: 좌측 레일(Now/History/Settings, 아이콘 + 선택 시 accent 하이라이트, 상단 로고 마크 +
+  "{plan} plan" 서브타이틀, 하단 새로고침/관전/종료) + 우측 **디테일(각자 독립 스크롤)**. 탭 전환 메커니즘
+  자체가 사라져 대각선/리사이즈/여백 문제 소멸. 높이 차이는 그냥 스크롤일 뿐.
+- 창은 **자유 리사이즈**(가로·세로, 최소 600×440) + 크기 저장(`setFrameAutosaveName`). behind-window 유리 +
+  테마 wash + accent 틴트는 창 전체에.
+- 브랜드: 테마 accent 앱-아이콘 풍 로고(`fork.knife`) + 워드마크 + 플랜 서브타이틀(플로팅 pill 폐기).
+- 정리: 탭 시절의 `MainWindowRoot`/`DSSegmented` 슬라이드/측정·진단 하니스 제거. `swift test` 78/78 · 빌드 green.
+
 ### Changed — 메뉴바 UI를 일반 유리 NSWindow로 (2026-06-15, ADR-0019 supersedes ADR-0018)
 커스텀 borderless NSPanel 팝오버(ADR-0018)의 깜빡임/stale-opaque/높이점프/앵커링 우회가 누적돼,
 **우리 소유 일반 창은 투명화 가능**하다는 점을 살려 **일반 유리 NSWindow**로 전환:

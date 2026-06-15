@@ -393,69 +393,56 @@ struct DSSegmented<T: Hashable>: View {
     let options: [T]
     let label: (T) -> String
     @Environment(\.themeMood) private var mood
-    /// Shared namespace so the selected pill + underline are a SINGLE indicator that **slides**
-    /// between cells on switch (matchedGeometryEffect), instead of popping on/off per cell —
-    /// the Apple segmented-control motion (user 2026-06-15).
-    @Namespace private var ns
-    /// Drives the *pill* slide independently of `selection`. The binding (which also swaps the
-    /// tab CONTENT) is set WITHOUT animation so the content changes instantly; only this mirror
-    /// is animated, so the pill glides while the content doesn't cross-fade/overlap (the glitch
-    /// where both tabs showed at once — user 2026-06-15).
-    @State private var animSel: T?
+    /// The indicator's animated position, as a fractional index. Driven by an EXPLICIT
+    /// `withAnimation` (not the implicit `.animation(_:value:)` modifier, which the big tab
+    /// content-swap re-render cancelled, making the pill jump instead of slide — verified via
+    /// frame-by-frame capture, user 2026-06-15). Content swaps instantly; only this slides.
+    @State private var indicator: CGFloat = 0
+
+    private var selectedIndex: Int { options.firstIndex(of: selection) ?? 0 }
+    private var slide: Animation { .spring(response: 0.34, dampingFraction: 0.82) }
 
     var body: some View {
-        let current = animSel ?? selection
-        HStack(spacing: 2) {
-            ForEach(options, id: \.self) { option in
-                let on = current == option
-                // Constant weight — toggling .semibold/.regular changed the label width and made
-                // the tabs visibly jump on switch (user 2026-06-12). Selection = pill + ink only.
-                // The selected pill carries the **theme accent** (tint bg + primary ink kept for
-                // legibility) — this is the most central, always-visible theme tell, so picking a
-                // theme instantly recolors the tab (theme-palette-redesign 2026-06-13).
-                Text(label(option))
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(on ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-                    .lineLimit(1)
-                    .padding(.vertical, 4)
-                    .frame(maxWidth: .infinity)
-                    .background {
-                        // The one moving pill — only the selected cell hosts it, and the matched id
-                        // makes it glide from the old cell to the new one inside the withAnimation.
-                        if on {
-                            let pill = RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            ZStack {
-                                pill.fill(.background.opacity(0.55))
-                                pill.fill(mood.accent.opacity(0.30))
+        GeometryReader { geo in
+            let n = max(1, options.count)
+            let cellW = geo.size.width / CGFloat(n)
+            let pill = RoundedRectangle(cornerRadius: 7, style: .continuous)
+            ZStack(alignment: .leading) {
+                ZStack {
+                    pill.fill(.regularMaterial)
+                    pill.fill(mood.accent.opacity(0.16))
+                }
+                .overlay(pill.strokeBorder(.white.opacity(0.16), lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.18), radius: 2.5, y: 1)
+                .frame(width: max(0, cellW - 4), height: max(0, geo.size.height - 4))
+                .offset(x: indicator * cellW + 2)
+
+                HStack(spacing: 0) {
+                    ForEach(options, id: \.self) { option in
+                        let on = selection == option
+                        Text(label(option))
+                            .font(.system(size: 11.5, weight: on ? .semibold : .medium))
+                            .foregroundStyle(on ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                            .lineLimit(1)
+                            .frame(width: cellW, height: geo.size.height)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                guard selection != option else { return }
+                                selection = option                                       // content: instant
+                                let target = CGFloat(options.firstIndex(of: option) ?? 0)
+                                withAnimation(slide) { indicator = target }         // pill: slide
                             }
-                            .matchedGeometryEffect(id: "segPill", in: ns)
-                        }
                     }
-                    .overlay(alignment: .bottom) {
-                        if on {
-                            Capsule().fill(mood.accent)
-                                .frame(height: 1.5).padding(.horizontal, 8).padding(.bottom, 1)
-                                .matchedGeometryEffect(id: "segLine", in: ns)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        guard selection != option else { return }
-                        selection = option                                          // content: instant swap
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
-                            animSel = option                                        // pill: slide only
-                        }
-                    }
+                }
             }
         }
+        .frame(height: 24)
         .padding(2)
         .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 9))
-        .onAppear { animSel = selection }
-        // External selection changes (not via tap) still slide the pill.
-        .onChange(of: selection) { _, newValue in
-            if animSel != newValue {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) { animSel = newValue }
-            }
+        .onAppear { indicator = CGFloat(selectedIndex) }
+        // External selection changes (not via a tap here) still slide the indicator.
+        .onChange(of: selection) { _, _ in
+            withAnimation(slide) { indicator = CGFloat(selectedIndex) }
         }
     }
 }
