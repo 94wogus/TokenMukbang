@@ -23,12 +23,12 @@ public enum MukbangZone: Sendable, CaseIterable, Equatable {
 
     public var label: String {
         switch self {
-        case .tasting: return "간 보는 중"
-        case .cruising: return "순항"
-        case .overeating: return "과식 주의"
-        case .inhaling: return "흡입"
-        case .finished: return "완식"
-        case .digesting: return "소화 중"
+        case .tasting: return "Tasting"
+        case .cruising: return "Cruising"
+        case .overeating: return "Overeating"
+        case .inhaling: return "Inhaling"
+        case .finished: return "Cleaned Plate"
+        case .digesting: return "Digesting"
         }
     }
 

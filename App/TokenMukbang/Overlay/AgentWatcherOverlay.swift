@@ -75,7 +75,7 @@ struct OverlayContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("관전 중 🍿").font(.headline)
+                Text("Watching 🍿").font(.headline)
                 Spacer()
                 Picker("", selection: $controller.style) {
                     ForEach(OverlayStyle.allCases) { Text($0.label).tag($0) }
@@ -83,7 +83,7 @@ struct OverlayContentView: View {
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
             }
             if controller.sessions.isEmpty {
-                Text("식사 중인 세션이 없습니다.")
+                Text("No sessions eating right now.")
                     .font(.caption).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -152,6 +152,6 @@ struct OverlaySessionRow: View {
         .onHover { hover = $0 }
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
-        .help("클릭하면 이 세션의 터미널로")
+        .help("Click to open this session's terminal")
     }
 }

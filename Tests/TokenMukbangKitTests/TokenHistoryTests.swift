@@ -61,7 +61,7 @@ final class TokenHistoryTests: XCTestCase {
         XCTAssertEqual(casts.first?.tokens, 150)            // opus 100 + 50
         XCTAssertEqual(casts.first { $0.cast == .fable }?.tokens, 24)
         XCTAssertEqual(casts.first { $0.cast == nil }?.tokens, 7)  // 기타 bucket
-        XCTAssertEqual(casts.first { $0.cast == nil }?.id, "기타")
+        XCTAssertEqual(casts.first { $0.cast == nil }?.id, "Other")
     }
 
     func testByDayCastStacks() {

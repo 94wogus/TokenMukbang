@@ -1,6 +1,8 @@
 # 0018 — 팝오버를 커스텀 NSPanel 글래스로 (MenuBarExtra 대체)
 
-- Status: Accepted
+- Status: Superseded by ADR-0019 (2026-06-15) — 커스텀 borderless NSPanel의 깜빡임/stale-opaque/
+  앵커링 우회가 누적돼, 우리 소유 일반 창은 투명화 가능하다는 점을 살려 **일반 유리 NSWindow**로 전환.
+  behind-window 유리(ADR-0016)는 유지.
 - Date: 2026-06-12
 - Affects: ADR-0007(네이티브 스택), ADR-0015(앱 측 색), ADR-0017(팝오버 IA)
 

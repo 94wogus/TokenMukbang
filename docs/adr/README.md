@@ -29,7 +29,8 @@
 | [0015](0015-app-side-scheme-branched-risk-color.md) | 위험색은 앱 UI 계층에서 scheme 분기 해석 | Accepted | 2026-06-11 | Kit 은 risk 레벨만 emit, 앱 `RiskTone` 이 라이트/다크별 `Color` 해석 (디자인 시스템) |
 | [0016](0016-steam-visual-direction.md) | 비주얼 방향 "김 서림(Steam)" 채택 | Accepted | 2026-06-12 | 멀티에이전트 리서치(v1 12종·v2 6종) 끝 김 서림 채택, `DESIGN_SYSTEM`(Liquid Vitals) 대체 → `STEAM_DESIGN.md` |
 | [0017](0017-menu-bar-popover-ia.md) | 메뉴바 팝오버 IA: 하단 탭 폐기 | Accepted | 2026-06-12 | 네이티브 컨벤션 리서치 끝 하단 탭바 폐기 → 상단 `현황\|기록` 토글 + 기어→별도 ⌘, 설정 창 |
-| [0018](0018-custom-nspanel-glass-popover.md) | 팝오버를 커스텀 NSPanel 글래스로 | Accepted | 2026-06-12 | MenuBarExtra는 behind-window 유리 불가 → 직접 NSStatusItem + 투명 NSPanel + NSVisualEffect(.behindWindow,.active) |
+| [0018](0018-custom-nspanel-glass-popover.md) | 팝오버를 커스텀 NSPanel 글래스로 | Superseded by 0019 | 2026-06-12 | MenuBarExtra는 behind-window 유리 불가 → 직접 NSStatusItem + 투명 NSPanel + NSVisualEffect(.behindWindow,.active) |
+| [0019](0019-normal-glass-window.md) | 메뉴바 UI를 일반 유리 NSWindow로 | Accepted | 2026-06-15 | NSPanel 우회(깜빡임/stale/앵커링) 누적 → 우리 소유 일반 창은 투명화 가능, 유리 유지하며 교체 + Now/History/Settings 단일 창 통합 |
 
 > 위 표의 "한 줄 요약"만 훑어도 어떤 결정이 어디 있는지 보이게 유지한다 — 결정이 바뀌면 해당 행의
 > ADR을 찾아 supersede/수정하고 이 표를 갱신한다.

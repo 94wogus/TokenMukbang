@@ -52,23 +52,23 @@ final class MukbangTests: XCTestCase {
     // MARK: MukbangCopy (T1.2) — POV must not break
 
     func testHeadlineUsesWansik() {
-        XCTAssertEqual(MukbangCopy.headline(utilization: 80), "80% 완식")
+        XCTAssertEqual(MukbangCopy.headline(utilization: 80), "80% eaten")
     }
 
     func testResetUsesDigestion() {
         let now = Date(timeIntervalSince1970: 0)
         let reset = MukbangCopy.reset(to: Date(timeIntervalSince1970: 8040), from: now)
-        XCTAssertTrue(reset.contains("소화 중"))
+        XCTAssertTrue(reset.contains("Digesting"))
         XCTAssertTrue(reset.contains("2h 14m"))
     }
 
     func testEventCopy() {
-        XCTAssertTrue(MukbangCopy.event(.finished).contains("잘 먹었습니다"))
-        XCTAssertTrue(MukbangCopy.event(.spoonDropped).contains("숟가락"))
-        XCTAssertTrue(MukbangCopy.event(.freshTable).contains("새 상"))
-        XCTAssertTrue(MukbangCopy.event(.paceWarning(hoursToFull: 3)).contains("3시간"))
-        XCTAssertTrue(MukbangCopy.event(.backToKitchen).contains("주방"))
-        XCTAssertTrue(MukbangCopy.status(for: .inhaling).contains("빨간불"))
+        XCTAssertTrue(MukbangCopy.event(.finished).contains("Clean plate"))
+        XCTAssertTrue(MukbangCopy.event(.spoonDropped).contains("spoon"))
+        XCTAssertTrue(MukbangCopy.event(.freshTable).contains("Fresh table"))
+        XCTAssertTrue(MukbangCopy.event(.paceWarning(hoursToFull: 3)).contains("3h"))
+        XCTAssertTrue(MukbangCopy.event(.backToKitchen).contains("kitchen"))
+        XCTAssertTrue(MukbangCopy.status(for: .inhaling).contains("red zone"))
     }
 
     // MARK: ModelCast (T1.3)
@@ -82,8 +82,8 @@ final class MukbangTests: XCTestCase {
         XCTAssertNil(ModelCast.forModel("five_hour"))
         XCTAssertNil(ModelCast.forModel("<synthetic>"))
         XCTAssertEqual(ModelCast.allCases.count, 4)   // opus/sonnet/haiku/fable
-        XCTAssertEqual(ModelCast.opus.label, "대식가")
-        XCTAssertEqual(ModelCast.haiku.label, "소식좌")
+        XCTAssertEqual(ModelCast.opus.label, "Big Eater")
+        XCTAssertEqual(ModelCast.haiku.label, "Light Eater")
         XCTAssertEqual(ModelCast.fable.modelName, "Fable")
         for c in ModelCast.allCases {
             XCTAssertFalse(c.face.isEmpty)

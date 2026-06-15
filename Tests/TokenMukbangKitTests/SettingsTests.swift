@@ -5,7 +5,7 @@ final class SettingsTests: XCTestCase {
     // MARK: Theme (D1)
 
     func testThemePresets() {
-        XCTAssertEqual(Theme.allCases.count, 5)   // 4 presets + custom
+        XCTAssertEqual(Theme.allCases.count, 7)   // 6 curated rooms + custom
         for theme in Theme.allCases {
             let p = theme.presetPalette
             XCTAssertTrue(p.accentHex.hasPrefix("#"))
@@ -19,8 +19,17 @@ final class SettingsTests: XCTestCase {
         s.theme = .custom
         s.customPalette = ThemePalette(calmHex: "#111111", watchHex: "#222222", warningHex: "#333333", criticalHex: "#444444", accentHex: "#555555")
         XCTAssertEqual(s.palette.accentHex, "#555555")
-        s.theme = .mint
-        XCTAssertEqual(s.palette.accentHex, Theme.mint.presetPalette.accentHex)
+        s.theme = .matcha
+        XCTAssertEqual(s.palette.accentHex, Theme.matcha.presetPalette.accentHex)
+    }
+
+    /// Retired theme rawValues decode onto the nearest current room (migration, 2026-06-13).
+    func testLegacyThemeMigration() throws {
+        let dec = JSONDecoder()
+        XCTAssertEqual(try dec.decode(Theme.self, from: Data("\"classic\"".utf8)), .charcoal)
+        XCTAssertEqual(try dec.decode(Theme.self, from: Data("\"mint\"".utf8)), .matcha)
+        XCTAssertEqual(try dec.decode(Theme.self, from: Data("\"sunset\"".utf8)), .charcoal)
+        XCTAssertEqual(try dec.decode(Theme.self, from: Data("\"charcoal\"".utf8)), .charcoal)
     }
 
     // MARK: Thresholds (D2)
@@ -54,13 +63,13 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(store.load(), .default)   // no file → default
 
         var s = AppSettings.default
-        s.theme = .sunset
+        s.theme = .ganjang
         s.thresholds = RiskThresholds(warning: 60, critical: 85)
         s.notifications.sonnet = true
         store.save(s)
 
         let loaded = store.load()
-        XCTAssertEqual(loaded.theme, .sunset)
+        XCTAssertEqual(loaded.theme, .ganjang)
         XCTAssertEqual(loaded.thresholds.warning, 60)
         XCTAssertTrue(loaded.notifications.sonnet)
     }

@@ -57,6 +57,46 @@
 > calm 틸그린 `#5BA88A` · watch 앰버골드 `#C9A227` · warning 오커 `#D08A3E` · **critical 쿨 크림슨 `#C23B4E`**
 > (기존 토마토수프 오렌지레드 폐기) · over `#D94E63`. (dark 기준; light은 동일 hue·저명도 형제.)
 
+## 테마 (큐레이션 6 rooms + Custom)
+
+테마는 **"방의 분위기"** 다 — 위험 색의 *의미*(calm→critical 순서, 빨강=위험)는 절대 안 바뀌고,
+각 테마는 그 위에 자기 **정체성(hue territory)** 을 입힌다. 색 해석은 전부 앱 측
+`ThemeMood.resolve`(`App/Shared/DesignSystem.swift`)에 있고 Kit은 색-free(ADR-0015). 6개 방이
+**서로 다른 색상환 영역**을 차지하도록 큐레이션해 "특색 없음"을 없앴다(theme-palette-redesign 2026-06-13).
+
+각 테마가 정의하는 완결 팔레트: **분위기**(`baseWash` 배경 그라디언트 light/dark · `glassTint` 카드
+유리 틴트 · `accent`) + **위험 4단계**(`riskCalm/Watch/Warning/Critical` + `riskOver`, light/dark) +
+**데이터 식별색**(`DS.modelColor` 를 accent로 `dataTint` 만큼 당김).
+
+| 방 | 컨셉 | accent(dark) | hue 영역 | base(dark) | 비고 |
+|---|---|---|---|---|---|
+| **숯불** charcoal | 그릴 잉걸불, dark-first(기본) | `#F76707` | 오렌지(ember) | 웜 차콜 `#2A2420→#15110E` | 가장 뜨거운 위험 램프 |
+| **말차** matcha | 다도(茶道) 차분 | `#8FCB6B` | 옐로-그린 | 올리브 `#222A20→#121810` | 차분한 위험 램프 |
+| **한지** hanji | 닥종이 + 인주(印朱) 도장, light-first | `#E85C44` | 버밀리언/적 | 웜 그레이(종이) `#2A2826→#181615` | 라이트에서 정체성 만개 |
+| **간장** ganjang | 발효 간장 + 단청(丹靑) 보석 | `#46C39A` | 제이드(양록) | 딥 소이브라운 `#2A1E12→#180F08` | accent만 제이드, 위험은 자기 웜 스케일(danger=red) |
+| **오방** obang | 오방색, 청(靑) accent·적(赤)=위험 | `#4FA0E0` | 블루 | 뉴트럴 `#1A1E26→#0F1217` | |
+| **흑백** mono | 무채색, 계기판 등급 | `#C8CCD2` | achromatic + 적색 danger zone | 그레이 `#26282B→#141517` | calm/watch/warning=명도만; **critical/over=instrument-red**(VU 미터 red zone) |
+| **커스텀** custom | 사용자 accent | (user) | (user) | 뉴트럴 | 위험은 `RiskTone` 을 accent로 16% 블렌드 |
+
+**테마가 보이는 자리**(투명 유리 안 깨고 정체성 내는 레버, 2026-06-13):
+- **선택된 탭 pill** = accent 틴트 배경 + accent 1.5px 언더라인(가장 중앙·상시 노출 → 테마 즉시 인지).
+- **카드 유리 틴트**(`glassTint`, material 위 0.16~0.25 alpha) — 카드가 방의 hue를 머금음.
+- **baseWash**(패널 배경, dark 0.30/0.44·light 0.22/0.34 alpha) — 카드 사이/주변 여백이 방 색.
+  alpha를 높여도 behind-window 글래스(ADR-0018)는 비친다(불투명 아님).
+- **데이터(모델) 색**이 accent로 끌려와 History 차트가 on-theme.
+
+**위험 색 불변식**: 모든 테마에서 `riskCalm→Watch→Warning→Critical` 의 명도/채도 순서가 유지되고
+critical 은 빨강/위험으로 읽힌다. **mono 특례**(계기판 등급): calm·watch·warning 은 무채색 *명도*
+램프로 — **방향은 scheme별**:
+- **dark**: calm=어두운 회색 → warning=밝은 회색 (오를수록 *밝게* — 어두운 유리 위 대비).
+- **light**: calm=중간 회색 → warning=거의 검정 (오를수록 *어둡게* — 밝은 종이 위 대비).
+
+명도 L\* 폭을 넓게 잡아(critic iter1) 단계가 한눈에 갈린다. **단, critical·over 는 muted instrument-red**
+(`#D6534C`/`#F0473A` dark · `#B23A3A`/`#8E2018` light) — 거의-흰 회색 critical 이 *위험*이 아니라 *깨끗함*
+으로 읽힌 문제(QA iter2)를 VU 미터 red peak zone 처럼 해소하고, 전 테마 공통 **빨강=위험** 불변식을 mono
+에서도 정확히 지킨다("정확함 > 귀여움"). critical 은 드물어 mono 는 대부분 시간 무채색으로 읽힌다. 추가로
+상태 라벨/글리프(`▲`/`✕`)로 redundancy. (게이지/도트/칩만 위험색 — 숫자는 중립.)
+
 ## 타이포그래피
 
 (03 상속 — 변경 없음)

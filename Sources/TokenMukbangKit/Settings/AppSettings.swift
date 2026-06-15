@@ -17,36 +17,66 @@ public struct ThemePalette: Codable, Sendable, Equatable {
     }
 }
 
-/// 4 presets + custom (TokenEater theme parity).
+/// Curated theme set (theme-palette-redesign 2026-06-13) — 6 strong-identity 먹방 rooms + custom.
+/// The *colors* (atmosphere + per-theme risk ramp) live app-side in `ThemeMood` (ADR-0015); this
+/// enum + `presetPalette` carry the accent (for `.tint`) + representative risk hexes used by the
+/// Settings threshold sliders. The dark-value accent is the canonical one.
 public enum Theme: String, Codable, Sendable, CaseIterable, Identifiable {
-    case classic, mint, sunset, mono, custom
+    case charcoal   // 숯불 — grill ember, dark-first (default)
+    case matcha     // 말차 — tea-ceremony calm green
+    case hanji      // 한지 — light-first mulberry paper + 인주 seal
+    case ganjang    // 간장 — fermented soy + 단청 jewel accents
+    case obang      // 오방 — Korea's five cardinal colors
+    case mono       // 흑백 — achromatic, instrument-grade
+    case custom     // user accent
 
     public var id: String { rawValue }
 
-    public var label: String {
-        switch self {
-        case .classic: return "Classic"
-        case .mint: return "Mint"
-        case .sunset: return "Sunset"
-        case .mono: return "Mono"
-        case .custom: return "Custom"
+    /// Legacy raw values from the old set map onto the nearest new room so persisted settings
+    /// don't break (Codable decodes by rawValue; this maps the retired ones).
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        switch raw {
+        case "classic": self = .charcoal
+        case "mint":    self = .matcha
+        case "sunset":  self = .charcoal
+        default:        self = Theme(rawValue: raw) ?? .charcoal
         }
     }
 
-    /// Preset palette. `.custom` returns a neutral default; the actual custom
-    /// colors live in `AppSettings.customPalette`.
+    /// User-facing names. The case names keep their 먹방/Korean-culture origin (숯불/말차/…),
+    /// but the labels are descriptive English for global distribution — each maps to the room's
+    /// visible identity (ember orange, matcha green, paper, jade, ocean blue, monochrome).
+    public var label: String {
+        switch self {
+        case .charcoal: return "Ember"
+        case .matcha:   return "Matcha"
+        case .hanji:    return "Paper"
+        case .ganjang:  return "Jade"
+        case .obang:    return "Ocean"
+        case .mono:     return "Mono"
+        case .custom:   return "Custom"
+        }
+    }
+
+    /// Preset palette — accent (canonical dark value) + representative risk hexes (dark) used by
+    /// the Settings threshold sliders. The live UI risk ramp comes from `ThemeMood`, not here.
     public var presetPalette: ThemePalette {
         switch self {
-        case .classic:
-            return ThemePalette(calmHex: "#34C759", watchHex: "#FFD60A", warningHex: "#FF9F0A", criticalHex: "#FF453A", accentHex: "#0A84FF")
-        case .mint:
-            return ThemePalette(calmHex: "#2EE6A8", watchHex: "#A8E62E", warningHex: "#E6C12E", criticalHex: "#E64545", accentHex: "#19C37D")
-        case .sunset:
-            return ThemePalette(calmHex: "#FFB07C", watchHex: "#FF9F6B", warningHex: "#FF6B6B", criticalHex: "#D7263D", accentHex: "#F75C03")
-        case .mono:
-            return ThemePalette(calmHex: "#9AA0A6", watchHex: "#BDC1C6", warningHex: "#E8EAED", criticalHex: "#FFFFFF", accentHex: "#C0C0C0")
+        case .charcoal:
+            return ThemePalette(calmHex: "#5BA88A", watchHex: "#D8A92E", warningHex: "#E08B3A", criticalHex: "#E0573F", accentHex: "#F76707")
+        case .matcha:
+            return ThemePalette(calmHex: "#7BC07F", watchHex: "#C4BC4A", warningHex: "#C99A52", criticalHex: "#C8525E", accentHex: "#8FCB6B")
+        case .hanji:
+            return ThemePalette(calmHex: "#7AAE8C", watchHex: "#C7A848", warningHex: "#CE9456", criticalHex: "#D04E50", accentHex: "#E85C44")
+        case .ganjang:   // accent = 단청 jade (양록); risk stays its own warm scale (danger=red).
+            return ThemePalette(calmHex: "#5C9A6E", watchHex: "#D8B042", warningHex: "#D89254", criticalHex: "#E0594A", accentHex: "#46C39A")
+        case .obang:
+            return ThemePalette(calmHex: "#5ABF93", watchHex: "#F0C840", warningHex: "#E89A48", criticalHex: "#E85560", accentHex: "#4FA0E0")
+        case .mono:   // achromatic grey ramp, but critical = instrument-red danger zone (matches ThemeMood).
+            return ThemePalette(calmHex: "#6E747C", watchHex: "#9097A0", warningHex: "#B6BCC4", criticalHex: "#D6534C", accentHex: "#C8CCD2")
         case .custom:
-            return ThemePalette(calmHex: "#34C759", watchHex: "#FFD60A", warningHex: "#FF9F0A", criticalHex: "#FF453A", accentHex: "#0A84FF")
+            return ThemePalette(calmHex: "#5BA88A", watchHex: "#C9A227", warningHex: "#D08A3E", criticalHex: "#C23B4E", accentHex: "#0A84FF")
         }
     }
 }
@@ -89,21 +119,48 @@ public struct NotificationSettings: Codable, Sendable, Equatable {
     )
 }
 
-/// The user's full settings (theme + thresholds + notifications), persisted.
+/// The user's full settings (theme + thresholds + notifications + glass), persisted.
 public struct AppSettings: Codable, Sendable, Equatable {
     public var theme: Theme
     public var customPalette: ThemePalette
     public var thresholds: RiskThresholds
     public var notifications: NotificationSettings
     public var temperament: Temperament
+    /// Popover behind-window blur **veil** opacity (0…1). Lower = more see-through desktop +
+    /// softer blur; higher = more frosted. Applied to `GlassPanel`'s `.behindWindow` layer alpha
+    /// (ADR-0018). Content stays crisp regardless (it sits above the veil). User-tunable.
+    public var glassOpacity: Double
+
+    /// The shipped default blur veil — was a hard-coded constant in `GlassPanel`, now the default
+    /// for the user-tunable `glassOpacity` (so existing behavior is unchanged until adjusted).
+    public static let defaultGlassOpacity: Double = 0.70
 
     public init(theme: Theme, customPalette: ThemePalette, thresholds: RiskThresholds,
-                notifications: NotificationSettings, temperament: Temperament = .balanced) {
+                notifications: NotificationSettings, temperament: Temperament = .balanced,
+                glassOpacity: Double = AppSettings.defaultGlassOpacity) {
         self.theme = theme
         self.customPalette = customPalette
         self.thresholds = thresholds
         self.notifications = notifications
         self.temperament = temperament
+        self.glassOpacity = glassOpacity
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case theme, customPalette, thresholds, notifications, temperament, glassOpacity
+    }
+
+    /// Forgiving decode: any missing field falls back to its default, so adding a new setting
+    /// (like `glassOpacity`) never invalidates an older persisted `settings.json` and silently
+    /// wipes every other preference. (Synthesized decode would throw on the first missing key.)
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        theme = try c.decodeIfPresent(Theme.self, forKey: .theme) ?? .charcoal
+        customPalette = try c.decodeIfPresent(ThemePalette.self, forKey: .customPalette) ?? Theme.custom.presetPalette
+        thresholds = try c.decodeIfPresent(RiskThresholds.self, forKey: .thresholds) ?? .default
+        notifications = try c.decodeIfPresent(NotificationSettings.self, forKey: .notifications) ?? .default
+        temperament = try c.decodeIfPresent(Temperament.self, forKey: .temperament) ?? .balanced
+        glassOpacity = try c.decodeIfPresent(Double.self, forKey: .glassOpacity) ?? AppSettings.defaultGlassOpacity
     }
 
     /// The active palette (preset, or custom colors when theme == .custom).
@@ -112,8 +169,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
     }
 
     public static let `default` = AppSettings(
-        theme: .classic,
-        customPalette: Theme.classic.presetPalette,
+        theme: .charcoal,
+        customPalette: Theme.custom.presetPalette,
         thresholds: .default,
         notifications: .default
     )

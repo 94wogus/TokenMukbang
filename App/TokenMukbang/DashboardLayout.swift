@@ -1,21 +1,21 @@
 import Foundation
 
-/// The popover's two content modes, swapped by a TOP segmented toggle (현황 | 기록).
-/// Settings is NOT a mode here — it opens a separate macOS Settings window (⌘,) via the
-/// header gear, per native menu-bar conventions (research 2026-06-12: native popovers don't
-/// use tab bars; config lives in a Settings window, a secondary analytical view is a top
-/// segmented control or its own window — Apple HIG, Stats, iStat Menus, Itsycal).
+/// The main window's content modes, swapped by a TOP segmented toggle (Now | History | Settings).
+/// Since 2026-06-15 the app is a single **normal glass window** (ADR-0019, supersedes ADR-0018's
+/// borderless NSPanel popover) — so Settings is now an in-window tab, not a separate window.
 public enum DashboardLayout: String, CaseIterable, Identifiable, Sendable {
-    case dashboard // 현황 — hero window + secondary windows + sessions (the glance)
-    case history   // 기록 — 7-day token history (filter by model)
+    case dashboard // Now — hero window + secondary windows + sessions (the glance)
+    case history   // History — 7-day token history (filter by model)
+    case settings  // Settings — Appearance / Alerts (was a separate window)
 
     public var id: String { rawValue }
 
-    /// Korean toggle labels (먹방 voice) — 현황(now) / 기록(history).
+    /// Toggle labels — Now (the live glance) / History (7-day tokens) / Settings.
     public var label: String {
         switch self {
-        case .dashboard: return "현황"
-        case .history: return "기록"
+        case .dashboard: return "Now"
+        case .history: return "History"
+        case .settings: return "Settings"
         }
     }
 }

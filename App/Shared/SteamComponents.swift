@@ -72,8 +72,17 @@ struct GlassTile<Content: View>: View {
         let light = scheme == .light
         return content()
             // 솟은 유리 카드 = **적응형 material** + 진짜 유리 라이팅(광택·림광·두께·그림자).
-            .background(.regularMaterial, in: shape)
-            .background(mood.glassTint, in: shape)             // 테마 무드 살짝 (.clear=중성)
+            // 핵심(theme-palette-redesign 2026-06-13): glassTint 를 frost material **위**에 얹는다.
+            // 예전엔 `.background(material).background(tint)` 라 tint가 material *뒤*로 가 프로스트가
+            // 다 덮어버려서 다크에서 테마색이 카드에 안 보였다(QA/critic iter1: "다크 5종 동일"). ZStack
+            // 으로 [frost → tint film] 순서를 박아 카드가 방의 hue를 머금게 한다(tint alpha가 낮아 프로스트
+            // 질감·뒤 글래스 ADR-0018 는 유지).
+            .background {
+                ZStack {
+                    shape.fill(.regularMaterial)
+                    shape.fill(mood.glassTint)                 // 테마 무드 틴트 필름 (.clear=중성)
+                }
+            }
             // 보더는 거의 안 보이게 — 카드 구분은 그림자로(user 2026-06-12: 테두리 선 눈에 안 띄게).
             .overlay(shape.strokeBorder(.white.opacity(light ? 0.10 : 0.04), lineWidth: 0.5))
             // 상단 은은한 광택 sheen(유리에 비친 빛) — 부드럽게만.
@@ -91,10 +100,18 @@ struct GlassTile<Content: View>: View {
 /// 그 *위에* broth 글로우·틴트가 와야 라이브에서 보인다(material을 위에 깔면 다 덮인다). z3 김은 콘텐츠 위
 /// 상단 빈 공간에만.
 extension View {
-    /// 팝오버 콘텐츠 배경을 **완전히 투명**하게 둔다 — 진짜 유리(데스크톱 굴절 + 살짝 blur)는 팝오버 패널의
-    /// `NSGlassEffectView(.clear)`(ADR-0018)가 *뒤*에서 제공하므로, 여기에 어떤 베일도 얹으면 그 유리가
-    /// 가려진다(user 2026-06-12: 완전 투명 + 살짝 blur). 위험/테마색은 카드(GlassTile)·게이지·칩이 든다.
+    /// 팝오버 콘텐츠 배경에 **테마 baseWash를 옅게** 얹는다 — 이게 테마 정체성의 가장 큰 레버(테마별
+    /// 분위기, theme-palette-redesign 2026-06-13). alpha가 낮아(0.16~0.26) 뒤 유리(NSVisualEffectView
+    /// behind-window, ADR-0018)는 여전히 비친다. 위험/모델색은 카드·게이지·칩이 추가로 든다.
     func steamBackground(level: String, isOver: Bool, scheme: ColorScheme, mood: ThemeMood) -> some View {
+        // The popover floats over a GREY behind-window blur veil (GlassPanel, ADR-0018). A dark,
+        // low-chroma `baseWash` over that veil read as plain grey — the room's hue washed out (user
+        // 2026-06-15: "그냥 회색느낌"). So tint the glass with the theme's *saturated* accent hue
+        // (frontmost background, right behind the content) so the color clearly reads through the
+        // frost; `baseWash` stays behind it for the gradient/depth. Mono's accent is achromatic, so
+        // it correctly stays grey. (Settings window has no veil, so it keeps plain baseWash.)
         self
+            .background(mood.accent.opacity(scheme == .light ? 0.14 : 0.22))
+            .background(mood.baseWash)
     }
 }

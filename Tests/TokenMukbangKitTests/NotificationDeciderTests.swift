@@ -28,7 +28,7 @@ final class NotificationDeciderTests: XCTestCase {
         let alerts = NotificationDecider.alerts(previous: snap([window("five_hour", 80)]),
                                                 current: snap([window("five_hour", 95)]),
                                                 settings: allOn, thresholds: thresholds)
-        XCTAssertTrue(alerts.contains { $0.event == .escalation && $0.body.contains("배 터") })
+        XCTAssertTrue(alerts.contains { $0.event == .escalation && $0.body.contains("burst") })
     }
 
     func testNoEscalationWhenAlreadyAbove() {

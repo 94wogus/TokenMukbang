@@ -48,11 +48,11 @@ public enum NotificationDecider {
 
         // Token expiry (global) — fire on the transition into an expired error.
         if settings.tokenExpiry,
-           let err = current.error, err.contains("expired") || err.contains("만료"),
-           !(previous?.error.map { $0.contains("expired") || $0.contains("만료") } ?? false) {
+           let err = current.error, err.contains("expired"),
+           !(previous?.error.map { $0.contains("expired") } ?? false) {
             out.append(NotificationAlert(
                 event: .tokenExpiry, surfaceKind: nil,
-                title: "주방에 다시 다녀오세요", body: MukbangCopy.event(.backToKitchen)))
+                title: "Back to the kitchen", body: MukbangCopy.event(.backToKitchen)))
         }
 
         for cur in current.windows {
@@ -65,10 +65,10 @@ public enum NotificationDecider {
             if settings.escalation {
                 if prevUtil < thresholds.critical, cur.utilization >= thresholds.critical {
                     out.append(NotificationAlert(event: .escalation, surfaceKind: cur.kind,
-                        title: "\(label) 흡입 중", body: "\(Int(cur.utilization))% 완식 — 곧 배 터집니다"))
+                        title: "\(label) inhaling", body: "\(Int(cur.utilization))% eaten — about to burst."))
                 } else if prevUtil < thresholds.warning, cur.utilization >= thresholds.warning {
                     out.append(NotificationAlert(event: .escalation, surfaceKind: cur.kind,
-                        title: "\(label) 과식 주의", body: "\(Int(cur.utilization))% 완식"))
+                        title: "\(label) overeating", body: "\(Int(cur.utilization))% eaten"))
                 }
             }
 
@@ -76,20 +76,20 @@ public enum NotificationDecider {
             if settings.recovery, prevUtil >= thresholds.warning, cur.utilization < thresholds.warning,
                cur.resetsAt == prev?.resetsAt {
                 out.append(NotificationAlert(event: .recovery, surfaceKind: cur.kind,
-                    title: "\(label) 소화 완료", body: "\(Int(cur.utilization))%로 여유가 생겼습니다"))
+                    title: "\(label) digested", body: "Down to \(Int(cur.utilization))% — room to breathe."))
             }
 
             // Reset: a new window (reset time changed and usage dropped).
             if settings.reset, let prev, cur.resetsAt != prev.resetsAt, cur.utilization < prev.utilization {
                 out.append(NotificationAlert(event: .reset, surfaceKind: cur.kind,
-                    title: "새 상 차림", body: MukbangCopy.event(.freshTable)))
+                    title: "Fresh table", body: MukbangCopy.event(.freshTable)))
             }
 
             // Pacing: newly projected to 완식 before reset.
             if settings.pacing, cur.paceWarningHours != nil, prev?.paceWarningHours == nil,
                let h = cur.paceWarningHours {
                 out.append(NotificationAlert(event: .pacing, surfaceKind: cur.kind,
-                    title: "\(label) 페이스 경고", body: MukbangCopy.event(.paceWarning(hoursToFull: h))))
+                    title: "\(label) pace warning", body: MukbangCopy.event(.paceWarning(hoursToFull: h))))
             }
         }
 

@@ -39,7 +39,7 @@ public enum TokenHistory {
     public struct CastTotal: Sendable, Equatable, Identifiable {
         public let cast: ModelCast?
         public let tokens: Int
-        public var id: String { cast?.modelName ?? "기타" }
+        public var id: String { cast?.modelName ?? "Other" }
         public init(cast: ModelCast?, tokens: Int) { self.cast = cast; self.tokens = tokens }
     }
 

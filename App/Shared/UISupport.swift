@@ -1,8 +1,9 @@
 import SwiftUI
+import AppKit
 import TokenMukbangKit
 
 // UI-only helpers shared by both the app and the widget extension. These are
-// presentation glue (hex → Color), not usage/session/risk logic — that all lives
+// presentation glue (hex ⇄ Color), not usage/session/risk logic — that all lives
 // once in TokenMukbangKit.
 
 extension Color {
@@ -17,6 +18,16 @@ extension Color {
             green: Double((rgb >> 8) & 0xFF) / 255.0,
             blue: Double(rgb & 0xFF) / 255.0
         )
+    }
+
+    /// Serialize back to `#RRGGBB` (sRGB) — the inverse of `init(hex:)`, so a native
+    /// `ColorPicker` well can write straight into the persisted `accentHex` string.
+    var hexString: String {
+        guard let c = NSColor(self).usingColorSpace(.sRGB) else { return "#000000" }
+        let r = Int((c.redComponent * 255).rounded())
+        let g = Int((c.greenComponent * 255).rounded())
+        let b = Int((c.blueComponent * 255).rounded())
+        return String(format: "#%02X%02X%02X", r, g, b)
     }
 }
 
