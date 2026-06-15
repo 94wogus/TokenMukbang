@@ -147,16 +147,53 @@ enum WindowSnapshot {
         for (name, layout) in tabs {
             render(to: "\(dir)/live-tab-\(name).png", layout: layout, backdrop: .colorful)
         }
-        // (c) theme mood proof — dashboard + history over a plain dark desktop, one per theme.
+        // (c) theme mood proof — dashboard over a plain dark AND light desktop, one per theme, so
+        // light-first rooms (hanji/mono) are judged in their native scheme too. History in dark only.
         for theme in Theme.allCases {
             render(to: "\(dir)/live-theme-\(theme.rawValue).png", layout: .dashboard,
                    backdrop: .neutralDark, theme: theme)
+            render(to: "\(dir)/live-themelight-\(theme.rawValue).png", layout: .dashboard,
+                   backdrop: .neutralLight, theme: theme)
             render(to: "\(dir)/live-themehist-\(theme.rawValue).png", layout: .history,
                    backdrop: .neutralDark, theme: theme)
         }
+        // (d) Settings window — the redesigned Appearance (theme gallery + preview) and Alerts
+        // tabs, in dark & light, plus the custom-accent state, reviewable like the popover.
+        renderSettings(to: "\(dir)/live-settings-dark.png", scheme: .dark, theme: .charcoal, tab: .appearance)
+        renderSettings(to: "\(dir)/live-settings-light.png", scheme: .light, theme: .hanji, tab: .appearance)
+        renderSettings(to: "\(dir)/live-settings-custom.png", scheme: .dark, theme: .custom, tab: .appearance)
+        renderSettings(to: "\(dir)/live-settings-alerts.png", scheme: .dark, theme: .obang, tab: .alerts)
     }
 
-    private static func render(to path: String, layout: DashboardLayout, backdrop: Backdrop, theme: Theme = .classic) {
+    /// Render the Settings window (the controller hosts it at width 360 + 20pt padding).
+    private static func renderSettings(to path: String, scheme: ColorScheme, theme: Theme, tab: SettingsTab) {
+        var settings = AppSettings.default
+        settings.theme = theme
+        let model = AppModel(previewSnapshot: PreviewData.snapshot, settings: settings, tokenEvents: PreviewData.tokenEvents)
+        let backdrop: Backdrop = scheme == .dark ? .neutralDark : .neutralLight
+        let root = ZStack(alignment: .top) {
+            backdrop.view.ignoresSafeArea()
+            SettingsView(model: model, initialTab: tab).frame(width: 360).padding(20)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(width: 400)
+        .environment(\.colorScheme, scheme)
+
+        let host = NSHostingView(rootView: root)
+        host.frame = NSRect(x: 0, y: 0, width: 400, height: host.fittingSize.height)
+        let window = NSWindow(contentRect: host.frame, styleMask: [.borderless],
+                              backing: .buffered, defer: false)
+        window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+        window.contentView = host
+        host.layoutSubtreeIfNeeded()
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        if let png = rep.representation(using: .png, properties: [:]) {
+            try? png.write(to: URL(fileURLWithPath: path))
+        }
+    }
+
+    private static func render(to path: String, layout: DashboardLayout, backdrop: Backdrop, theme: Theme = .charcoal) {
         var settings = AppSettings.default
         settings.theme = theme
         let model = AppModel(previewSnapshot: PreviewData.snapshot, settings: settings, tokenEvents: PreviewData.tokenEvents)

@@ -1,14 +1,17 @@
 import Foundation
 
 /// A single rate-limit window returned by `GET /api/oauth/usage`.
-/// Each window is either present (`{utilization, resets_at}`) or `null`.
+/// A window may be `null`, OR present with `utilization` but a **null `resets_at`** — the API
+/// sends a null reset for a window with no scheduled reset yet (e.g. an unused window like
+/// `seven_day_sonnet` at 0%). `resetsAt` is therefore optional so one null reset doesn't fail
+/// the whole payload decode; windows without a reset are skipped downstream (`UsageService`).
 public struct RateLimitWindow: Codable, Sendable, Equatable {
     /// Percentage 0...100 of this window consumed.
     public let utilization: Double
-    /// When this window's allowance resets.
-    public let resetsAt: Date
+    /// When this window's allowance resets — `nil` if the API sent no reset (unused window).
+    public let resetsAt: Date?
 
-    public init(utilization: Double, resetsAt: Date) {
+    public init(utilization: Double, resetsAt: Date?) {
         self.utilization = utilization
         self.resetsAt = resetsAt
     }

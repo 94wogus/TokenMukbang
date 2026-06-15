@@ -1,40 +1,31 @@
 import SwiftUI
 import TokenMukbangKit
 
-/// The dropdown panel shown when the menu-bar item is clicked.
+/// The app's single window content — Now / History / Settings, in a normal glass window
+/// (ADR-0019, supersedes the borderless NSPanel popover ADR-0018). The top segmented control
+/// swaps the tab; Settings is now a tab, not a separate window. `forcedLayout` lets the headless
+/// renderer capture a specific tab.
 struct MenuContentView: View {
     @ObservedObject var model: AppModel
     @Environment(\.colorScheme) private var scheme
-    /// Override the displayed tab — used only to *measure* each tab's height (Option B).
+    /// Force the displayed tab — used by the headless renderer to capture each tab.
     var forcedLayout: DashboardLayout? = nil
-    /// When set, the popover is this fixed height (= the taller of the two tabs), so switching
-    /// 현황↔기록 never resizes the window — instant, no jank (user choice 2026-06-12, Option B).
-    var fixedHeight: CGFloat? = nil
     private let now = Date()
 
     private var effectiveLayout: DashboardLayout { forcedLayout ?? model.layout }
 
     var body: some View {
-        // Nav at the TOP (현황|기록 toggle); Settings in a separate window. FIXED height (Option B):
-        // the window doesn't resize on tab switch. The footer is pinned to the absolute bottom via
-        // a ZStack (NOT a Spacer-in-VStack, which added an extra gap and let the footer drift on
-        // tab change — user 2026-06-12). Measurement mode (no fixedHeight) lays out naturally.
-        Group {
-            if let h = fixedHeight {
-                ZStack(alignment: .top) {
-                    topArea
-                    VStack(spacing: 0) { Spacer(minLength: 0); footer }
-                }
-                .frame(width: 320, height: h, alignment: .top)
-            } else {
-                VStack(spacing: DS.row) { topArea; footer }
-                    .frame(width: 320)
-            }
-        }
-        .padding(DS.outer)
-        .environment(\.themeMood, mood)   // theme atmosphere flows to GlassTiles + cards
-        .steamBackground(level: headlineLevel, isOver: headlineOver, scheme: scheme, mood: mood)
-        .tint(Color(hex: model.settings.palette.accentHex))
+        // Single column: top nav (Now | History | Settings) + content + footer. The window sizes
+        // to this content — no fixed-height/anchor gymnastics (that was the borderless-panel era,
+        // ADR-0018). Extra top padding clears the transparent titlebar's traffic-light buttons.
+        VStack(spacing: DS.row) { topArea; footer }
+            .frame(width: 360)
+            .padding(.horizontal, DS.outer)
+            .padding(.bottom, DS.outer)
+            .padding(.top, 26)
+            .environment(\.themeMood, mood)   // theme atmosphere flows to GlassTiles + cards
+            .steamBackground(level: headlineLevel, isOver: headlineOver, scheme: scheme, mood: mood)
+            .tint(Color(hex: model.settings.palette.accentHex))
     }
 
     /// Header + tab toggle + the active tab's content (everything above the footer).
@@ -46,7 +37,10 @@ struct MenuContentView: View {
                 .padding(.horizontal, 2)
 
             VStack(alignment: .leading, spacing: DS.section) {
-                if let snapshot = model.snapshot {
+                if effectiveLayout == .settings {
+                    // Settings doesn't depend on the live snapshot, so it shows immediately.
+                    SettingsView(model: model)
+                } else if let snapshot = model.snapshot {
                     content(snapshot)
                 } else {
                     ProgressView().controlSize(.small)
@@ -89,17 +83,7 @@ struct MenuContentView: View {
                     .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
                     .fixedSize()
             }
-            // Gear → the standard macOS Settings window (⌘,). Frosted circular button so the icon
-            // reads on any backdrop through the glass.
-            Button { AppActions.openSettings() } label: {
-                Image(systemName: "gearshape").font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.primary.opacity(0.8))
-                    .frame(width: 24, height: 24)
-                    .background(.regularMaterial, in: Circle())
-                    .overlay(Circle().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
-            }
-            .buttonStyle(.plain)
-            .help("환경설정 (⌘,)")
+            // (Settings moved into the segmented tab bar — no gear button needed, ADR-0019.)
         }
         .padding(.horizontal, 4)
     }
@@ -118,6 +102,7 @@ struct MenuContentView: View {
         switch effectiveLayout {
         case .dashboard: dashboardLayout(snapshot)
         case .history: HistoryBrowserView(model: model)
+        case .settings: EmptyView()   // handled in topArea (snapshot-independent)
         }
     }
 
@@ -179,20 +164,20 @@ struct MenuContentView: View {
 
     private var actionRow: some View {
         HStack(spacing: 8) {
-            IconGlassButton(symbol: "arrow.clockwise", help: "새로고침", scheme: scheme) {
+            IconGlassButton(symbol: "arrow.clockwise", help: "Refresh", scheme: scheme) {
                 Task { await model.refresh(); await model.loadTokenHistory() }
             }
             .disabled(model.isRefreshing)
             .opacity(model.isRefreshing ? 0.5 : 1)
 
-            IconGlassButton(symbol: "rectangle.on.rectangle", help: "관전 오버레이", scheme: scheme) {
+            IconGlassButton(symbol: "rectangle.on.rectangle", help: "Watch overlay", scheme: scheme) {
                 model.overlay.toggle()
             }
 
             Spacer(minLength: 0)
 
             // 종료 is neutral ink — red is reserved for the risk channel (design-critique r2).
-            IconGlassButton(symbol: "power", help: "종료", scheme: scheme) {
+            IconGlassButton(symbol: "power", help: "Quit", scheme: scheme) {
                 NSApplication.shared.terminate(nil)
             }
         }
@@ -237,7 +222,7 @@ struct StatusChip: View {
     let scheme: ColorScheme
     @Environment(\.themeMood) private var mood
     var body: some View {
-        let c = mood.themedRisk(RiskTone.color(level: level, over: over, scheme: scheme))
+        let c = mood.risk(level, over: over)
         // A real pill (faint risk-tinted bg) so the top-priority state reads as status,
         // not floating text (design-critique r3).
         HStack(spacing: 4) {
@@ -310,7 +295,7 @@ struct MiniWindowCard: View {
                 // Status word carries its risk chroma at readable weight (was too faint).
                 Text(window.riskLabel)
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(mood.themedRisk(RiskTone.color(level: window.riskLevel, over: window.isOver, scheme: scheme)))
+                    .foregroundStyle(mood.risk(window.riskLevel, over: window.isOver))
                     .lineLimit(1)
             }
             .padding(DS.section)

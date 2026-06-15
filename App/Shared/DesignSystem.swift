@@ -81,7 +81,7 @@ enum RiskTone {
     /// Context-fill (sessions) maps onto the SAME palette via a fraction → level.
     static func contextColor(fraction: Double?, scheme: ColorScheme) -> Color {
         guard let f = fraction else { return Color(.tertiaryLabelColor) }
-        let level = f < 0.5 ? "calm" : f < 0.8 ? "warning" : "critical"
+        let level = f < 0.5 ? "calm" : f < 0.65 ? "watch" : f < 0.85 ? "warning" : "critical"
         return color(level: level, over: f >= 1.0, scheme: scheme)
     }
 
@@ -153,56 +153,131 @@ enum Steam {
 struct ThemeMood: Equatable {
     var baseTop: Color
     var baseBottom: Color
-    var glassTint: Color        // faint per-theme overlay on cards (.clear = neutral)
+    var glassTint: Color        // per-theme card tint (.clear = neutral)
     var accent: Color           // theme accent (drives .tint + categorical-color biasing)
     var dataTint: Double        // how hard categorical (model) colors pull toward accent (0…1)
-    var riskTint: Double        // GENTLER pull for risk colors (gauge/dots) — keeps the
-                                // calm→critical ordering so danger still reads, just on-theme
+    // Per-theme RISK ramp (curated, scheme-branched — theme-palette-redesign 2026-06-13). The
+    // grammar is invariant (calm cool/safe → critical hot/danger, monotonic L*), each theme only
+    // tints it to its identity (Ember runs hotter, Matcha calmer, Mono achromatic).
+    var riskCalm: Color
+    var riskWatch: Color
+    var riskWarning: Color
+    var riskCritical: Color
+    var riskOver: Color
 
-    /// Blend a risk color toward the theme so the whole UI is cohesive — gentle so critical
-    /// stays clearly hot. 기타-style neutrals are untouched by callers.
-    func themedRisk(_ c: Color) -> Color { c.blended(toward: accent, amount: riskTint) }
+    /// The final risk color for a level (per-theme). Replaces RiskTone.color in the popover —
+    /// the menu bar keeps RiskTone (theme-independent, wallpaper-tuned).
+    func risk(_ level: String, over: Bool) -> Color {
+        if over { return riskOver }
+        switch level {
+        case "watch":    return riskWatch
+        case "warning":  return riskWarning
+        case "critical": return riskCritical
+        case "calm":     return riskCalm
+        default:         return riskCalm
+        }
+    }
 
-    /// Intrinsic base wash under the frost — gives the popover its OWN depth/color so it looks
-    /// rich over *any* desktop (not only a colorful wallpaper), now tinted by the theme.
+    /// Gauge heat-ramp built from this theme's risk colors (cooler start → hottest leading edge).
+    func riskRamp(level: String, over: Bool) -> [Color] {
+        switch (over ? "critical" : level) {
+        case "watch":    return [riskCalm, riskWatch]
+        case "warning":  return [riskWatch, riskWarning]
+        case "critical": return over ? [riskWarning, riskOver] : [riskWarning, riskCritical]
+        case "calm":     return [riskCalm.opacity(0.55), riskCalm]
+        default:         return [riskCalm.opacity(0.55), riskCalm]
+        }
+    }
+
+    /// Session context-fill → risk level → this theme's risk color. All four bands are used so the
+    /// per-theme `watch` color actually appears on session dots (theme-palette-redesign 2026-06-13).
+    func contextColor(_ fraction: Double?) -> Color {
+        guard let f = fraction else { return Color(.tertiaryLabelColor) }
+        let level = f < 0.5 ? "calm" : f < 0.65 ? "watch" : f < 0.85 ? "warning" : "critical"
+        return risk(level, over: f >= 1.0)
+    }
+
     var baseWash: LinearGradient {
         LinearGradient(colors: [baseTop, baseBottom], startPoint: .top, endPoint: .bottom)
     }
 
-    static func resolve(_ theme: Theme, _ scheme: ColorScheme, accent: Color) -> ThemeMood {
+    /// Resolve a theme to its full atmosphere + risk ramp for a scheme. For preset themes the
+    /// accent is the theme's own (the passed `accent` is used only by `.custom`).
+    static func resolve(_ theme: Theme, _ scheme: ColorScheme, accent customAccent: Color) -> ThemeMood {
         let light = scheme == .light
-        // The biggest container is PURE glass — only a faint NEUTRAL frost scrim for text
-        // legibility (no theme hue), so the behind-window blur reads as real glass. The THEME
-        // color lives on the CARDS (glassTint) instead (user idea 2026-06-12).
-        let baseTop    = Color(hex: light ? "#FFFFFF" : "#2C3036").opacity(light ? 0.12 : 0.16)
-        let baseBottom = Color(hex: light ? "#F1F0EE" : "#191B20").opacity(light ? 0.18 : 0.22)
-        func card(_ hex: String, _ a: Double) -> Color { Color(hex: hex).opacity(a) }
+        func c(_ l: String, _ d: String) -> Color { Color(hex: light ? l : d) }
+        // base wash: themed hue at a faint alpha so the behind-window glass still shows through.
+        // Pushed up from 0.16/0.24·0.20/0.26 — at the old alpha the wash sat behind the material
+        // cards and themes read identical (charcoal ≈ matcha). Higher alpha makes the panel base
+        // carry the theme hue in the gaps/around the cards while still letting the behind-window
+        // glass (ADR-0018) show through (theme-palette-redesign 2026-06-13).
+        func wash(_ lTop: String, _ lBot: String, _ dTop: String, _ dBot: String) -> (Color, Color) {
+            light ? (Color(hex: lTop).opacity(0.22), Color(hex: lBot).opacity(0.34))
+                  : (Color(hex: dTop).opacity(0.30), Color(hex: dBot).opacity(0.44))
+        }
+        func tint(_ l: String, _ d: String, _ a: Double) -> Color { Color(hex: light ? l : d).opacity(a) }
+
         switch theme {
-        case .classic:            // neutral glass cards
-            return ThemeMood(baseTop: baseTop, baseBottom: baseBottom,
-                             glassTint: .clear, accent: accent, dataTint: 0.0, riskTint: 0.0)
-        case .custom:             // cards tinted by the user's accent
-            return ThemeMood(baseTop: baseTop, baseBottom: baseBottom,
-                             glassTint: accent.opacity(0.16), accent: accent, dataTint: 0.32, riskTint: 0.16)
-        case .mint:               // mint-tinted glass cards
-            return ThemeMood(baseTop: baseTop, baseBottom: baseBottom,
-                             glassTint: card(light ? "#13A56B" : "#37E8AE", 0.18),
-                             accent: accent, dataTint: 0.42, riskTint: 0.24)
-        case .sunset:             // amber-tinted glass cards
-            return ThemeMood(baseTop: baseTop, baseBottom: baseBottom,
-                             glassTint: card(light ? "#F2590A" : "#FFA86B", 0.18),
-                             accent: accent, dataTint: 0.42, riskTint: 0.24)
-        case .mono:               // neutral grey cards + greyscale data
-            return ThemeMood(baseTop: baseTop, baseBottom: baseBottom,
-                             glassTint: Color.gray.opacity(0.13),
-                             accent: accent, dataTint: 0.70, riskTint: 0.50)
+        case .charcoal:   // 숯불 — Korean grill ember, dark-first, runs hot. Base = warm glowing coals.
+            let w = wash("#FCF6F1", "#EFE3DA", "#2E2318", "#180F08")
+            return ThemeMood(baseTop: w.0, baseBottom: w.1,
+                glassTint: tint("#F2590A", "#FF8A4D", 0.22), accent: c("#D9480F", "#F76707"), dataTint: 0.30,
+                riskCalm: c("#3E8C6E", "#5BA88A"), riskWatch: c("#9C7C1E", "#D8A92E"),
+                riskWarning: c("#B0682C", "#E08B3A"), riskCritical: c("#A8313F", "#E0573F"), riskOver: c("#8C2718", "#FF5630"))
+        case .matcha:     // 말차 — tea-ceremony calm, warm yellow-green (chartreuse tea). Base leans
+                          // distinctly green so its surround separates from ganjang's brown (closest pair).
+            let w = wash("#F1F0DE", "#D6E2C0", "#1E2E16", "#0D170A")
+            return ThemeMood(baseTop: w.0, baseBottom: w.1,
+                glassTint: tint("#5E8C3E", "#9ED67A", 0.23), accent: c("#5E8C3E", "#8FCB6B"), dataTint: 0.34,
+                riskCalm: c("#4F8C5A", "#7BC07F"), riskWatch: c("#8C861E", "#C4BC4A"),
+                riskWarning: c("#A06B2C", "#C99A52"), riskCritical: c("#A03B44", "#C8525E"), riskOver: c("#8C2E3A", "#D9606C"))
+        case .hanji:      // 한지 — light-first mulberry paper + sumi ink + 인주 seal. In dark the base
+                          // is a muted *warm grey* (paper under low light), not brown — that, plus the
+                          // sharp vermilion 인주 accent, separates it from charcoal's ember & ganjang's soy.
+            let w = wash("#F7F3E9", "#E6DCC8", "#2A2826", "#181615")
+            return ThemeMood(baseTop: w.0, baseBottom: w.1,
+                glassTint: tint("#C2A878", "#CFC3AE", 0.22), accent: c("#C0341B", "#E85C44"), dataTint: 0.28,
+                riskCalm: c("#4A7A5E", "#7AAE8C"), riskWatch: c("#94781E", "#C7A848"),
+                riskWarning: c("#A8682C", "#CE9456"), riskCritical: c("#A8313A", "#D04E50"), riskOver: c("#8C2018", "#E0574A"))
+        case .ganjang:    // 간장 — fermented soy brown base + 단청 **jade** (양록) jewel accent. The jade
+                          // accent (not another red) is what makes this room its own hue, breaking the warm
+                          // trio: deep soy-brown panel, jade-tinted glass + tab. Danger stays red (universal).
+            let w = wash("#EDE2D0", "#D6BE9C", "#2E1D0C", "#1A0E04")
+            return ThemeMood(baseTop: w.0, baseBottom: w.1,
+                glassTint: tint("#2F7D63", "#46B38C", 0.22), accent: c("#2F7D63", "#46C39A"), dataTint: 0.34,
+                riskCalm: c("#3E6B4F", "#5C9A6E"), riskWatch: c("#A6841E", "#D8B042"),
+                riskWarning: c("#B06A2C", "#D89254"), riskCritical: c("#C1352B", "#E0594A"), riskOver: c("#9C2A22", "#F2604A"))
+        case .obang:      // 오방 — Korea's five cardinal colors; 청 accent, 적 = danger. Base leans cool navy.
+            let w = wash("#F6F8FB", "#DCE6F0", "#141C2E", "#080D18")
+            return ThemeMood(baseTop: w.0, baseBottom: w.1,
+                glassTint: tint("#1F6FB2", "#5AA8E0", 0.22), accent: c("#1F6FB2", "#4FA0E0"), dataTint: 0.30,
+                riskCalm: c("#2E7D5E", "#5ABF93"), riskWatch: c("#C8A21E", "#F0C840"),
+                riskWarning: c("#C8702C", "#E89A48"), riskCritical: c("#C8323A", "#E85560"), riskOver: c("#A8222A", "#F25360"))
+        case .mono:       // 흑백 — instrument-grade achromatic, with a **VU-meter danger zone**. calm/
+                          // watch/warning stay achromatic (lightness ramp, scheme-aware: dark climbs
+                          // brighter, light climbs darker). But **critical & over turn a muted
+                          // instrument-red** — a near-white "critical" read as *clean*, not *danger*
+                          // (QA iter2), so the room follows the universal 빨강=위험 invariant exactly
+                          // where it matters, like a meter's red peak zone. Still "the grey room" 95%
+                          // of the time (critical is rare); accuracy > purity (정확함 > 귀여움).
+            let w = wash("#FAFAFA", "#ECECEC", "#26282B", "#141517")
+            return ThemeMood(baseTop: w.0, baseBottom: w.1,
+                glassTint: tint("#7A7A7A", "#9AA0A6", 0.16), accent: c("#3A3D42", "#C8CCD2"), dataTint: 0.70,
+                riskCalm: c("#979CA3", "#585D64"), riskWatch: c("#6E737B", "#868C94"),
+                riskWarning: c("#474B51", "#B4BAC2"), riskCritical: c("#B23A3A", "#D6534C"), riskOver: c("#8E2018", "#F0473A"))
+        case .custom:     // user accent drives glass + a gentle on-theme risk pull
+            let w = wash("#FBFAF8", "#EEECE8", "#2A2E35", "#191B20")
+            let r: (String) -> Color = { lvl in RiskTone.color(level: lvl, over: false, scheme: scheme).blended(toward: customAccent, amount: 0.16) }
+            return ThemeMood(baseTop: w.0, baseBottom: w.1,
+                glassTint: customAccent.opacity(0.16), accent: customAccent, dataTint: 0.32,
+                riskCalm: r("calm"), riskWatch: r("watch"), riskWarning: r("warning"),
+                riskCritical: r("critical"), riskOver: RiskTone.color(level: "critical", over: true, scheme: scheme).blended(toward: customAccent, amount: 0.16))
         }
     }
 }
 
 private struct ThemeMoodKey: EnvironmentKey {
-    static let defaultValue = ThemeMood.resolve(.classic, .dark, accent: Color(hex: "#0A84FF"))
-    // (riskTint/dataTint baked by resolve)
+    static let defaultValue = ThemeMood.resolve(.charcoal, .dark, accent: Color(hex: "#F76707"))
 }
 extension EnvironmentValues {
     var themeMood: ThemeMood {
@@ -276,10 +351,8 @@ struct GaugeBar: View {
 
     var body: some View {
         let frac = max(0, min(1, window.utilization / 100))
-        // Risk ramp, gently pulled on-theme so the dashboard matches the History chart while the
-        // calm→critical order (danger reading) survives (user feedback 2026-06-12).
-        let ramp = RiskTone.gaugeRamp(level: window.riskLevel, over: window.isOver, scheme: scheme)
-            .map { mood.themedRisk($0) }
+        // Per-theme risk heat-ramp (curated per theme; calm→critical order preserved everywhere).
+        let ramp = mood.riskRamp(level: window.riskLevel, over: window.isOver)
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule().fill(scheme == .light ? DS.gaugeTrackLight : DS.gaugeTrackDark)
@@ -319,27 +392,71 @@ struct DSSegmented<T: Hashable>: View {
     @Binding var selection: T
     let options: [T]
     let label: (T) -> String
+    @Environment(\.themeMood) private var mood
+    /// Shared namespace so the selected pill + underline are a SINGLE indicator that **slides**
+    /// between cells on switch (matchedGeometryEffect), instead of popping on/off per cell —
+    /// the Apple segmented-control motion (user 2026-06-15).
+    @Namespace private var ns
+    /// Drives the *pill* slide independently of `selection`. The binding (which also swaps the
+    /// tab CONTENT) is set WITHOUT animation so the content changes instantly; only this mirror
+    /// is animated, so the pill glides while the content doesn't cross-fade/overlap (the glitch
+    /// where both tabs showed at once — user 2026-06-15).
+    @State private var animSel: T?
 
     var body: some View {
+        let current = animSel ?? selection
         HStack(spacing: 2) {
             ForEach(options, id: \.self) { option in
-                let on = selection == option
+                let on = current == option
                 // Constant weight — toggling .semibold/.regular changed the label width and made
                 // the tabs visibly jump on switch (user 2026-06-12). Selection = pill + ink only.
+                // The selected pill carries the **theme accent** (tint bg + primary ink kept for
+                // legibility) — this is the most central, always-visible theme tell, so picking a
+                // theme instantly recolors the tab (theme-palette-redesign 2026-06-13).
                 Text(label(option))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(on ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                     .lineLimit(1)
                     .padding(.vertical, 4)
                     .frame(maxWidth: .infinity)
-                    .background(on ? AnyShapeStyle(.background.opacity(0.9)) : AnyShapeStyle(.clear),
-                                in: RoundedRectangle(cornerRadius: 7))
+                    .background {
+                        // The one moving pill — only the selected cell hosts it, and the matched id
+                        // makes it glide from the old cell to the new one inside the withAnimation.
+                        if on {
+                            let pill = RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            ZStack {
+                                pill.fill(.background.opacity(0.55))
+                                pill.fill(mood.accent.opacity(0.30))
+                            }
+                            .matchedGeometryEffect(id: "segPill", in: ns)
+                        }
+                    }
+                    .overlay(alignment: .bottom) {
+                        if on {
+                            Capsule().fill(mood.accent)
+                                .frame(height: 1.5).padding(.horizontal, 8).padding(.bottom, 1)
+                                .matchedGeometryEffect(id: "segLine", in: ns)
+                        }
+                    }
                     .contentShape(Rectangle())
-                    .onTapGesture { selection = option }
+                    .onTapGesture {
+                        guard selection != option else { return }
+                        selection = option                                          // content: instant swap
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                            animSel = option                                        // pill: slide only
+                        }
+                    }
             }
         }
         .padding(2)
         .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 9))
+        .onAppear { animSel = selection }
+        // External selection changes (not via tap) still slide the pill.
+        .onChange(of: selection) { _, newValue in
+            if animSel != newValue {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) { animSel = newValue }
+            }
+        }
     }
 }
 

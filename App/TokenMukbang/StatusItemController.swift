@@ -3,164 +3,65 @@ import SwiftUI
 import Combine
 import TokenMukbangKit
 
-// Custom status-item + borderless glass NSPanel popover (ADR-0018). The SwiftUI
-// `MenuBarExtra(.window)` popover window is system-managed with an opaque material that
-// cannot be stripped, so `NSVisualEffectView(.behindWindow)` can never reveal the desktop
-// behind it (research 2026-06-12). A borderless, non-opaque NSPanel rooted in a
-// `.behindWindow` visual-effect view DOES show the blurred desktop — real glassmorphism.
+// Menu-bar status item + a single NORMAL glass window (ADR-0019, supersedes ADR-0018's borderless
+// NSPanel popover). The old custom NSPanel had to fake everything — transient anchoring, fixed
+// heights, "recreate every show" to dodge a stale-opaque bug over full-screen Spaces, etc. A plain
+// titled NSWindow with a `.behindWindow` visual-effect background gives the SAME desktop-blur glass
+// but is robust (movable, closable, never flips opaque), so all that fragility is gone.
 
 /// App-level actions reachable from AppKit-hosted SwiftUI (no SwiftUI scene environment).
 enum AppActions {
-    /// Open Settings via our own controller-owned NSWindow (not the SwiftUI `Settings` scene +
-    /// `showSettingsWindow:` selector, which reopened unreliably — opened once, then never again
-    /// after close, user 2026-06-12).
+    /// Show the main window on the Settings tab (kept for ⌘, / future menu wiring).
     @MainActor static func openSettings() {
-        StatusItemController.shared.openSettingsWindow()
+        StatusItemController.shared.showMain(selecting: .settings)
     }
 }
 
-/// A borderless, non-opaque panel whose content root is a `.behindWindow` visual-effect view
-/// — the blurred desktop shows through (the thing MenuBarExtra's popover can't do). The SwiftUI
-/// content is hosted by an `NSHostingController` whose view auto-sizes to the content, and the
-/// panel tracks that size (no manual fittingSize gymnastics — those collapsed the content).
-final class GlassPanel: NSPanel {
-    /// Blur layer opacity (0…1). Lower = more transparent + softer blur. Dialed to near-max
-    /// transparency per user (2026-06-12). Tune this one number for the see-through/blur balance.
-    static let blurStrength: CGFloat = 0.70
-    static let panelWidth: CGFloat = 320
+/// A `.behindWindow` blur as a SwiftUI background — lets a plain non-opaque window show the blurred
+/// desktop (real glassmorphism) while the window auto-sizes to SwiftUI content via a hosting
+/// controller. `alpha` is the see-through/frost veil (AppSettings.glassOpacity) — being a SwiftUI
+/// view, it updates **live** when the setting changes (no manual KVO/subscription).
+struct VisualEffectBackground: NSViewRepresentable {
+    var material: NSVisualEffectView.Material = .underWindowBackground
+    var alpha: Double
 
-    private let hosting: NSHostingController<AnyView>
-    private let blur = NSVisualEffectView()
-    /// The fixed top-left screen point (just below the status item). On a content-height change
-    /// (tab switch) the window must keep its TOP here and grow DOWNWARD — a bare setContentSize
-    /// keeps the bottom-left fixed, so the panel jumped upward (user 2026-06-12: "height 문제").
-    var anchorTopLeft: NSPoint?
-
-    // Force the window permanently non-opaque — a resize on tab switch was flipping it back to
-    // opaque, turning the whole panel into a solid frosted block (user 2026-06-12, Image #7).
-    override var isOpaque: Bool { get { false } set {} }
-
-    init<Content: View>(rootView: Content) {
-        hosting = NSHostingController(rootView: AnyView(rootView))
-        hosting.sizingOptions = [.preferredContentSize]   // view's size follows SwiftUI content
-        super.init(contentRect: NSRect(x: 0, y: 0, width: 320, height: 600),
-                   styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-
-        // --- load-bearing transparency: a transparent window lets the desktop sit directly
-        // behind the glass so the glass can refract it (ghostty's Liquid Glass pattern). ---
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = true
-        level = .popUpMenu
-        isMovable = false
-        hidesOnDeactivate = false
-        isReleasedWhenClosed = false
-        animationBehavior = .utilityWindow
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
-
-        // Hosting view must be non-opaque or it covers the glass (the bug that made the panel
-        // read as a flat frosted panel with nothing behind it).
-        let host = hosting.view
-        host.wantsLayer = true
-        host.layer?.backgroundColor = NSColor.clear.cgColor
-
-        let radius: CGFloat = 18
-        // `.state = .active` forces the material always-active → never dims to the frosted
-        // "inactive" gray on the 2nd show over a full-screen Space (confirmed bug 2026-06-12:
-        // glass follows system active state, no public override). The blur is its OWN backmost
-        // layer (not the content's parent) and its `alphaValue` is dialed DOWN, so the desktop
-        // shows through with *less* blur veil (higher transparency) while the content stays crisp.
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 600))
-        container.wantsLayer = true
-        container.layer?.cornerRadius = radius
-        container.layer?.masksToBounds = true
-        container.autoresizesSubviews = true
-
-        blur.blendingMode = .behindWindow
-        blur.state = .active
-        blur.material = .underWindowBackground
-        blur.isEmphasized = false
-        blur.alphaValue = Self.blurStrength   // <1 → more transparent + softer blur (tunable)
-        blur.frame = container.bounds
-        blur.autoresizingMask = [.width, .height]
-        container.addSubview(blur)
-
-        host.frame = container.bounds
-        host.autoresizingMask = [.width, .height]
-        container.addSubview(host)            // content on top, full opacity (crisp)
-        contentView = container
-        resizeToFit()
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let v = NSVisualEffectView()
+        v.blendingMode = .behindWindow
+        v.material = material
+        v.state = .active                       // never dim to the inactive frost
+        v.alphaValue = max(0.1, min(1.0, alpha))
+        return v
     }
-
-    /// Measure the SwiftUI content's ideal height (width pinned) and resize the panel to it — this
-    /// is the "content determines the parent height" the preferredContentSize KVO failed to deliver
-    /// on tab switches (user 2026-06-12). `sizeThatFits` already reflects the new layout, so we can
-    /// resize synchronously (no delay) and animate the frame change for a smooth transition.
-    func resizeToFit(animated: Bool = false) {
-        var s = hosting.sizeThatFits(in: NSSize(width: Self.panelWidth, height: 10_000))
-        s.width = Self.panelWidth
-        guard s.height > 10 else { return }
-        applyContentSize(s, animated: animated)
+    func updateNSView(_ v: NSVisualEffectView, context: Context) {
+        v.material = material
+        v.state = .active
+        v.alphaValue = max(0.1, min(1.0, alpha))
     }
-
-    /// Resize to `s`, keeping the TOP edge anchored (grow downward, not upward), then re-assert
-    /// transparency (a bare setFrame also left the window opaque on resize — Image #7).
-    private func applyContentSize(_ s: NSSize, animated: Bool) {
-        let tl = anchorTopLeft ?? NSPoint(x: frame.minX, y: frame.maxY)
-        let newFrame = NSRect(x: tl.x, y: tl.y - s.height, width: s.width, height: s.height)
-        if animated {
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = 0.16
-                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                animator().setFrame(newFrame, display: true)
-            }
-        } else {
-            setFrame(newFrame, display: true)
-        }
-        backgroundColor = .clear
-        blur.state = .active
-        blur.alphaValue = Self.blurStrength
-    }
-
-    override var canBecomeKey: Bool { true }
 }
 
-/// Owns the menu-bar status item (its label image + wallpaper-aware color) and toggles the
-/// glass panel. Replaces `MenuBarExtra(.window)` (ADR-0018).
+/// The main window's SwiftUI root: the dashboard/settings content over the behind-window glass.
+/// The theme wash (steamBackground, inside MenuContentView) sits *over* this blur, so the glass
+/// reads tinted to the room while the blurred desktop shows through.
+private struct MainWindowRoot: View {
+    @ObservedObject var model: AppModel
+    var body: some View {
+        MenuContentView(model: model)
+            .background(VisualEffectBackground(alpha: model.settings.glassOpacity).ignoresSafeArea())
+    }
+}
+
+/// Owns the menu-bar status item (its label image + wallpaper-aware color) and the single glass
+/// window. Replaces the `MenuBarExtra(.window)` popover and the old GlassPanel (ADR-0019).
 @MainActor
 final class StatusItemController: NSObject {
     static let shared = StatusItemController()
 
     private let model = AppModel.shared
     private var statusItem: NSStatusItem?
-    private var panel: GlassPanel?
-    private var clickMonitor: Any?
+    private var window: NSWindow?
+    private var positioned = false
     private var cancellables = Set<AnyCancellable>()
-    private var settingsWindow: NSWindow?
-
-    /// Settings opens a controller-owned NSWindow (not the SwiftUI `Settings` scene, which
-    /// reopened unreliably). Kept alive (`isReleasedWhenClosed = false`) so it re-shows every time;
-    /// closing it drops the app back to `.accessory` so the Dock icon disappears.
-    func openSettingsWindow() {
-        dismissPanel()
-        if settingsWindow == nil {
-            let hc = NSHostingController(rootView: AnyView(SettingsView(model: model).frame(width: 360).padding(20)))
-            let w = NSWindow(contentViewController: hc)
-            w.title = "TokenMukbang 환경설정"
-            w.styleMask = [.titled, .closable]
-            w.isReleasedWhenClosed = false
-            w.center()
-            // Drop back to .accessory (Dock icon hidden) when this window closes.
-            NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification,
-                                                   object: w, queue: .main) { _ in
-                MainActor.assumeIsolated { _ = NSApp.setActivationPolicy(.accessory) }
-            }
-            settingsWindow = w
-        }
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        settingsWindow?.makeKeyAndOrderFront(nil)
-    }
 
     func install() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -169,10 +70,7 @@ final class StatusItemController: NSObject {
         statusItem = item
         MenuBarAppearance.shared.attach(statusItem: item)   // wallpaper-aware label color (KVO)
 
-        // Re-render the label image ONLY when the usage data or the menu-bar appearance changes —
-        // NOT on every `objectWillChange` (that fired the expensive ImageRenderer on every tab tap,
-        // making the popover laggy/unresponsive — user 2026-06-12). Panel resize/anchor is handled
-        // entirely by the panel's own preferredContentSize observer, so no $layout subscription here.
+        // Re-render the label image only when the usage data or the menu-bar appearance changes.
         model.$snapshot
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.renderLabel() }
@@ -181,8 +79,6 @@ final class StatusItemController: NSObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.renderLabel() }
             .store(in: &cancellables)
-        // No per-tab resize: the panel is a FIXED height (the taller tab) so switching 현황↔기록
-        // is instant with zero resize jank (Option B, user choice 2026-06-12).
         renderLabel()
     }
 
@@ -198,59 +94,63 @@ final class StatusItemController: NSObject {
     }
 
     @objc private func toggle() {
-        if let panel, panel.isVisible { dismiss() } else { present() }
+        let w = window ?? makeWindow()
+        // Hide only when it's already frontmost; if it's visible-but-behind, bring it forward
+        // (a menu-bar click should never feel like it "did nothing").
+        if w.isVisible && w.isKeyWindow {
+            w.orderOut(nil)
+        } else {
+            if !positioned { positionUnderStatusItem(w); positioned = true }
+            NSApp.activate(ignoringOtherApps: true)
+            w.makeKeyAndOrderFront(nil)
+        }
     }
 
-    private func present() {
-        // Recreate the panel fresh each show. Reusing a cached glass panel left it in a stale
-        // (suddenly-opaque) state on the *second* present over a full-screen Space whose menu bar
-        // auto-hides (user 2026-06-12). A fresh NSGlassEffectView re-samples cleanly every time.
-        panel?.orderOut(nil)
-        // Option B: fix the panel to the taller of the two tabs so tab switches never resize.
-        let h = measureMaxTabHeight()
-        let p = GlassPanel(rootView: MenuContentView(model: model, fixedHeight: h))
-        panel = p
-        anchorPanel()          // sets anchorTopLeft so resizeToFit keeps the top fixed
-        p.resizeToFit()
-        anchorPanel()
-        p.makeKeyAndOrderFront(nil)
+    /// Show the window and select a tab (e.g., from ⌘, → Settings).
+    func showMain(selecting layout: DashboardLayout) {
+        model.layout = layout
+        let w = window ?? makeWindow()
+        if !positioned { positionUnderStatusItem(w); positioned = true }
         NSApp.activate(ignoringOtherApps: true)
-        clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) {
-            [weak self] _ in self?.dismiss()
-        }
+        w.makeKeyAndOrderFront(nil)
     }
 
-    /// Measure the taller of the two tabs (Option B fixed height). Each is rendered off-screen
-    /// with a forced layout so its natural height can be measured without touching the live model.
-    private func measureMaxTabHeight() -> CGFloat {
-        var maxH: CGFloat = 200
-        for layout in DashboardLayout.allCases {
-            let hc = NSHostingController(rootView: AnyView(MenuContentView(model: model, forcedLayout: layout)))
-            let h = hc.sizeThatFits(in: NSSize(width: GlassPanel.panelWidth, height: 10_000)).height
-            maxH = max(maxH, h)
+    /// Build the single glass window: a plain titled NSWindow made non-opaque with a transparent,
+    /// full-size-content titlebar (traffic lights float over the glass), auto-sized to the SwiftUI
+    /// content by a hosting controller. The `.behindWindow` blur lives in `MainWindowRoot`.
+    private func makeWindow() -> NSWindow {
+        let hc = NSHostingController(rootView: MainWindowRoot(model: model))
+        hc.sizingOptions = [.preferredContentSize]
+        let w = NSWindow(contentViewController: hc)
+        w.styleMask = [.titled, .closable, .fullSizeContentView]
+        w.titlebarAppearsTransparent = true
+        w.titleVisibility = .hidden
+        w.title = "TokenMukbang"
+        w.isMovableByWindowBackground = true
+        w.isOpaque = false                       // load-bearing: lets the behind-window blur show desktop
+        w.backgroundColor = .clear
+        w.isReleasedWhenClosed = false           // closing just hides; the status item keeps the app alive
+        w.hasShadow = true
+        w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        // Drop back to .accessory (Dock icon hidden) when the window closes.
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification,
+                                               object: w, queue: .main) { _ in
+            MainActor.assumeIsolated { _ = NSApp.setActivationPolicy(.accessory) }
         }
-        return maxH
+        window = w
+        return w
     }
 
-    private func anchorPanel() {
-        guard let panel, let button = statusItem?.button, let bwin = button.window else { return }
+    /// Place the window just below the status item on first show (like a menu-bar popover would);
+    /// after that it's a normal movable window that remembers where the user left it.
+    private func positionUnderStatusItem(_ w: NSWindow) {
+        w.layoutIfNeeded()
+        guard let button = statusItem?.button, let bwin = button.window else { w.center(); return }
         let rect = bwin.convertToScreen(button.convert(button.bounds, to: nil))
-        var x = rect.midX - panel.frame.width / 2
+        var x = rect.midX - w.frame.width / 2
         if let vf = bwin.screen?.visibleFrame {
-            x = min(max(x, vf.minX + 8), vf.maxX - panel.frame.width - 8)
+            x = min(max(x, vf.minX + 8), vf.maxX - w.frame.width - 8)
         }
-        // Anchor by the TOP-left (just below the status item) so height changes grow downward.
-        let topLeft = NSPoint(x: x, y: rect.minY - 6)
-        panel.anchorTopLeft = topLeft
-        panel.setFrameTopLeftPoint(topLeft)
-    }
-
-    /// Public so the Settings action can close the popover before opening the window.
-    func dismissPanel() { dismiss() }
-
-    private func dismiss() {
-        panel?.orderOut(nil)
-        panel = nil                        // drop the glass so the next show builds fresh
-        if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
+        w.setFrameTopLeftPoint(NSPoint(x: x, y: rect.minY - 6))
     }
 }

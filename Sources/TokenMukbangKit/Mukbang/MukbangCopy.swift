@@ -11,38 +11,38 @@ public enum MukbangEvent: Sendable, Equatable {
     case backToKitchen               // 토큰 갱신 필요
 }
 
-/// POV-correct copy. ❌ "사용량 80%" → ⭕ "80% 완식".
+/// POV-correct copy. ❌ "80% used" → ⭕ "80% eaten".
 public enum MukbangCopy {
-    /// Headline phrasing for a window: `42% 완식`.
+    /// Headline phrasing for a window: `42% eaten`.
     public static func headline(utilization: Double) -> String {
-        "\(Formatting.percent(utilization)) 완식"
+        "\(Formatting.percent(utilization)) eaten"
     }
 
-    /// Reset countdown as digestion: `소화 중 · 2h 13m`. (Middot, not `...` — the ellipsis
+    /// Reset countdown as digestion: `Digesting · 2h 13m`. (Middot, not `...` — the ellipsis
     /// read as a truncation bug on the hero card, design-critique r4.)
     public static func reset(to date: Date, from now: Date) -> String {
-        "소화 중 · \(Formatting.countdown(to: date, from: now))"
+        "Digesting · \(Formatting.countdown(to: date, from: now))"
     }
 
     /// One-line status for the popover/menu, given a zone.
     public static func status(for zone: MukbangZone) -> String {
         switch zone {
-        case .tasting: return "깨작깨작. 아직 여유"
-        case .cruising: return "오물오물. 정상 페이스"
-        case .overeating: return "우적우적. 페이스 빠름"
-        case .inhaling: return "씹지도 않음. 빨간불"
-        case .finished: return "잘 먹었습니다"
-        case .digesting: return "배 두드리며 소화 중"
+        case .tasting: return "Just nibbling — plenty left."
+        case .cruising: return "Munching along — steady pace."
+        case .overeating: return "Chowing down — pace is quick."
+        case .inhaling: return "Not even chewing — red zone."
+        case .finished: return "Clean plate!"
+        case .digesting: return "Belly full, digesting."
         }
     }
 
     public static func event(_ event: MukbangEvent) -> String {
         switch event {
-        case .finished: return "( ˘ω˘ )🙏 잘 먹었습니다"
-        case .freshTable: return "🍚 새 상 차림! 다음 회차 시작"
-        case .paceWarning(let h): return "이 속도면 \(h)시간 뒤 완식합니다"
-        case .spoonDropped: return "( ;-;) 숟가락을 떨어뜨렸습니다"
-        case .backToKitchen: return "주방에 다시 다녀와야 합니다 (claude /login)"
+        case .finished: return "( ˘ω˘ )🙏 Clean plate!"
+        case .freshTable: return "🍚 Fresh table — next round!"
+        case .paceWarning(let h): return "At this pace, all gone in \(h)h."
+        case .spoonDropped: return "( ;-;) Dropped the spoon."
+        case .backToKitchen: return "Gotta pop back to the kitchen (claude /login)."
         }
     }
 }

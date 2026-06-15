@@ -20,10 +20,10 @@ public enum ModelCast: Sendable, CaseIterable, Equatable, Hashable {
 
     public var label: String {
         switch self {
-        case .opus: return "대식가"
-        case .sonnet: return "평균인"
-        case .haiku: return "소식좌"
-        case .fable: return "미식가"
+        case .opus: return "Big Eater"
+        case .sonnet: return "Regular"
+        case .haiku: return "Light Eater"
+        case .fable: return "Gourmet"
         }
     }
 

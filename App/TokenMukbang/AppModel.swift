@@ -6,8 +6,8 @@ import TokenMukbangKit
 /// snapshot to the UI, persists it for the widget, and nudges WidgetKit to reload.
 @MainActor
 final class AppModel: ObservableObject {
-    /// The one live model shared by the SwiftUI scenes (Settings/Window) and the AppKit
-    /// status-item controller that drives the glass panel (ADR-0018: custom NSPanel popover).
+    /// The one live model shared by the AppKit status-item controller (which owns the normal glass
+    /// window — ADR-0019) and the dev/screenshot SwiftUI scene.
     static let shared = AppModel()
 
     @Published private(set) var snapshot: UsageSnapshot?

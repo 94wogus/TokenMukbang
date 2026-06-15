@@ -67,21 +67,24 @@ public struct UsageService: Sendable {
     }
 
     private func windows(from usage: Usage, now: Date) -> [UsageSnapshot.Window] {
-        usage.displayWindows.map { kind, w in
+        usage.displayWindows.compactMap { kind, w in
+            // A window with no scheduled reset (resets_at: null — unused window) has nothing to
+            // count down and no span to pace against, so skip it rather than fabricate a date.
+            guard let resetsAt = w.resetsAt else { return nil }
             // Estimate when this window opened so risk can account for pacing
             // (smart coloring: absolute usage + projection).
-            let start = w.resetsAt.addingTimeInterval(-kind.duration)
+            let start = resetsAt.addingTimeInterval(-kind.duration)
             let level = RiskScorer.level(
-                utilization: w.utilization, windowStart: start, resetsAt: w.resetsAt, now: now
+                utilization: w.utilization, windowStart: start, resetsAt: resetsAt, now: now
             )
             let pace = PaceForecast.hoursToFull(
-                utilization: w.utilization, windowStart: start, resetsAt: w.resetsAt, now: now
+                utilization: w.utilization, windowStart: start, resetsAt: resetsAt, now: now
             )
             return UsageSnapshot.Window(
                 kind: kind.rawValue,
                 label: kind.label,
                 utilization: w.utilization,
-                resetsAt: w.resetsAt,
+                resetsAt: resetsAt,
                 riskHex: level.hex,
                 riskLabel: level.label,
                 riskLevel: level.rawValue,

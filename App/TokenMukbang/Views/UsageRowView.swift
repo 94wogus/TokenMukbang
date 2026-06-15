@@ -41,10 +41,9 @@ struct SessionRowView: View {
     var body: some View {
         Button(action: onFocus) {
             HStack(spacing: DS.row) {
-                // Color rides the dot only — context fill mapped onto the risk palette, gently
-                // pulled on-theme to match the rest of the UI (user feedback 2026-06-12).
+                // Color rides the dot only — context fraction mapped onto this theme's risk palette.
                 Circle()
-                    .fill(mood.themedRisk(RiskTone.contextColor(fraction: session.contextFraction, scheme: scheme)))
+                    .fill(mood.contextColor(session.contextFraction))
                     .frame(width: 8, height: 8)
                 Text(session.projectName)
                     .font(DS.bodyFont)
@@ -61,6 +60,6 @@ struct SessionRowView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("터미널 포커스 · \(session.tty ?? "tty 없음")")
+        .help("Focus terminal · \(session.tty ?? "no tty")")
     }
 }

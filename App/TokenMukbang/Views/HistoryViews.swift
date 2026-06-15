@@ -52,9 +52,9 @@ struct HistoryBrowserView: View {
 
             let totals = model.historyCastTotals
             if model.tokenEvents.isEmpty {
-                emptyState("아직 식사 기록이 없습니다. 잠시 후 다시 보세요.")
+                emptyState("No meals logged yet. Check back soon.")
             } else if totals.isEmpty {
-                emptyState("이 기간엔 먹은 기록이 없어요.")
+                emptyState("Nothing eaten in this period.")
             } else {
                 // Wrapped in GlassTiles so History shares the dashboard/Settings card
                 // aesthetic (design-critique: unify into card containers).
@@ -65,7 +65,7 @@ struct HistoryBrowserView: View {
                 }
                 GlassTile(scheme: scheme) {
                     VStack(alignment: .leading, spacing: DS.row) {
-                        Text("모델 구성").dsEyebrow()
+                        Text("Model mix").dsEyebrow()
                         ModelLegend(totals: totals, scheme: scheme)
                         StackedTokenBarChart(stacks: model.historyDayStacks)
                         tokenFooter
@@ -80,10 +80,10 @@ struct HistoryBrowserView: View {
     private var tokenFooter: some View {
         VStack(alignment: .leading, spacing: 2) {
             if let peak = model.historyHeaviestDay {
-                Label("최다 먹방 \(historyDayFmt.string(from: peak.day)) · \(fmtTokens(peak.tokens)) 토큰", systemImage: "flame")
+                Label("Biggest feast \(historyDayFmt.string(from: peak.day)) · \(fmtTokens(peak.tokens)) tokens", systemImage: "flame")
             }
             if let tp = model.historyTopProject {
-                Label("대식 프로젝트 \(tp.project) · \(fmtTokens(tp.tokens)) 토큰", systemImage: "trophy")
+                Label("Hungriest project \(tp.project) · \(fmtTokens(tp.tokens)) tokens", systemImage: "trophy")
             }
         }
         .font(DS.captionFont).foregroundStyle(.secondary).labelStyle(.titleAndIcon)
@@ -109,12 +109,12 @@ struct HistorySummaryView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(Formatting.tokenCount(summary.active))
                     .font(DS.heroFont).foregroundStyle(Color(.labelColor))
-                Text("신선 토큰").dsEyebrow()
+                Text("Fresh tokens").dsEyebrow()
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
                 if let d = summary.deltaPercent { deltaBadge(d) }
-                Text("재가열 \(Formatting.tokenCount(summary.cached)) · 캐시 \(Int((summary.cacheHitRate * 100).rounded()))%")
+                Text("Reheated \(Formatting.tokenCount(summary.cached)) · cache \(Int((summary.cacheHitRate * 100).rounded()))%")
                     .font(DS.captionFont.monospacedDigit()).foregroundStyle(.tertiary)
             }
         }
@@ -152,7 +152,7 @@ struct ModelLegend: View {
                         .frame(width: 9, height: 9)
                     // Name carries its model chroma (matches the dashboard status words) so the
                     // label and its swatch agree at a glance (design-critique r3).
-                    Text(t.cast?.modelName ?? "기타")
+                    Text(t.cast?.modelName ?? "Other")
                         .font(DS.captionFont.weight(.medium))
                         .foregroundStyle(DS.modelColor(t.cast, scheme: scheme, mood: mood))
                     Spacer(minLength: 8)
@@ -206,12 +206,12 @@ struct StackedTokenBarChart: View {
     private var hoverDetail: some View {
         if let i = hovered, i < stacks.count {
             let st = stacks[i]
-            let parts = st.segments.map { "\($0.cast?.modelName ?? "기타") \(fmtTokens($0.tokens))" }
+            let parts = st.segments.map { "\($0.cast?.modelName ?? "Other") \(fmtTokens($0.tokens))" }
             Text("\(historyDayFmt.string(from: st.day)) · \(parts.joined(separator: "  "))")
                 .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
                 .lineLimit(1).minimumScaleFactor(0.8)
         } else {
-            Text("막대에 마우스를 올리면 그날 모델 구성")
+            Text("Hover a bar for that day's model mix")
                 .font(.caption2).foregroundStyle(.tertiary)
         }
     }

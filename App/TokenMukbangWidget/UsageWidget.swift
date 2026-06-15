@@ -92,7 +92,7 @@ private struct SmallWidget: View {
                 Text(MukbangZone.forUtilization(headline.utilization).restingFace)
                     .font(.system(.caption, design: .rounded))
                     .foregroundStyle(.secondary)
-                Text("먹방").font(.caption.weight(.semibold))
+                Text("Mukbang").font(.caption.weight(.semibold))
                 Spacer()
                 if let plan { Text(plan).font(.caption2).foregroundStyle(.secondary) }
             }
@@ -147,7 +147,7 @@ private struct MediumWidget: View {
 
             if !snapshot.sessions.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("관전 중").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("Watching").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
                     ForEach(snapshot.sessions.prefix(3)) { s in
                         HStack(spacing: 4) {
                             Circle().fill(RiskTone.contextColor(fraction: s.contextFraction, scheme: scheme))

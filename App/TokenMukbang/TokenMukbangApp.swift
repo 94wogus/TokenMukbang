@@ -53,9 +53,9 @@ struct TokenMukbang: App {
     private let model = AppModel.shared
 
     var body: some Scene {
-        // Settings is a controller-owned NSWindow (StatusItemController.openSettingsWindow) — the
-        // SwiftUI `Settings` scene reopened unreliably (ADR-0018). The only SwiftUI scene left is
-        // a dev/screenshot mirror window, closed at launch unless TMK_SHOWWINDOW.
+        // The real UI is a controller-owned normal glass NSWindow (StatusItemController, ADR-0019)
+        // — Now/History/Settings in one window. This SwiftUI scene is only a dev/screenshot mirror,
+        // closed at launch unless TMK_SHOWWINDOW.
         Window("TokenMukbang", id: "dashboard") {
             MenuContentView(model: model)
         }

@@ -4,6 +4,76 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed — 메뉴바 UI를 일반 유리 NSWindow로 (2026-06-15, ADR-0019 supersedes ADR-0018)
+커스텀 borderless NSPanel 팝오버(ADR-0018)의 깜빡임/stale-opaque/높이점프/앵커링 우회가 누적돼,
+**우리 소유 일반 창은 투명화 가능**하다는 점을 살려 **일반 유리 NSWindow**로 전환:
+- `NSWindow([.titled,.closable,.fullSizeContentView])` + 투명 타이틀바 + `isOpaque=false` +
+  SwiftUI `VisualEffectBackground`(`NSVisualEffectView(.behindWindow,.underWindowBackground)`)로
+  behind-window 유리 유지(ADR-0016). `contentViewController`로 자동 사이징.
+- **Now / History / Settings 단일 창 통합** — 상단 세그먼트 탭. 기어 버튼·별도 설정 창 폐기(ADR-0017
+  "기어→별도 ⌘, 창"을 본 결정이 갱신). 메뉴바 클릭은 창 토글(앞이면 숨김, 뒤면 앞으로).
+- 창 **이동/닫기** 가능, 다른 창과 공존 → 설정 라이브 프리뷰 가능. 블러 강도(`glassOpacity`)는
+  `VisualEffectBackground.alpha`로 SwiftUI 반응형 → 라이브.
+- `GlassPanel`/present·dismiss·anchor·measure·settingsWindow 전부 제거. 탭 슬라이드 인디케이터는
+  내용과 분리(pill만 slide, 내용 즉시 전환)해 전환 중 두 탭 겹침 글리치 해소.
+- 문서 동기화: ADR-0019 신설 + ADR-0018 Superseded + 색인/ARCHITECTURE 갱신.
+
+### Added — 유리 블러 사용자 조절(라이브) + 알림 UI 리디자인 + 프리뷰 미니-팝오버 (2026-06-15)
+- **배경 유리 블러 슬라이더 (라이브)**: 팝오버 behind-window 블러 베일 알파를 `AppSettings.glassOpacity`
+  (0.2…1.0, 기본 0.70)로 노출 — 그동안 `GlassPanel`에 하드코딩이던 값. Appearance 탭 "Glass" 섹션에서 조절.
+  설정 창을 열어도 **팝오버를 닫지 않아**(openSettingsWindow 가 더는 dismiss 안 함) 슬라이더를 움직이면
+  열린 팝오버의 블러가 **실시간** 갱신(`GlassPanel.updateBlur`, `model.$settings.glassOpacity` 구독). 테마/
+  wash 는 SwiftUI 라 이미 실시간. 전역 클릭 모니터는 *타 앱* 클릭에만 반응하므로 설정 창 조작이 팝오버를
+  닫지 않음. `AppSettings`에 **forgiving Codable**(`decodeIfPresent`) 추가 — 새 필드가 기존 `settings.json`을
+  무효화해 전체 설정이 리셋되는 일 방지. (ADR-0018 결정 자체는 불변 — blurStrength 주입점만 추가.)
+- **프리뷰 = 미니 팝오버**: Appearance 프리뷰를 section 카드가 아니라 **faux 데스크톱 + 테마 wash(baseWash) +
+  히어로 카드** 3층 ZStack 으로 바꿔, 테마 바꾸면 카드뿐 아니라 **유리 영역 배경색까지** 바뀌게(user 2026-06-15).
+- **알림 설정 리디자인**: 투박하던 스위치 평면 나열을 → Surfaces는 선택형 **칩**(5h/7d/Sonnet, accent 틴트),
+  Events는 **아이콘 타일 + 제목/부제 + 스위치** 행(iOS 설정 idiom)으로. 이벤트별 색/심볼·한 줄 설명 추가.
+
+### Changed — 전체 영문화(글로벌) + 설정 탭 분리: Appearance / Alerts (2026-06-15)
+글로벌 배포 위해 **사용자-노출 텍스트 전부 영어**로 전환 + 설정 IA를 탭으로 정리:
+- **영문화**: 먹방 보이스는 유지하되 영어로 — `MukbangCopy`(`73% eaten`·`Digesting ·`·`Clean plate!`·
+  `At this pace, all gone in Nh.`·`Dropped the spoon.`), `MukbangZone`/`ModelCast` 라벨(Tasting…Digesting /
+  Big Eater·Regular·Light Eater·Gourmet), `DashboardLayout`(Now / History), 알림 카피(NotificationDecider),
+  History(Model mix·Fresh tokens·Reheated·Biggest feast·Hungriest project·Other), 위젯/오버레이/툴팁/
+  윈도우 타이틀. **테마 이름도 영문**: 숯불→Ember·말차→Matcha·한지→Paper·간장→Jade·오방→Ocean·흑백→Mono
+  (enum case 명은 유지, label만 변경 — 영속 설정 호환). 토큰 만료 감지의 `만료` 문자열 매칭 제거(에러는 영문).
+- **설정 탭 분리**: "외형(테마)"과 "임계값/알림"은 성격이 달라 한 스크롤에 섞여 있던 걸 상단 세그먼트
+  토글 **Appearance / Alerts** 두 탭으로 분리(user 2026-06-15). Appearance=테마 갤러리+라이브 프리뷰+커스텀,
+  Alerts=임계값+알림. `SettingsView(initialTab:)`로 렌더 검증(`live-settings-alerts.png` 추가).
+- 테스트 동기화(MukbangTests·NotificationDeciderTests·TokenHistoryTests 영문 단언). `swift test` 78/78 · 빌드 green.
+
+### Changed — 설정 창 프리미엄화: 비주얼 테마 갤러리 + 라이브 프리뷰 (2026-06-15, settings-premiumize)
+"없어보이던" 설정 창을 다른 앱(macOS 외형 설정·Raycast·VS Code) 수준의 **테마 갤러리**로 재설계:
+- **테마 = 자기-프리뷰 스와치 그리드**(3열). 좁은 7-way `DSSegmented`(텍스트만 우겨넣어 빈약) 대체.
+  스와치마다 그 방을 미니어처로 렌더 — `baseWash`(방) + 프로스트 카드(`glassTint` over material) +
+  accent 점 + heat-ramp 게이지 + 위험 4점. 선택 시 accent 링 + 체크 배지. 고를 때 결과가 보임.
+- **라이브 프리뷰**: 선택 테마를 실제 히어로 카드 크롬(GlassTile+StatusChip+GaugeBar)에 적용해 73%
+  샘플로 표시 — 평면 스와치가 아니라 진짜 결과를 미리 봄.
+- **Custom = 네이티브 컬러 웰**(SwiftUI `ColorPicker`, 옛 hex 텍스트필드 대체). `Color.hexString`로
+  `accentHex` 왕복(UISupport).
+- **섹션 IA 정비**: 외형/임계값/알림에 SF Symbol 아이콘 + eyebrow 헤더, 간격 리듬 정리. 임계값 슬라이더
+  틴트는 선택 테마의 `riskWarning`/`riskCritical`을 따름.
+- 검증 렌더 추가: `live-settings-{dark,light,custom}.png`(WindowSnapshot). 색 값/위험 문법 불변
+  (ADR-0015 그대로) — 순수 표현 레이어 변경. 빌드 green.
+
+### Changed — 테마 시스템 재설계: 큐레이션 6 rooms (2026-06-13, theme-palette-redesign)
+대충이고 특색 없던 테마(Classic/Mint/Sunset/Mono/Custom)를 **정체성이 확 사는 큐레이션 6방 + Custom**
+으로 재설계. 색 해석은 전부 앱 측 `ThemeMood`(ADR-0015), Kit은 색-free 유지:
+- **6 rooms = 서로 다른 색상환 영역**: 숯불(ember 오렌지)·말차(옐로-그린)·한지(버밀리언, light-first)·
+  간장(단청 제이드 + 소이브라운)·오방(블루)·흑백(무채색). 옛 raw value(classic/mint/sunset)는 가까운
+  방으로 Codable 마이그레이션(`Theme.init(from:)`).
+- 각 방이 **완결 팔레트**: 분위기(`baseWash`·`glassTint`·`accent`) + 위험 4단계(`riskCalm…Critical`+
+  `riskOver`, light/dark) + 데이터 식별색(accent로 `dataTint` 만큼 당김). 위험 의미 불변(calm→critical
+  순서·빨강=위험); **mono 는 calm/watch/warning 명도 램프 + critical/over instrument-red**(VU 미터
+  red-peak — 거의-흰 critical 이 안전처럼 읽힌 문제 해소, 빨강=위험 불변식 mono도 충족).
+- **테마가 보이는 자리**: 선택 탭 pill에 accent 틴트+언더라인(가장 중앙 레버), 카드 `glassTint`,
+  패널 `baseWash`(alpha↑하되 behind-window 글래스 ADR-0018은 비침). 이전엔 accent가 어디에도 안 보여
+  테마가 동일하게 보였던 게 근본 원인 — 이번에 해소.
+- 검증 렌더 확장: `live-theme-*`(dark) + `live-themelight-*`(light, 한지/흑백 native scheme 검증) +
+  `live-themehist-*`. 문서 동기화(STEAM_DESIGN 테마 섹션 추가). `swift test` 78/78 · 빌드 green.
+
 ### Changed — TokenMukbang 전면 리네임 (2026-06-12, ADR-0010 §0 완료)
 코드 전체에서 옛 `ClaudeUsage*` 브랜딩 제거 → **TokenMukbang**으로 정렬:
 - SPM 패키지 `ClaudeUsageKit`→`TokenMukbangKit`(+`Sources/`·`Tests/`·모든 `import`).

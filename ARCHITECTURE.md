@@ -21,7 +21,7 @@ claude-usage-widget/
 ├── Tests/TokenMukbangKitTests/    # 21 XCTest cases + Fixtures/
 └── App/                          # XcodeGen-generated app + widget (UI only)
     ├── project.yml               # source of truth → TokenMukbang.xcodeproj
-    ├── TokenMukbang/      # menu-bar app: NSStatusItem + custom glass NSPanel (ADR-0018)
+    ├── TokenMukbang/      # menu-bar app: NSStatusItem + normal glass NSWindow (ADR-0019)
     ├── TokenMukbangWidget/      # WidgetKit widget (systemSmall + systemMedium)
     └── Shared/                    # UI-only helpers used by both targets
 ```
