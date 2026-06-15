@@ -12,8 +12,10 @@ final class AppModel: ObservableObject {
 
     @Published private(set) var snapshot: UsageSnapshot?
     @Published private(set) var isRefreshing = false
-    /// Active dashboard tab (Dashboard / History / Settings).
+    /// Active window tab (Now / History / Settings).
     @Published var layout: DashboardLayout = .dashboard
+    /// Active Settings sub-tab (Appearance / Alerts).
+    @Published var settingsTab: SettingsTab = .appearance
     /// The floating Agent Watchers overlay controller (F1–F5).
     let overlay = OverlayController()
 

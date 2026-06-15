@@ -40,16 +40,6 @@ struct VisualEffectBackground: NSViewRepresentable {
     }
 }
 
-/// The main window's SwiftUI root: the dashboard/settings content over the behind-window glass.
-/// The theme wash (steamBackground, inside MenuContentView) sits *over* this blur, so the glass
-/// reads tinted to the room while the blurred desktop shows through.
-private struct MainWindowRoot: View {
-    @ObservedObject var model: AppModel
-    var body: some View {
-        MenuContentView(model: model)
-            .background(VisualEffectBackground(alpha: model.settings.glassOpacity).ignoresSafeArea())
-    }
-}
 
 /// Owns the menu-bar status item (its label image + wallpaper-aware color) and the single glass
 /// window. Replaces the `MenuBarExtra(.window)` popover and the old GlassPanel (ADR-0019).
@@ -115,14 +105,17 @@ final class StatusItemController: NSObject {
         w.makeKeyAndOrderFront(nil)
     }
 
-    /// Build the single glass window: a plain titled NSWindow made non-opaque with a transparent,
-    /// full-size-content titlebar (traffic lights float over the glass), auto-sized to the SwiftUI
-    /// content by a hosting controller. The `.behindWindow` blur lives in `MainWindowRoot`.
+    /// Build the single glass window — a REAL resizable window (like any app), not a popover. Its
+    /// size is decoupled from content: the user resizes it (height; width is locked to the column
+    /// layout) and the size persists. Content fills the window and SCROLLS when it overflows, so
+    /// different tab heights are irrelevant — switching tabs never touches the window. That
+    /// height-independent structure is the actual fix; the per-tab auto-resize was the whole problem
+    /// (user 2026-06-15). Transparent full-size-content titlebar keeps the glass edge-to-edge.
     private func makeWindow() -> NSWindow {
-        let hc = NSHostingController(rootView: MainWindowRoot(model: model))
-        hc.sizingOptions = [.preferredContentSize]
-        let w = NSWindow(contentViewController: hc)
-        w.styleMask = [.titled, .closable, .fullSizeContentView]
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 600),
+                         styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+                         backing: .buffered, defer: false)
+        let host = NSHostingView(rootView: AppShellView(model: model))
         w.titlebarAppearsTransparent = true
         w.titleVisibility = .hidden
         w.title = "TokenMukbang"
@@ -132,12 +125,16 @@ final class StatusItemController: NSObject {
         w.isReleasedWhenClosed = false           // closing just hides; the status item keeps the app alive
         w.hasShadow = true
         w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        w.minSize = NSSize(width: 600, height: 440)   // sidebar + detail need room; resizes freely
+        w.contentView = host
+        w.setFrameAutosaveName("TokenMukbangMainWindow")
+        positioned = w.setFrameUsingName("TokenMukbangMainWindow")   // skip first-show placement if restored
+        window = w
         // Drop back to .accessory (Dock icon hidden) when the window closes.
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification,
                                                object: w, queue: .main) { _ in
             MainActor.assumeIsolated { _ = NSApp.setActivationPolicy(.accessory) }
         }
-        window = w
         return w
     }
 

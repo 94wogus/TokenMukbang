@@ -170,10 +170,11 @@ enum WindowSnapshot {
         var settings = AppSettings.default
         settings.theme = theme
         let model = AppModel(previewSnapshot: PreviewData.snapshot, settings: settings, tokenEvents: PreviewData.tokenEvents)
+        model.settingsTab = tab
         let backdrop: Backdrop = scheme == .dark ? .neutralDark : .neutralLight
         let root = ZStack(alignment: .top) {
             backdrop.view.ignoresSafeArea()
-            SettingsView(model: model, initialTab: tab).frame(width: 360).padding(20)
+            SettingsView(model: model).frame(width: 360).padding(20)
         }
         .fixedSize(horizontal: false, vertical: true)
         .frame(width: 400)
@@ -200,13 +201,13 @@ enum WindowSnapshot {
         model.layout = layout
         let root = ZStack(alignment: .top) {
             backdrop.view.ignoresSafeArea()             // the "wallpaper" the glass blends with
-            MenuContentView(model: model).padding(.top, 28)
+            AppShellView(model: model)
         }
-        .frame(width: 392, height: 760)
+        .frame(width: 760, height: 600)
         .environment(\.colorScheme, backdrop.scheme)
 
         let host = NSHostingView(rootView: root)
-        host.frame = NSRect(x: 0, y: 0, width: 392, height: 760)
+        host.frame = NSRect(x: 0, y: 0, width: 760, height: 600)
         let window = NSWindow(contentRect: host.frame, styleMask: [.borderless],
                               backing: .buffered, defer: false)
         window.appearance = NSAppearance(named: backdrop.scheme == .dark ? .darkAqua : .aqua)
