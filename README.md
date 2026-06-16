@@ -1,4 +1,4 @@
-# Claude Usage Widget
+# TokenMukbang
 
 > **TL;DR:** A native macOS menu-bar app + WidgetKit widget (inspired by
 > [TokenEater](https://github.com/AThevon/TokenEater)) that reads Claude Code's
@@ -43,26 +43,67 @@ depend on that one package (no duplicated logic), and the widget only ever reads
 - A signed-in Claude Code (Pro/Max/Team) — the OAuth token is read from the macOS Keychain
   service `Claude Code-credentials`.
 
-## Build & run
+## Install
+
+There's no notarized release yet (ADR-0010), so the supported path is **build from
+source**. The Homebrew cask below is the planned distribution channel once a signed DMG
+ships.
+
+### From source (recommended today)
 
 ```bash
-# 1. Core + CLI (Command Line Tools is enough)
+# 0. Prereqs (once): full Xcode + XcodeGen
+xcode-select --install               # or install Xcode from the App Store
+brew install xcodegen
+
+# 1. Clone
+git clone https://github.com/94wogus/TokenMukbang.git
+cd TokenMukbang
+
+# 2. (optional) Verify the core pipeline headlessly — Command Line Tools is enough
+swift run usage-cli --print          # full pipeline → readable summary on stdout
+
+# 3. Generate the Xcode project and build the menu-bar app + widget
+cd App && xcodegen generate && cd ..
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+  xcodebuild -project App/TokenMukbang.xcodeproj \
+  -scheme TokenMukbang -destination 'platform=macOS' \
+  -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+
+# 4. Launch it (TokenMukbang lives in the menu bar — look top-right)
+open build/Build/Products/Debug/TokenMukbang.app
+```
+
+> `DEVELOPER_DIR=...` activates a full Xcode install for that command without changing
+> the system-wide `xcode-select` (no `sudo` needed). `CODE_SIGNING_ALLOWED=NO` lets it
+> build without a signing profile; macOS may warn the first time you `open` an unsigned
+> app — right-click → **Open** to allow it.
+
+On first launch the app reads your Claude Code OAuth token from the Keychain (you'll get
+a one-time Keychain access prompt — click **Allow**) and starts polling every 60s.
+
+### Homebrew (planned)
+
+Once a signed + notarized DMG is released, install via a personal tap:
+
+```bash
+brew install --cask 94wogus/tap/token-mukbang
+```
+
+The cask definition lives in [`Casks/token-mukbang.rb`](Casks/token-mukbang.rb); the
+signing/notarization pipeline is tracked in [ADR-0010](docs/adr/0010-sign-notarize-homebrew-cask-distribution.md).
+
+## Develop
+
+```bash
+# Core + CLI (Command Line Tools is enough — no Xcode)
 swift build
 swift run usage-cli --print          # headless: full pipeline → stdout
 swift run usage-cli --json           # machine-readable snapshot
 
-# 2. Tests (need the Xcode toolchain for XCTest)
+# Tests (need the Xcode toolchain for XCTest)
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
-
-# 3. The menu-bar app + widget
-cd App && xcodegen generate && cd ..
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
-  xcodebuild -project App/TokenMukbang.xcodeproj \
-  -scheme TokenMukbang -destination 'platform=macOS' build
 ```
-
-> `DEVELOPER_DIR=...` activates a full Xcode install for that command without changing
-> the system-wide `xcode-select` (no `sudo` needed).
 
 ## `usage-cli --print` example
 
