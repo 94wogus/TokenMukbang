@@ -107,9 +107,10 @@ struct AppShellView: View {
 
     private func icon(for item: DashboardLayout) -> String {
         switch item {
-        case .dashboard: return "gauge.with.dots.needle.67percent"
-        case .history:   return "chart.bar.fill"
-        case .settings:  return "gearshape.fill"
+        case .dashboard:     return "gauge.with.dots.needle.67percent"
+        case .history:       return "chart.bar.fill"
+        case .retrospective: return "moon.stars.fill"
+        case .settings:      return "gearshape.fill"
         }
     }
 
@@ -132,6 +133,7 @@ struct AppShellView: View {
                             .frame(maxWidth: .infinity, alignment: .center).padding(.vertical, 24)
                     }
                 case .history:  HistoryBrowserView(model: model)
+                case .retrospective: RetrospectiveView(model: model)
                 case .settings: SettingsView(model: model)
                 }
             }

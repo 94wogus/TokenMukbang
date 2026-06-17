@@ -26,6 +26,17 @@ final class AppModel: ObservableObject {
     private let settingsStore: SettingsStore
     private var loop: Task<Void, Never>?
 
+    // MARK: - Retrospective (ADR-0020 — "usage meter → reflection mirror")
+    private let retroBuilder = RetrospectiveBuilder()
+    private let retroStore = RetrospectiveStore()
+    /// Yesterday's retrospective. The metadata layer (A) is built cheaply from local
+    /// token events; the content layer (`topics`, B) is filled only on demand.
+    @Published private(set) var retrospective: RetrospectiveSummary?
+    /// True while the on-demand `claude` CLI summarization is running.
+    @Published private(set) var isGeneratingRetro = false
+    /// Whether the local `claude` CLI is installed — drives graceful degrade to A-only.
+    let claudeAvailable: Bool = ClaudeCLISummarizer.resolvedPath() != nil
+
     /// User settings (theme / thresholds / notifications) — persisted on change.
     @Published var settings: AppSettings {
         didSet { settingsStore.save(settings) }
@@ -176,6 +187,58 @@ final class AppModel: ObservableObject {
     func loadTokenHistory() async {
         let events = await Task.detached(priority: .utility) { JSONLParser.allEvents() }.value
         tokenEvents = events
+        loadRetrospective()
+    }
+
+    /// Build yesterday's **metadata (A)** retrospective from local token events and merge
+    /// any previously-generated **topics (B)** from the app-only cache. Cheap and
+    /// token-free — safe to call on load/refresh. **Never** calls the `claude` CLI; that
+    /// is `generateRetrospectiveTopics()` only (on-demand, 먹방 paradox — ADR-0020).
+    func loadRetrospective() {
+        var summary = retroBuilder.yesterday(events: tokenEvents, now: Date())
+        if let cached = retroStore.summary(for: summary.periodStart), let topics = cached.topics {
+            summary.topics = topics   // reuse generated content; don't re-spend tokens
+        }
+        retrospective = summary
+    }
+
+    #if DEBUG
+    /// Preview/render-only: inject generated topics so the Retro tab's post-generate state
+    /// (summary + themes + Regenerate/Copy) is reviewable headlessly. Not used by the live app.
+    func previewInjectTopics(_ topics: RetroTopics) { retrospective?.topics = topics }
+    #endif
+
+    /// **On-demand** content layer (B): send yesterday's conversation digest to the local
+    /// `claude` CLI, attach the resulting topics, and cache them app-only. This is the ONLY
+    /// path that spends tokens for the retrospective — it is never wired into the 60s poll
+    /// (`refresh()`), honoring the 먹방 paradox (ADR-0020). Uses the CLI's own auth, never
+    /// the OAuth token (ADR-0002); results never touch `SharedStore` (ADR-0003).
+    func generateRetrospectiveTopics() async {
+        guard !isGeneratingRetro, let base = retrospective,
+              let claudePath = ClaudeCLISummarizer.resolvedPath() else { return }
+        isGeneratingRetro = true
+        defer { isGeneratingRetro = false }
+
+        let start = base.periodStart, end = base.periodEnd
+        let events = tokenEvents
+        // Coach input = usage-pattern metrics (the signal) + a small balanced prompt sample
+        // (flavor). Built off the main actor (transcript walk can be heavy).
+        let coachInput = await Task.detached(priority: .utility) { () -> String in
+            let (byProject, order) = TranscriptDigest.collect(periodStart: start, periodEnd: end)
+            let promptCounts = byProject.mapValues(\.count)
+            let metrics = RetrospectiveMetrics.build(events: events, promptCounts: promptCounts,
+                                                     periodStart: start, periodEnd: end)
+            let sample = TranscriptDigest.assemble(byProject: byProject, order: order, maxChars: 4_000)
+            return metrics.coachInputText + (sample.isEmpty ? "" : "\n\nSample prompts:\n" + sample)
+        }.value
+
+        let summarizer = ClaudeCLISummarizer(runner: SystemProcessRunner(), claudePath: claudePath)
+        guard let topics = await summarizer.summarize(digest: coachInput, now: Date()) else { return }
+
+        var updated = base
+        updated.topics = topics
+        retrospective = updated
+        retroStore.save(updated)   // app-only cache; widget never reads this
     }
 
     /// Estimated window-open time for a window kind (for pacing/equilibrium).

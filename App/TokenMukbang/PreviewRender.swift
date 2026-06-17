@@ -42,7 +42,10 @@ enum PreviewData {
         return [
             ev(0.1, "claude-opus-4-8", 90_000, "arkraft"),
             ev(0.5, "claude-opus-4-7", 60_000, "claude-usage-widget"),
-            ev(1.2, "claude-fable-5", 40_000, "arkraft"),
+            // ~yesterday (UTC) so the Retro tab renders a representative A layer.
+            ev(1.1, "claude-opus-4-8", 70_000, "arkraft"),
+            ev(1.3, "claude-fable-5", 40_000, "claude-usage-widget"),
+            ev(1.6, "claude-sonnet-4-6", 8_000, "njtransit"),
             ev(2.0, "claude-opus-4-8", 55_000, "njtransit"),
             ev(2.4, "claude-sonnet-4-6", 6_000, "claude-usage-widget"),
             ev(3.1, "claude-fable-5", 24_000, "njtransit"),
@@ -142,7 +145,7 @@ enum WindowSnapshot {
         }
         // (b) every tab over the colorful wallpaper — for IA / redundancy / tab-structure critique.
         let tabs: [(String, DashboardLayout)] = [
-            ("dashboard", .dashboard), ("history", .history),
+            ("dashboard", .dashboard), ("history", .history), ("retrospective", .retrospective),
         ]
         for (name, layout) in tabs {
             render(to: "\(dir)/live-tab-\(name).png", layout: layout, backdrop: .colorful)
@@ -199,6 +202,20 @@ enum WindowSnapshot {
         settings.theme = theme
         let model = AppModel(previewSnapshot: PreviewData.snapshot, settings: settings, tokenEvents: PreviewData.tokenEvents)
         model.layout = layout
+        model.loadRetrospective()   // token-free A layer so the Retro tab renders content
+        #if DEBUG
+        if layout == .retrospective {
+            model.previewInjectTopics(RetroTopics(
+                summary: "Right-size your models — 100% Opus is your biggest waste; routine work on Sonnet/Haiku is the top win.",
+                themes: [
+                    "njtransit ate 1/3 of tokens over few prompts — long auto-loops; consider Sonnet or checkpoints",
+                    "100% Opus: blog drafting (wogus-blog) would be fine on Sonnet",
+                    "High cache-read/turn on ops-sessions — split sessions or /clear sooner",
+                    "Repeated release checks (.release) could become a saved skill",
+                ],
+                generatedAt: Date(), source: .claudeCLI))
+        }
+        #endif
         let root = ZStack(alignment: .top) {
             backdrop.view.ignoresSafeArea()             // the "wallpaper" the glass blends with
             AppShellView(model: model)

@@ -44,3 +44,6 @@ flowchart LR
 - `Sources/TokenMukbangKit/SharedStore.swift`, `App/TokenMukbang/AppModel.swift`,
   `App/TokenMukbangWidget/`, `App/project.yml`(entitlements)
 - `CLAUDE.md`(App Group 일치 규칙), `ARCHITECTURE.md` §4, ADR-0010 §0
+- 이 결정은 유효하다. [ADR-0020](0020-retrospective-via-local-claude-cli.md)이 이 경계를
+  **확장**한다 — 회고의 콘텐츠 파생 요약은 위젯이 읽는 `SharedStore` 스냅샷에 절대 넣지 않고
+  앱 전용으로만 저장한다(샌드박스 위젯은 콘텐츠를 못 본다).
