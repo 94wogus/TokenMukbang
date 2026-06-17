@@ -3,10 +3,12 @@ import TokenMukbangKit
 
 /// Compact token count (k/M/B). Shared by the History views.
 private func fmtTokens(_ n: Int) -> String { Formatting.tokenCount(n) }
-/// "M/d" day formatter shared by the History views.
-private let historyDayFmt: DateFormatter = {
-    let f = DateFormatter(); f.dateFormat = "M/d"; return f
-}()
+/// "M/d" day label in the user's chosen display zone (Settings → General). Must match the
+/// zone the bars are bucketed in (`AppModel.displayCalendar`) so labels line up with bars.
+private func historyDayLabel(_ date: Date, _ tz: TimeZone) -> String {
+    let f = DateFormatter(); f.dateFormat = "M/d"; f.timeZone = tz
+    return f.string(from: date)
+}
 
 /// One window's 7-day usage graph: label + current "완식" + sparkline.
 struct UsageGraphView: View {
@@ -67,7 +69,8 @@ struct HistoryBrowserView: View {
                     VStack(alignment: .leading, spacing: DS.row) {
                         Text("Model mix").dsEyebrow()
                         ModelLegend(totals: totals, scheme: scheme)
-                        StackedTokenBarChart(stacks: model.historyDayStacks)
+                        StackedTokenBarChart(stacks: model.historyDayStacks,
+                                             timeZone: model.settings.resolvedTimeZone)
                         tokenFooter
                     }
                     .padding(DS.section)
@@ -80,7 +83,7 @@ struct HistoryBrowserView: View {
     private var tokenFooter: some View {
         VStack(alignment: .leading, spacing: 2) {
             if let peak = model.historyHeaviestDay {
-                Label("Biggest feast \(historyDayFmt.string(from: peak.day)) · \(fmtTokens(peak.tokens)) tokens", systemImage: "flame")
+                Label("Biggest feast \(historyDayLabel(peak.day, model.settings.resolvedTimeZone)) · \(fmtTokens(peak.tokens)) tokens", systemImage: "flame")
             }
             if let tp = model.historyTopProject {
                 Label("Hungriest project \(tp.project) · \(fmtTokens(tp.tokens)) tokens", systemImage: "trophy")
@@ -168,6 +171,8 @@ struct ModelLegend: View {
 /// composition (Opus/Sonnet/Haiku/Fable/기타), so the mix is read straight off the bar.
 struct StackedTokenBarChart: View {
     let stacks: [TokenHistory.DayStack]
+    /// Display zone for the hover day label — matches the zone the bars are bucketed in.
+    var timeZone: TimeZone = .current
     @Environment(\.colorScheme) private var scheme
     @Environment(\.themeMood) private var mood
     @State private var hovered: Int?
@@ -207,7 +212,7 @@ struct StackedTokenBarChart: View {
         if let i = hovered, i < stacks.count {
             let st = stacks[i]
             let parts = st.segments.map { "\($0.cast?.modelName ?? "Other") \(fmtTokens($0.tokens))" }
-            Text("\(historyDayFmt.string(from: st.day)) · \(parts.joined(separator: "  "))")
+            Text("\(historyDayLabel(st.day, timeZone)) · \(parts.joined(separator: "  "))")
                 .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
                 .lineLimit(1).minimumScaleFactor(0.8)
         } else {

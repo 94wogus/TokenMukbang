@@ -73,4 +73,52 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(loaded.thresholds.warning, 60)
         XCTAssertTrue(loaded.notifications.sonnet)
     }
+
+    // MARK: Display time zone (configurable-timezone)
+
+    /// By default the app follows the system zone (no override stored).
+    func testTimeZoneDefaultsToSystem() {
+        let s = AppSettings.default
+        XCTAssertNil(s.timeZoneIdentifier)
+        XCTAssertTrue(s.followsSystemTimeZone)
+        XCTAssertEqual(s.resolvedTimeZone, .current)
+        XCTAssertEqual(s.displayCalendar.timeZone, .current)
+    }
+
+    /// A valid override is resolved and threads into the display calendar; an unknown
+    /// identifier falls back to the system zone (never crashes the aggregations).
+    func testTimeZoneOverrideResolves() {
+        var s = AppSettings.default
+        s.timeZoneIdentifier = "Asia/Seoul"
+        XCTAssertFalse(s.followsSystemTimeZone)
+        XCTAssertEqual(s.resolvedTimeZone.identifier, "Asia/Seoul")
+        XCTAssertEqual(s.displayCalendar.timeZone.identifier, "Asia/Seoul")
+
+        s.timeZoneIdentifier = "Not/AZone"
+        XCTAssertEqual(s.resolvedTimeZone, .current)   // graceful fallback
+    }
+
+    /// An older settings.json (written before the field existed) still decodes — the zone
+    /// falls back to nil (= follow system) without wiping the other preferences.
+    func testForgivingDecodeWithoutTimeZone() throws {
+        let json = Data("""
+        {"theme":"matcha","thresholds":{"warning":55,"critical":80}}
+        """.utf8)
+        let s = try JSONDecoder().decode(AppSettings.self, from: json)
+        XCTAssertNil(s.timeZoneIdentifier)
+        XCTAssertEqual(s.theme, .matcha)
+        XCTAssertEqual(s.thresholds.warning, 55)
+    }
+
+    /// The override survives a save/load round trip.
+    func testTimeZoneRoundTrip() {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("tmk-tz-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = SettingsStore(directory: dir)
+        var s = AppSettings.default
+        s.timeZoneIdentifier = "America/New_York"
+        store.save(s)
+        XCTAssertEqual(store.load().timeZoneIdentifier, "America/New_York")
+    }
 }

@@ -119,6 +119,12 @@ deliberately avoid emitting it. `SecurityCLICredentialStore` is read-only — it
 - **Dates**: the OAuth API sends ISO-8601 *with fractional seconds + offset*
   (`2026-06-11T13:59:59.715802+00:00`). Decode API payloads with `ClaudeJSON.makeDecoder()`,
   not a default `JSONDecoder`. `SharedStore` snapshots use plain `.iso8601`.
+- **Display time zone**: `TokenHistory` day bucketing is **calendar-injectable** and defaults to
+  `TokenHistory.utcCalendar` (deterministic tests). The *app* overrides this per the user setting
+  `AppSettings.timeZoneIdentifier` (nil = follow system) via `AppSettings.displayCalendar` /
+  `AppModel.displayCalendar`, so History charts, day buckets and labels render in the chosen zone
+  (Settings → General). Label formatters must use the same `resolvedTimeZone` as the buckets, or
+  bars and labels drift. Reset countdowns are pure interval math — zone-independent.
 
 ## Naming note
 
