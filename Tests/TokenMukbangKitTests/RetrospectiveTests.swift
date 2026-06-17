@@ -72,6 +72,25 @@ final class RetrospectiveTests: XCTestCase {
         XCTAssertEqual(s.hourly[5], 0)
     }
 
+    /// hourly buckets follow the injected calendar's zone: the same events land in +09:00-shifted
+    /// buckets under an Asia/Seoul calendar (this is what makes the retrospective's "WHEN" match
+    /// the user's display zone instead of UTC).
+    func testBuildMetadataHourlyRespectsCalendarZone() {
+        let start = Date(timeIntervalSince1970: 10 * 86_400)  // 00:00 UTC
+        let events = [
+            ev(start.addingTimeInterval(3600), "claude-opus-4-8", "a", 10),      // 01:00 UTC = 10:00 KST
+            ev(start.addingTimeInterval(20 * 3600), "claude-opus-4-8", "a", 7),  // 20:00 UTC = 05:00 KST (+1d)
+        ]
+        var seoul = Calendar(identifier: .gregorian)
+        seoul.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        // Widen the window so both events stay in-period after the +9h shift.
+        let s = RetrospectiveBuilder().buildMetadata(
+            events: events, periodStart: start, periodEnd: start.addingTimeInterval(2 * 86_400), calendar: seoul)
+        XCTAssertEqual(s.hourly[10], 10)   // 01:00 UTC → 10:00 KST
+        XCTAssertEqual(s.hourly[5], 7)     // 20:00 UTC → 05:00 KST
+        XCTAssertEqual(s.hourly[1], 0)     // nothing at UTC-hour 1 anymore
+    }
+
     func testBuildMetadataBaselineDeltaVsPriorWindow() {
         let start = Date(timeIntervalSince1970: 10 * 86_400)
         let end = start.addingTimeInterval(86_400)
@@ -251,14 +270,21 @@ final class RetrospectiveTests: XCTestCase {
             baselineDeltaPercent: 13,
             topics: RetroTopics(summary: "Focused on auth + retro.", themes: ["auth", "retro ADR"],
                                 generatedAt: start, source: .claudeCLI))
-        let report = summary.plainTextReport
+        let report = summary.plainTextReport()
         XCTAssertTrue(report.contains("262.5k eaten"))
         XCTAssertTrue(report.contains("↑13% vs usual"))
         XCTAssertTrue(report.contains("arkraft: 157.5k"))
         XCTAssertTrue(report.contains("Opus: 262.5k"))
-        XCTAssertTrue(report.contains("Busiest around 23:00 UTC"))
+        XCTAssertTrue(report.contains("Busiest around 23:00 UTC"))   // default zone = UTC
         XCTAssertTrue(report.contains("Focused on auth + retro."))
         XCTAssertTrue(report.contains("- auth"))
+
+        // The label carries the zone, not "UTC", when a display zone is passed. (The bucket index
+        // itself is fixed by whatever calendar built `hourly` — re-bucketing is tested at build level.)
+        let seoul = TimeZone(identifier: "Asia/Seoul")!
+        let zoned = summary.plainTextReport(timeZone: seoul)
+        XCTAssertFalse(zoned.contains("23:00 UTC"))
+        XCTAssertTrue(zoned.contains("Busiest around 23:00 \(RetrospectiveSummary.zoneAbbrev(seoul))"))
     }
 
     func testPlainTextReportOmitsTopicsWhenNotGenerated() {
@@ -267,7 +293,7 @@ final class RetrospectiveTests: XCTestCase {
             periodStart: start, periodEnd: start.addingTimeInterval(86_400),
             totalConsumed: 100, projects: [.init(project: "a", tokens: 100)], casts: [],
             hourly: Array(repeating: 0, count: 24), baselineDeltaPercent: nil)
-        let report = summary.plainTextReport
+        let report = summary.plainTextReport()
         XCTAssertFalse(report.contains("What you focused on"))
         XCTAssertTrue(report.contains("Total: 100 eaten"))
     }

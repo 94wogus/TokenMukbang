@@ -19,7 +19,8 @@ public struct RetrospectiveSummary: Codable, Sendable, Equatable {
     public let projects: [ProjectShare]
     /// Per-model-cast consumption, heaviest first ("출연진별 섭취량").
     public let casts: [CastShare]
-    /// Tokens by UTC hour-of-day (24 buckets) — when you were eating.
+    /// Tokens by hour-of-day (24 buckets) in the zone the summary was built with — UTC by
+    /// default, the user's display zone when built by the app — i.e. when you were eating.
     public let hourly: [Int]
     /// This period's active total vs the immediately preceding equal-length window.
     /// `nil` when there's no prior data to compare against.
