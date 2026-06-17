@@ -64,6 +64,26 @@ final class TokenHistoryTests: XCTestCase {
         XCTAssertEqual(casts.first { $0.cast == nil }?.id, "Other")
     }
 
+    /// Day bucketing follows the injected calendar's zone: two events that straddle UTC
+    /// midnight collapse into one local day under a +09:00 calendar but split into two under UTC.
+    /// This is what the configurable display zone relies on (AppModel.displayCalendar).
+    func testByDayBucketsRespectCalendarZone() {
+        func ev(_ secs: TimeInterval) -> TokenEvent {
+            TokenEvent(timestamp: Date(timeIntervalSince1970: secs), model: "claude-opus-4-8",
+                       inputTokens: 10, outputTokens: 0, cacheReadTokens: 0,
+                       cacheCreationTokens: 0, project: "p")
+        }
+        let events = [ev(72_000), ev(90_000)]   // 1970-01-01 20:00 UTC and 1970-01-02 01:00 UTC
+
+        // UTC: 20:00 → Jan 1, 01:00 → Jan 2 ⇒ two day buckets.
+        XCTAssertEqual(TokenHistory.byDay(events).count, 2)
+
+        // Asia/Seoul (UTC+9): both fall on Jan 2 (05:00 / 10:00 KST) ⇒ one day bucket.
+        var seoul = Calendar(identifier: .gregorian)
+        seoul.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        XCTAssertEqual(TokenHistory.byDay(events, calendar: seoul).count, 1)
+    }
+
     func testByDayCastStacks() {
         let day0 = Date(timeIntervalSince1970: 0)                 // 1970-01-01 UTC
         let day1 = Date(timeIntervalSince1970: 86_400)            // 1970-01-02 UTC

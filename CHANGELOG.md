@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added — 표시 타임존을 설정 가능하게 (2026-06-17)
+차트·일자 버킷·시각 라벨이 UTC 기준이라 다른 타임존 사용자에게는 "하루"의 경계가 어긋나 보이던 문제 해결:
+- **Settings → 새 General 탭**에 타임존 섹션 — 이 Mac의 감지된 타임존을 표시하고, 기본은 "Follow system
+  time zone"(시스템 따라가기). 끄면 **전체 IANA 타임존을 검색**해 임의 기준 타임존으로 변경 가능
+  (`TimeZonePicker`, 검색 필드 + 스크롤 목록 + 현재 오프셋 표시).
+- `AppSettings.timeZoneIdentifier`(옵셔널, nil=시스템 따라가기) 추가 — 관용적 디코드라 기존 `settings.json`
+  은 그대로 로드(다른 설정 보존). `resolvedTimeZone` / `followsSystemTimeZone` / `displayCalendar` 파생.
+- `AppModel.displayCalendar`를 `TokenHistory.byDay/byDayCast/heaviestDay`(History 차트·"Biggest feast"·
+  peak day)에 주입 — 일자 버킷이 선택한 타임존의 벽시계 기준으로 재계산. 차트 라벨 포매터도 같은 존으로
+  맞춰 막대와 라벨이 일치(`historyDayLabel`). **리셋 카운트다운은 순수 간격 계산이라 영향 없음.**
+- Kit 집계는 테스트 결정성을 위해 기본 `TokenHistory.utcCalendar`를 유지(앱만 표시 존을 주입).
+- 테스트: AppSettings 타임존(기본/오버라이드/관용 디코드/라운드트립) + 타임존별 일자 버킷팅 6종 추가.
+
 ### Changed — 회고 코칭 plan-aware 프레이밍 (2026-06-17, ADR-0020)
 회고 코치가 비용 조언을 플랜에 맞게 프레이밍한다. 코치 입력에 플랜 라벨(예: Max)을 넣어,
 구독 플랜이면 Opus 남발의 비용을 *$ 요금*이 아니라 **5h/7d 사용량 윈도우를 더 빨리 소진**(한도에

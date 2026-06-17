@@ -131,23 +131,32 @@ public struct AppSettings: Codable, Sendable, Equatable {
     /// (ADR-0018). Content stays crisp regardless (it sits above the veil). User-tunable.
     public var glassOpacity: Double
 
+    /// IANA identifier of the time zone used to **display** day buckets, chart axes and
+    /// times (e.g. `"Asia/Seoul"`). `nil` = follow the system zone live (`TimeZone.current`).
+    /// The OAuth API delivers UTC-bearing instants; this only changes how we *bucket and
+    /// label* them — the Kit's aggregation stays calendar-injectable and defaults to UTC for
+    /// deterministic tests (`TokenHistory.utcCalendar`).
+    public var timeZoneIdentifier: String?
+
     /// The shipped default blur veil — was a hard-coded constant in `GlassPanel`, now the default
     /// for the user-tunable `glassOpacity` (so existing behavior is unchanged until adjusted).
     public static let defaultGlassOpacity: Double = 0.70
 
     public init(theme: Theme, customPalette: ThemePalette, thresholds: RiskThresholds,
                 notifications: NotificationSettings, temperament: Temperament = .balanced,
-                glassOpacity: Double = AppSettings.defaultGlassOpacity) {
+                glassOpacity: Double = AppSettings.defaultGlassOpacity,
+                timeZoneIdentifier: String? = nil) {
         self.theme = theme
         self.customPalette = customPalette
         self.thresholds = thresholds
         self.notifications = notifications
         self.temperament = temperament
         self.glassOpacity = glassOpacity
+        self.timeZoneIdentifier = timeZoneIdentifier
     }
 
     private enum CodingKeys: String, CodingKey {
-        case theme, customPalette, thresholds, notifications, temperament, glassOpacity
+        case theme, customPalette, thresholds, notifications, temperament, glassOpacity, timeZoneIdentifier
     }
 
     /// Forgiving decode: any missing field falls back to its default, so adding a new setting
@@ -161,6 +170,25 @@ public struct AppSettings: Codable, Sendable, Equatable {
         notifications = try c.decodeIfPresent(NotificationSettings.self, forKey: .notifications) ?? .default
         temperament = try c.decodeIfPresent(Temperament.self, forKey: .temperament) ?? .balanced
         glassOpacity = try c.decodeIfPresent(Double.self, forKey: .glassOpacity) ?? AppSettings.defaultGlassOpacity
+        timeZoneIdentifier = try c.decodeIfPresent(String.self, forKey: .timeZoneIdentifier)
+    }
+
+    /// The effective time zone for display — the override if set and valid, else the live
+    /// system zone. Re-evaluated on each access so "follow system" tracks the OS.
+    public var resolvedTimeZone: TimeZone {
+        if let id = timeZoneIdentifier, let tz = TimeZone(identifier: id) { return tz }
+        return .current
+    }
+
+    /// True when no explicit override is set — the app follows the system zone.
+    public var followsSystemTimeZone: Bool { timeZoneIdentifier == nil }
+
+    /// A Gregorian calendar in the resolved display zone — what the app passes to
+    /// `TokenHistory` aggregations and uses to format day/time labels.
+    public var displayCalendar: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = resolvedTimeZone
+        return c
     }
 
     /// The active palette (preset, or custom colors when theme == .custom).

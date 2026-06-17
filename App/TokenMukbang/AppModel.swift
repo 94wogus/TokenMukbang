@@ -64,19 +64,30 @@ final class AppModel: ObservableObject {
         HistoryFilter.tokenEvents(tokenEvents, timeframe: historyTimeframe, cast: nil, now: Date())
     }
 
+    /// Calendar in the user's chosen display zone (Settings → General; nil = follow system).
+    /// Day buckets and chart axes are computed in this zone so a "day" lines up with the user's
+    /// wall clock rather than UTC. (Kit aggregations keep their UTC default for tests.)
+    var displayCalendar: Calendar { settings.displayCalendar }
+
     /// Per-model token-volume breakdown (Opus/Sonnet/Haiku/Fable/기타) in the timeframe.
     var historyCastTotals: [TokenHistory.CastTotal] { TokenHistory.byCast(timeframeTokenEvents) }
     /// Daily token consumption split into per-model segments (the stacked bar chart).
-    var historyDayStacks: [TokenHistory.DayStack] { TokenHistory.byDayCast(timeframeTokenEvents) }
+    var historyDayStacks: [TokenHistory.DayStack] {
+        TokenHistory.byDayCast(timeframeTokenEvents, calendar: displayCalendar)
+    }
     /// Active/cached/cache-hit + trend-vs-previous-period summary for the timeframe.
     var historySummary: TokenHistory.Summary {
         TokenHistory.summary(tokenEvents, timeframe: historyTimeframe, now: Date())
     }
 
     /// Daily token-consumption buckets for the History browser.
-    var historyTokenBuckets: [TokenHistory.DayBucket] { TokenHistory.byDay(filteredTokenEvents) }
+    var historyTokenBuckets: [TokenHistory.DayBucket] {
+        TokenHistory.byDay(filteredTokenEvents, calendar: displayCalendar)
+    }
     /// Heaviest day / top project within the current History filter.
-    var historyHeaviestDay: TokenHistory.DayBucket? { TokenHistory.heaviestDay(filteredTokenEvents) }
+    var historyHeaviestDay: TokenHistory.DayBucket? {
+        TokenHistory.heaviestDay(filteredTokenEvents, calendar: displayCalendar)
+    }
     var historyTopProject: (project: String, tokens: Int)? { TokenHistory.topProject(filteredTokenEvents) }
 
     /// How often to re-poll the usage API (seconds). 5 min to stay well under
@@ -250,7 +261,7 @@ final class AppModel: ObservableObject {
     }
 
     /// The day with the most token consumption (Monitoring "peak day").
-    var peakDay: TokenHistory.DayBucket? { TokenHistory.heaviestDay(tokenEvents) }
+    var peakDay: TokenHistory.DayBucket? { TokenHistory.heaviestDay(tokenEvents, calendar: displayCalendar) }
     /// The project that ate the most tokens (History "top project").
     var topProject: (project: String, tokens: Int)? { TokenHistory.topProject(tokenEvents) }
 

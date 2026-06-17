@@ -1,13 +1,19 @@
 import SwiftUI
 import TokenMukbangKit
 
-/// Which Settings tab is showing. Appearance (how it looks) and Alerts (when it warns) are
-/// different kinds of setting, so they live behind a top segmented toggle rather than one long
-/// scroll (user feedback 2026-06-15).
+/// Which Settings tab is showing. General (time zone & basics), Appearance (how it looks) and
+/// Alerts (when it warns) are different kinds of setting, so they live behind a top segmented
+/// toggle rather than one long scroll (user feedback 2026-06-15).
 enum SettingsTab: String, CaseIterable, Hashable, Identifiable {
-    case appearance, alerts
+    case general, appearance, alerts
     var id: String { rawValue }
-    var label: String { self == .appearance ? "Appearance" : "Alerts" }
+    var label: String {
+        switch self {
+        case .general:    return "General"
+        case .appearance: return "Appearance"
+        case .alerts:     return "Alerts"
+        }
+    }
 }
 
 /// The Settings space — two tabs:
@@ -31,6 +37,7 @@ struct SettingsView: View {
             DSSegmented(selection: $model.settingsTab, options: SettingsTab.allCases) { $0.label }
 
             switch model.settingsTab {
+            case .general: generalTab
             case .appearance: appearanceTab
             case .alerts: alertsTab
             }
@@ -40,6 +47,52 @@ struct SettingsView: View {
         // tint to the selected theme via the env.
         .frame(maxWidth: .infinity, alignment: .leading)
         .environment(\.themeMood, selectedMood)
+    }
+
+    // MARK: - General tab
+
+    /// General settings — currently the display **time zone**. The OAuth API delivers
+    /// UTC-bearing instants; this zone decides how day buckets / chart axes / times are
+    /// labelled (it never moves a reset countdown, which is pure interval math).
+    private var generalTab: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            section("Time zone", icon: "clock") {
+                // The machine's detected zone — shown for reference even when overriding.
+                HStack(spacing: 6) {
+                    Image(systemName: "location.fill").font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                    Text("This Mac: \(tzLabel(.current))")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+
+                Toggle(isOn: followSystem) {
+                    Text("Follow system time zone").font(.caption)
+                }
+                .toggleStyle(.switch).controlSize(.mini)
+                .tint(selectedMood.accent)
+
+                if !followSystem.wrappedValue {
+                    Divider().padding(.vertical, 2)
+                    Text("Showing times in").font(.caption2).foregroundStyle(.tertiary)
+                    TimeZonePicker(selection: timeZoneOverride, accent: selectedMood.accent)
+                }
+
+                Text("Charts, day buckets and times use this zone. Reset countdowns are unaffected.")
+                    .font(.system(size: 9)).foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    /// nil identifier ⇄ "follow system" switch.
+    private var followSystem: Binding<Bool> {
+        Binding(get: { model.settings.followsSystemTimeZone },
+                set: { model.settings.timeZoneIdentifier = $0 ? nil : TimeZone.current.identifier })
+    }
+
+    /// The explicit override identifier (only read/written while not following system).
+    private var timeZoneOverride: Binding<String> {
+        Binding(get: { model.settings.timeZoneIdentifier ?? TimeZone.current.identifier },
+                set: { model.settings.timeZoneIdentifier = $0 })
     }
 
     // MARK: - Appearance tab
@@ -320,5 +373,81 @@ private struct ThemeSwatch: View {
         }
         .contentShape(Rectangle())
         .help(theme.label)
+    }
+}
+
+// MARK: - Time zone picker
+
+/// "UTC+09:00" style offset for a zone (uses the zone's *current* offset incl. DST).
+private func tzOffset(_ tz: TimeZone) -> String {
+    let secs = tz.secondsFromGMT()
+    let a = abs(secs)
+    return String(format: "UTC%@%02d:%02d", secs >= 0 ? "+" : "-", a / 3600, (a % 3600) / 60)
+}
+
+/// "Asia/Seoul (UTC+09:00)" — identifier + current offset.
+private func tzLabel(_ tz: TimeZone) -> String { "\(tz.identifier) (\(tzOffset(tz)))" }
+
+/// A searchable list of every IANA time zone — type to filter, tap to select. Lives inside the
+/// Settings popover, so it's a compact filter field + a fixed-height scrolling list (not a sheet).
+private struct TimeZonePicker: View {
+    @Binding var selection: String
+    var accent: Color
+    @State private var query: String = ""
+
+    private var matches: [String] {
+        let all = TimeZone.knownTimeZoneIdentifiers.sorted()
+        guard !query.isEmpty else { return all }
+        return all.filter { $0.localizedCaseInsensitiveContains(query) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").font(.system(size: 10)).foregroundStyle(.tertiary)
+                TextField("Search (e.g. Seoul, New_York, UTC)", text: $query)
+                    .textFieldStyle(.plain).font(.caption)
+                if !query.isEmpty {
+                    Button { query = "" } label: {
+                        Image(systemName: "xmark.circle.fill").font(.system(size: 10))
+                            .foregroundStyle(.tertiary)
+                    }.buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 8).padding(.vertical, 5)
+            .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 6))
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(matches, id: \.self) { id in
+                        let isSel = id == selection
+                        Button { selection = id } label: {
+                            HStack(spacing: 6) {
+                                Text(id).font(.caption)
+                                    .foregroundStyle(isSel ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                                Spacer(minLength: 6)
+                                Text(tzOffset(TimeZone(identifier: id) ?? .current))
+                                    .font(.caption2.monospacedDigit()).foregroundStyle(.tertiary)
+                                if isSel {
+                                    Image(systemName: "checkmark").font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(accent)
+                                }
+                            }
+                            .padding(.vertical, 4).padding(.horizontal, 6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                            .background(isSel ? AnyShapeStyle(accent.opacity(0.16)) : AnyShapeStyle(.clear),
+                                        in: RoundedRectangle(cornerRadius: 5))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if matches.isEmpty {
+                        Text("No matching zone").font(.caption2).foregroundStyle(.tertiary)
+                            .padding(.vertical, 8)
+                    }
+                }
+            }
+            .frame(height: 170)
+        }
     }
 }
