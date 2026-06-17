@@ -206,10 +206,10 @@ enum WindowSnapshot {
         #if DEBUG
         if layout == .retrospective {
             model.previewInjectTopics(RetroTopics(
-                summary: "Right-size your models — 100% Opus is your biggest waste; routine work on Sonnet/Haiku is the top win.",
+                summary: "Right-size your models — 100% Opus burns your 5h/7d limit fastest; moving routine work to Sonnet/Haiku buys back runway.",
                 themes: [
-                    "njtransit ate 1/3 of tokens over few prompts — long auto-loops; consider Sonnet or checkpoints",
-                    "100% Opus: blog drafting (wogus-blog) would be fine on Sonnet",
+                    "On Max, Opus-everything is why you hit warning zones — reserve Opus for hard reasoning",
+                    "blog drafting (wogus-blog) on Sonnet would stretch your window further",
                     "High cache-read/turn on ops-sessions — split sessions or /clear sooner",
                     "Repeated release checks (.release) could become a saved skill",
                 ],

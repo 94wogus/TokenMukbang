@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed — 회고 코칭 plan-aware 프레이밍 (2026-06-17, ADR-0020)
+회고 코치가 비용 조언을 플랜에 맞게 프레이밍한다. 코치 입력에 플랜 라벨(예: Max)을 넣어,
+구독 플랜이면 Opus 남발의 비용을 *$ 요금*이 아니라 **5h/7d 사용량 윈도우를 더 빨리 소진**(한도에
+빨리 도달)으로 설명 — 이 앱이 추적하는 바로 그 한도와 정합. `RetrospectiveMetrics.coachInputText`가
+`planLabel` 파라미터를 받고, `AppModel`이 `snapshot.planLabel`을 전달. (pay-per-token API는 $ 유지.)
+
 ### Added — 회고(Retrospective) 기능 구현 (2026-06-17, ADR-0020, S1~S4)
 설계(ADR-0020/VISION/PLAN)에 이어 회고 기능을 실제 구현 — "사용량 미터 → 사용 습관 거울"의 첫 기능:
 - **Kit `Retrospective/`** (Foundation-only, ADR-0001): `RetrospectiveBuilder`(A층 — 어제의

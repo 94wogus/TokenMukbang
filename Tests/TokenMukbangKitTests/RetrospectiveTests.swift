@@ -306,10 +306,13 @@ final class RetrospectiveTests: XCTestCase {
         let m = RetrospectiveMetrics.build(
             events: [tev(start.addingTimeInterval(3600), "claude-opus-4-8", "njtransit", 1000, 5000)],
             promptCounts: ["njtransit": 1], periodStart: start, periodEnd: end)
-        let text = m.coachInputText
+        let text = m.coachInputText()
         XCTAssertTrue(text.contains("Opus 100%"))
         XCTAssertTrue(text.contains("njtransit"))
         XCTAssertTrue(text.contains("/turn"))   // cache-read/turn signal present
+        XCTAssertFalse(text.contains("Plan:"))  // no plan line when not provided
+        // Plan-aware: the plan label is surfaced so the coach can frame cost as window-burn.
+        XCTAssertTrue(m.coachInputText(planLabel: "Max").contains("Plan: Max"))
     }
 
     func testEmptyStoreReturnsNil() {

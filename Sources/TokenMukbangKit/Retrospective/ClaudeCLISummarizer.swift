@@ -35,7 +35,10 @@ public struct ClaudeCLISummarizer: RetrospectiveSummarizing {
     (per-project tokens, user-prompts, tokens/prompt, cache-read/turn, model) plus a few \
     sample prompts. Analyze HOW EFFICIENTLY they used their tokens and give specific, \
     actionable advice to use them BETTER — do NOT just describe what they did. Consider:
-    - Cost: model choice (e.g. Opus where Sonnet/Haiku would do), cache reuse, high tokens/prompt.
+    - Cost: model choice (e.g. Opus where Sonnet/Haiku would do), cache reuse, high tokens/prompt. \
+      Frame cost by the user's Plan (shown in the data): for subscription plans (Max/Pro/Team) the \
+      cost of over-using Opus is BURNING THE SHARED 5h/7d USAGE LIMIT FASTER (hitting limits / fewer \
+      hours of runway) — NOT dollars; only talk dollars for pay-per-token API usage.
     - Session/context hygiene: high cache-read/turn ⇒ ballooned context; when to /clear or split.
     - Workflow: low prompts + high tokens ⇒ automation/long auto-loops (e.g. Ralph) — flag if it \
       dominates; repeated work that could become a saved prompt/skill.
