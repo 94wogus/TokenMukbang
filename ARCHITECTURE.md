@@ -83,6 +83,7 @@ substitute a fake:
 | OAuth API | `UsageFetching` | `ClaudeAPIClient` | `GET /api/oauth/{usage,profile}` |
 | Sessions | (concrete, injects `ProcessRunning`) | `SessionDetector` | `ps` + `lsof` |
 | Terminal focus | (concrete, injects `ProcessRunning`) | `TerminalFocus` | `osascript` |
+| Retrospective summary | `RetrospectiveSummarizing` | `ClaudeCLISummarizer` | local `claude` CLI (`claude -p`) — ADR-0020 |
 
 `TokenMukbangKit` module map:
 
@@ -121,6 +122,11 @@ substitute a fake:
   `~/.claude/projects/*.jsonl`에서 파싱·집계 — by day/model/project/**cast**, `byDayCast`(일별 모델
   세그먼트), `summary`(신선/재가열·캐시적중·전기간 대비 Δ), heaviest day, top project; ADR-0012).
   History는 **CLI 토큰**만 다룬다 — API 사용률%는 계정 전체(웹 포함) 메트릭이라 섞지 않는다.
+- **`Retrospective/`** — "yesterday's you" reflection (ADR-0020): `RetrospectiveBuilder` (layer A
+  metadata, reuses `TokenHistory`/`HistoryStore`); `RetrospectiveMetrics` (per-project usage-pattern
+  signals: tokens·prompts·tokens/prompt·cache-read/turn·model — the coach input); `RetrospectiveSummarizing`
+  seam + `ClaudeCLISummarizer` + `TranscriptDigest` (layer B **coaching** via the local `claude` CLI,
+  on-demand); `RetrospectiveStore` (app-only cache, **never** `SharedStore`); `RetrospectiveSummary`/`RetroTopics` DTOs.
 - **`Settings/`** — `AppSettings` (Codable: `Theme` 4 presets + custom `ThemePalette`,
   `RiskThresholds`, `NotificationSettings`) + `SettingsStore` (JSON persistence, injectable dir).
 - **`Notifications/`** — `NotificationDecider` (edge-triggered: compares previous vs current
@@ -135,6 +141,18 @@ substitute a fake:
 > The app calls `history.record(snap)` each poll, then attaches the headline window's
 > 7-day sparkline to `UsageSnapshot.headlineSparkline` before caching so the widget can
 > draw it without history access.
+
+> Decision: [ADR-0020 — retrospective via local `claude` CLI](docs/adr/0020-retrospective-via-local-claude-cli.md) · Direction: [`docs/VISION.md`](docs/VISION.md)
+> **"usage meter → reflection mirror".** The retrospective (`Retrospective/`:
+> `RetrospectiveBuilder` + `RetrospectiveSummarizing` seam / `ClaudeCLISummarizer` + `TranscriptDigest`
+> + app-only `RetrospectiveStore`) reflects "yesterday's you" in two layers: **(A) metadata** reusing
+> `TokenHistory`/`HistoryStore` (ADR-0011/0012, no duplication), and **(B) usage-pattern coaching**
+> ("how to use tokens better" — from `RetrospectiveMetrics`, not a raw prompt dump) by shelling
+> the local `claude` CLI (behind `ProcessRunning`). B is the one place app-initiated network carries
+> user *content* — justified by unchanged recipient, and bounded by: no OAuth-token reuse (ADR-0002),
+> on-demand only (먹방 paradox — `AppModel.generateRetrospectiveTopics()`, never the poll), and app-only
+> storage — content-derived summaries never reach the widget-readable `SharedStore` (extends ADR-0003).
+> UI is the **Retro** rail item in the single glass window (ADR-0019). Plan: [`docs/RETROSPECTIVE_PLAN.md`](docs/RETROSPECTIVE_PLAN.md).
 
 ## 4. App ↔ widget data flow
 

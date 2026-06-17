@@ -37,3 +37,5 @@ access token은 어디에도 출력·로깅하지 않는다. 접근은 `Credenti
 
 - `Sources/TokenMukbangKit/Keychain/Credentials.swift`
 - `CLAUDE.md`(토큰 미출력 불변식), `README.md` Privacy 섹션
+- 이 불변식은 [ADR-0020](0020-retrospective-via-local-claude-cli.md)에서도 보존된다 — 회고의
+  콘텐츠 분석은 이 OAuth 토큰을 추론에 **재활용하지 않고** 로컬 `claude` CLI의 자기 인증을 쓴다.

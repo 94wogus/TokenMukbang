@@ -49,7 +49,8 @@ every doc in sync lives in **`.claude/rules/adr.md`**. The load-bearing obligati
 The rules in this section map to ADRs: core/UI split → ADR-0001, Keychain → ADR-0002,
 app-writes/widget-reads → ADR-0003, never-throws → ADR-0004, XcodeGen → ADR-0005,
 injection seams → ADR-0006. See also: native stack → ADR-0007, terminal focus → ADR-0008,
-product concept → ADR-0009, distribution → ADR-0010 (index: `docs/adr/README.md`).
+product concept → ADR-0009, distribution → ADR-0010, retrospective via local `claude` CLI →
+ADR-0020 (index: `docs/adr/README.md`). Product direction: `docs/VISION.md`.
 
 ## Architecture — what you must respect
 
@@ -80,6 +81,18 @@ session discovery (`ps`/`lsof`), and terminal focus (`osascript`) all inject a
 `CredentialProviding`; the API through `UsageFetching`. Tests pass fakes through these
 seams — when adding logic that touches the system or network, add it behind one of these
 protocols rather than calling `Process`/`URLSession` directly, so it stays testable.
+
+**Retrospective sends transcript *content* off-device via the local `claude` CLI — the one
+exception to "app network = usage/profile API only".** (ADR-0020) The retrospective (the **Retro**
+rail item; "usage meter → reflection mirror", `docs/VISION.md`) analyzes *what* you talked about by
+shelling out to the locally-installed `claude` CLI (behind `ProcessRunning`, ADR-0006). This
+is the first app-initiated egress of user content; it's justified because the **recipient is
+unchanged** (those transcripts already reached Anthropic when the sessions happened).
+Invariants to preserve: it does **not** repurpose the OAuth token (the CLI self-authenticates,
+so ADR-0002 holds); it runs **on-demand only** (it spends the user's own budget — the very
+thing the app monitors); and content-derived summaries are stored **app-only**
+(`RetrospectiveStore`, Application Support) and **never** written into the widget-readable
+`SharedStore` snapshot (extends ADR-0003). The metadata layer reuses ADR-0011/0012 infra.
 
 **The access token must never be printed or logged.** (ADR-0002) `usage-cli` and any diagnostics
 deliberately avoid emitting it. `SecurityCLICredentialStore` is read-only — it only ever

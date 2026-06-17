@@ -4,6 +4,48 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added — 회고(Retrospective) 기능 구현 (2026-06-17, ADR-0020, S1~S4)
+설계(ADR-0020/VISION/PLAN)에 이어 회고 기능을 실제 구현 — "사용량 미터 → 사용 습관 거울"의 첫 기능:
+- **Kit `Retrospective/`** (Foundation-only, ADR-0001): `RetrospectiveBuilder`(A층 — 어제의
+  프로젝트별·모델별·시간대별 토큰 + 기준선 대비 델타, `TokenHistory`/`HistoryStore` 재사용·중복 0),
+  `RetrospectiveMetrics`(사용 패턴 지표 — 프로젝트별 토큰·프롬프트수·프롬프트당 토큰·turn당
+  cache-read·모델·시간), `RetrospectiveSummarizing` seam + `ClaudeCLISummarizer`(**B층 코치** — 위
+  지표 + 균형 샘플을 로컬 `claude` CLI로 분석, ADR-0006), `TranscriptDigest`(프로젝트 라운드로빈
+  균형 샘플링 + `[project]` 라벨), `RetrospectiveStore`(앱 전용 캐시, `SharedStore` 아님, ADR-0003),
+  `RetrospectiveSummary`/`RetroTopics`/`plainTextReport`(복사용) DTO.
+- **B는 "주제 나열"이 아니라 "사용 패턴 코치"**: 토큰을 *얼마나 효율적으로* 쓰는지 진단하고
+  개선 액션(모델 선택·컨텍스트 위생·자동화 균형·페이싱)을 제안. raw 프롬프트 대신 패턴 지표를
+  주어 turn 수 많은 자동 세션(ralph 등) 편향을 제거(VISION/ADR-0020 §B 갱신).
+- **불변식 보존**: OAuth 토큰 미재활용(CLI 자기 인증, ADR-0002) · 콘텐츠 요약 위젯 노출 0(누수 grep 0) ·
+  **on-demand 전용**(`AppModel.generateRetrospectiveTopics()`만 토큰 소비, 60초 폴링 `refresh()`는 미호출 —
+  먹방 역설). A층은 토큰-free라 폴링/로드시 즉시 표시.
+- **UI**: 단일 유리 창(ADR-0019)에 **Retro** 레일 추가(`DashboardLayout.retrospective` +
+  `RetrospectiveView`). 영문 먹방 보이스("Yesterday's plate"·"eaten"·"What you chewed on"), on-demand
+  "Generate review" 버튼이 토큰 소비를 명시, `claude` 부재 시 A-only graceful degrade.
+  생성 후에도 **Regenerate**(재생성, 캐시 덮어쓰기)·**Copy**(전체 회고를 plain-text로 클립보드 복사,
+  `RetrospectiveSummary.plainTextReport` — Kit, 페이지 레벨 배치) 지원 + 토픽 텍스트 선택 복사.
+  코치 첫 줄은 **TL;DR 배지**(가장 큰 개선 기회 한 줄)로 강조, 아래에 액션 팁.
+- **테스트 +14**(`RetrospectiveTests`): A 집계·기준선, 가짜 `ProcessRunning`으로 CLI 정상/부재/malformed/
+  빈 digest(미실행)/토큰-미포함 인자, Store 왕복·캐시. `swift test` 92/92 · app+widget `xcodebuild` green.
+- 문서 동기화: ARCHITECTURE(seam 표·회고 흐름·모듈맵 "planned"→구현), CLAUDE.md·README §Privacy/기능 갱신.
+
+### Added — 회고(Retrospective) 설계 + 제품 방향 재정의 (2026-06-17, ADR-0020, 설계 문서만)
+POSIWID("the purpose of a system is what it does")를 출발점으로 제품을 **"사용량 미터 →
+사용 습관 거울"** 로 확장하는 방향을 정립하고, 첫 기능인 **회고**의 경계 결정·구현 계획을 설계
+문서로 남김(코드 변경 없음):
+- **ADR-0020 신설**: 회고의 콘텐츠 분석(B층 — 주제/스타일)을 **로컬 `claude` CLI**로 한다
+  (`ProcessRunning` seam, ADR-0006). 콘텐츠가 클라우드로 가지만 **수신자 불변**(그 대화는 발생
+  당시 이미 Anthropic을 거침)이 정당화. 불변식: OAuth 토큰 미사용(CLI 자기 인증, ADR-0002 보존)·
+  **on-demand 전용**(먹방 역설)·콘텐츠 요약 **앱 전용 저장**(위젯 노출 금지, ADR-0003 확장).
+  A층(메타데이터)은 `TokenHistory`/`HistoryStore`(ADR-0011/0012) **재사용**.
+- **`docs/VISION.md` 신설**: POSIWID 렌즈 + 세 층위 거울(A/B/C) + 로드맵(M1 회고 → M2 주간 식단
+  결산 → M3 실시간 코칭) + 프라이버시 자세. ADR-0009 먹방 컨셉("주간 식단 결산")과 정합.
+- **`docs/RETROSPECTIVE_PLAN.md` 신설**: 5 슬라이스(S1 Kit RetrospectiveBuilder → S2 claude CLI
+  seam → S3 앱전용 RetrospectiveStore → S4 on-demand UI[마일스톤] → S5 테스트·문서) + 의존
+  그래프 + 측정 가능한 성공기준.
+- **문서 정합성**(`.claude/rules/adr.md §4`): ADR 색인·ADR-0002/0003 교차링크·`CLAUDE.md`·
+  `ARCHITECTURE.md`(§3 seam 표 + 회고 흐름)·`README.md` §Privacy(콘텐츠 egress 정직화) 동기화.
+
 ### Changed — 메인 창 구조를 사이드바(좌측 레일 + 디테일)로 (2026-06-15, ADR-0019 갱신)
 상단 탭 구조가 성격·높이가 다른 섹션을 한 컨테이너에 욱여넣어 탭 전환 시 리사이즈/정렬이 충돌(인디케이터가
 "대각선"으로 이동)하던 문제를 **구조적으로 해결** — macOS 사이드바 앱 패턴으로 전환(전문가 컨벤션 리서치):

@@ -118,6 +118,7 @@ struct MenuContentView: View {
         switch layout {
         case .dashboard: dashboardLayout(snapshot)
         case .history: HistoryBrowserView(model: model)
+        case .retrospective: RetrospectiveView(model: model)
         case .settings: EmptyView()   // handled above (snapshot-independent)
         }
     }
