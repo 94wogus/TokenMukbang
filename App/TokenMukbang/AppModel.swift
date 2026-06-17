@@ -221,6 +221,7 @@ final class AppModel: ObservableObject {
 
         let start = base.periodStart, end = base.periodEnd
         let events = tokenEvents
+        let plan = snapshot?.planLabel   // plan-aware coaching: frame cost as window-burn for subs
         // Coach input = usage-pattern metrics (the signal) + a small balanced prompt sample
         // (flavor). Built off the main actor (transcript walk can be heavy).
         let coachInput = await Task.detached(priority: .utility) { () -> String in
@@ -229,7 +230,7 @@ final class AppModel: ObservableObject {
             let metrics = RetrospectiveMetrics.build(events: events, promptCounts: promptCounts,
                                                      periodStart: start, periodEnd: end)
             let sample = TranscriptDigest.assemble(byProject: byProject, order: order, maxChars: 4_000)
-            return metrics.coachInputText + (sample.isEmpty ? "" : "\n\nSample prompts:\n" + sample)
+            return metrics.coachInputText(planLabel: plan) + (sample.isEmpty ? "" : "\n\nSample prompts:\n" + sample)
         }.value
 
         let summarizer = ClaudeCLISummarizer(runner: SystemProcessRunner(), claudePath: claudePath)

@@ -96,9 +96,12 @@ public struct RetrospectiveMetrics: Sendable, Equatable {
     }
 
     /// The metrics rendered as compact text for the coach prompt — the pattern signal, not raw prompts.
-    public var coachInputText: String {
+    /// `planLabel` (e.g. "Max") lets the coach frame cost correctly: subscription plans burn the
+    /// shared 5h/7d usage *window*, not dollars (ADR-0020 — plan-aware coaching).
+    public func coachInputText(planLabel: String? = nil) -> String {
         func tk(_ n: Int) -> String { RetrospectiveSummary.tokens(n) }
         var lines: [String] = []
+        if let plan = planLabel, !plan.isEmpty { lines.append("Plan: \(plan)") }
         var head = "Total \(tk(totalConsumed)) tokens · Opus \(Int((opusShare * 100).rounded()))%"
         if totalConsumed + totalCacheRead > 0 {
             let hit = Int((Double(totalCacheRead) / Double(totalConsumed + totalCacheRead) * 100).rounded())
