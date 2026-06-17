@@ -53,7 +53,8 @@ public struct RetrospectiveBuilder: Sendable {
         )
     }
 
-    /// Convenience: the A-layer summary for "yesterday" (the UTC day before `now`'s day).
+    /// Convenience: the A-layer summary for "yesterday" — the day before `now`'s day in the
+    /// given calendar's zone (UTC by default; the app passes its display-zone calendar).
     public func yesterday(events: [TokenEvent], now: Date,
                           calendar: Calendar = TokenHistory.utcCalendar) -> RetrospectiveSummary {
         let startOfToday = calendar.startOfDay(for: now)

@@ -97,8 +97,10 @@ public struct RetrospectiveMetrics: Sendable, Equatable {
 
     /// The metrics rendered as compact text for the coach prompt — the pattern signal, not raw prompts.
     /// `planLabel` (e.g. "Max") lets the coach frame cost correctly: subscription plans burn the
-    /// shared 5h/7d usage *window*, not dollars (ADR-0020 — plan-aware coaching).
-    public func coachInputText(planLabel: String? = nil) -> String {
+    /// shared 5h/7d usage *window*, not dollars (ADR-0020 — plan-aware coaching). `timeZone` labels
+    /// the busiest hour (defaults to UTC; the app passes the user's display zone, matching `hourly`).
+    public func coachInputText(planLabel: String? = nil,
+                               timeZone: TimeZone = RetrospectiveSummary.utc) -> String {
         func tk(_ n: Int) -> String { RetrospectiveSummary.tokens(n) }
         var lines: [String] = []
         if let plan = planLabel, !plan.isEmpty { lines.append("Plan: \(plan)") }
@@ -108,7 +110,7 @@ public struct RetrospectiveMetrics: Sendable, Equatable {
             head += " · cache-read \(hit)%"
         }
         head += " · \(totalPrompts) user prompts over \(totalTurns) turns"
-        if let h = busiestHour { head += " · busiest \(h):00 UTC" }
+        if let h = busiestHour { head += " · busiest \(h):00 \(RetrospectiveSummary.zoneAbbrev(timeZone))" }
         if let d = baselineDeltaPercent { head += String(format: " · %@%.0f%% vs usual", d >= 0 ? "↑" : "↓", abs(d)) }
         lines.append(head)
         lines.append("")

@@ -4,9 +4,13 @@ extension RetrospectiveSummary {
     /// A plain-text rendering of the retrospective for copy-to-clipboard / sharing.
     /// English, mukbang voice (matches the UI). Includes the content layer (B) only
     /// when it's been generated. Pure formatting → lives in Kit and is unit-tested (ADR-0001).
-    public var plainTextReport: String {
+    ///
+    /// `timeZone` decides how the date + busiest-hour are *labelled* — defaults to UTC so tests
+    /// stay deterministic; the app passes the user's display zone (`AppSettings.resolvedTimeZone`),
+    /// matching the calendar that bucketed `hourly`.
+    public func plainTextReport(timeZone: TimeZone = RetrospectiveSummary.utc) -> String {
         var lines: [String] = []
-        lines.append("TokenMukbang — Retrospective (\(Self.dateLabel(periodStart)))")
+        lines.append("TokenMukbang — Retrospective (\(Self.dateLabel(periodStart, timeZone: timeZone)))")
 
         var totalLine = "Total: \(Self.tokens(totalConsumed)) eaten"
         if let delta = baselineDeltaPercent {
@@ -24,9 +28,9 @@ extension RetrospectiveSummary {
             lines.append("Cast (by model)")
             for c in casts.prefix(8) { lines.append("  \(c.castName): \(Self.tokens(c.tokens))") }
         }
-        if let peak = Self.peakHour(hourly) {
+        if let label = Self.busiestHourLabel(hourly, timeZone: timeZone) {
             lines.append("")
-            lines.append("Busiest around \(peak):00 UTC")
+            lines.append("Busiest around \(label)")
         }
         if let topics {
             lines.append("")
@@ -44,18 +48,39 @@ extension RetrospectiveSummary {
         return "\(n)"
     }
 
-    /// Index of the busiest UTC hour, or nil if there was no activity.
+    /// Index of the busiest hour bucket, or nil if there was no activity. The bucket's zone is
+    /// whichever calendar built `hourly` (UTC by default; the app's display zone live) — pair
+    /// with `busiestHourLabel` for the zone-aware string.
     public static func peakHour(_ hourly: [Int]) -> Int? {
         guard let maxV = hourly.max(), maxV > 0 else { return nil }
         return hourly.firstIndex(of: maxV)
     }
 
-    public static func dateLabel(_ date: Date) -> String {
+    /// The busiest hour rendered in `timeZone` — "8:00 UTC" / "8:00 GMT+9" — or nil if idle.
+    /// `hourly` must have been bucketed in the same zone (see `RetrospectiveBuilder`).
+    public static func busiestHourLabel(_ hourly: [Int], timeZone: TimeZone) -> String? {
+        guard let h = peakHour(hourly) else { return nil }
+        return "\(h):00 \(zoneAbbrev(timeZone))"
+    }
+
+    /// Day label ("EEE, MMM d") in `timeZone`. Defaults to UTC for deterministic tests; the app
+    /// passes the user's display zone so the date matches the zone the period was computed in.
+    public static func dateLabel(_ date: Date, timeZone: TimeZone = RetrospectiveSummary.utc) -> String {
         let f = DateFormatter()
         f.calendar = Calendar(identifier: .gregorian)
-        f.timeZone = TimeZone(identifier: "UTC")
+        f.timeZone = timeZone
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "EEE, MMM d"
         return f.string(from: date)
     }
+
+    /// Short zone label — "UTC" for the zero meridian, else the zone's abbreviation ("GMT+9")
+    /// or, failing that, its identifier.
+    static func zoneAbbrev(_ tz: TimeZone) -> String {
+        if tz.identifier == "UTC" || tz.identifier == "GMT" { return "UTC" }
+        return tz.abbreviation() ?? tz.identifier
+    }
+
+    /// UTC zone — the deterministic default for Kit formatting (tests/CLI). The app overrides it.
+    public static let utc = TimeZone(identifier: "UTC")!
 }

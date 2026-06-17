@@ -46,7 +46,7 @@ struct RetrospectiveView: View {
                     Spacer()
                     if let delta = retro.baselineDeltaPercent { baselineChip(delta) }
                 }
-                Text(RetrospectiveSummary.dateLabel(retro.periodStart))
+                Text(RetrospectiveSummary.dateLabel(retro.periodStart, timeZone: model.settings.resolvedTimeZone))
                     .font(DS.captionFont).foregroundStyle(.tertiary)
             }
             .padding(DS.section)
@@ -58,7 +58,7 @@ struct RetrospectiveView: View {
         Button {
             let pb = NSPasteboard.general
             pb.clearContents()
-            pb.setString(retro.plainTextReport, forType: .string)
+            pb.setString(retro.plainTextReport(timeZone: model.settings.resolvedTimeZone), forType: .string)
             copied = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copied = false }
         } label: {
@@ -101,9 +101,9 @@ struct RetrospectiveView: View {
                         }
                     }
                 }
-                if let peak = RetrospectiveSummary.peakHour(retro.hourly) {
+                if let label = RetrospectiveSummary.busiestHourLabel(retro.hourly, timeZone: model.settings.resolvedTimeZone) {
                     section("WHEN") {
-                        Text("Busiest around \(peak):00 UTC")
+                        Text("Busiest around \(label)")
                             .font(.callout).foregroundStyle(.secondary)
                     }
                 }

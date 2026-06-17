@@ -206,7 +206,9 @@ final class AppModel: ObservableObject {
     /// token-free — safe to call on load/refresh. **Never** calls the `claude` CLI; that
     /// is `generateRetrospectiveTopics()` only (on-demand, 먹방 paradox — ADR-0020).
     func loadRetrospective() {
-        var summary = retroBuilder.yesterday(events: tokenEvents, now: Date())
+        // Bucket "yesterday" + hourly in the user's display zone (Settings → General) so the
+        // retrospective's day boundary and "WHEN" hour match the rest of the app, not UTC.
+        var summary = retroBuilder.yesterday(events: tokenEvents, now: Date(), calendar: displayCalendar)
         if let cached = retroStore.summary(for: summary.periodStart), let topics = cached.topics {
             summary.topics = topics   // reuse generated content; don't re-spend tokens
         }
@@ -233,15 +235,17 @@ final class AppModel: ObservableObject {
         let start = base.periodStart, end = base.periodEnd
         let events = tokenEvents
         let plan = snapshot?.planLabel   // plan-aware coaching: frame cost as window-burn for subs
+        let cal = displayCalendar        // capture on the main actor (settings is main-actor)
+        let tz = settings.resolvedTimeZone
         // Coach input = usage-pattern metrics (the signal) + a small balanced prompt sample
         // (flavor). Built off the main actor (transcript walk can be heavy).
         let coachInput = await Task.detached(priority: .utility) { () -> String in
             let (byProject, order) = TranscriptDigest.collect(periodStart: start, periodEnd: end)
             let promptCounts = byProject.mapValues(\.count)
             let metrics = RetrospectiveMetrics.build(events: events, promptCounts: promptCounts,
-                                                     periodStart: start, periodEnd: end)
+                                                     periodStart: start, periodEnd: end, calendar: cal)
             let sample = TranscriptDigest.assemble(byProject: byProject, order: order, maxChars: 4_000)
-            return metrics.coachInputText(planLabel: plan) + (sample.isEmpty ? "" : "\n\nSample prompts:\n" + sample)
+            return metrics.coachInputText(planLabel: plan, timeZone: tz) + (sample.isEmpty ? "" : "\n\nSample prompts:\n" + sample)
         }.value
 
         let summarizer = ClaudeCLISummarizer(runner: SystemProcessRunner(), claudePath: claudePath)

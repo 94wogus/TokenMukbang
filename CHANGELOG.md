@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed — 회고(Retrospective) 시간 표현도 표시 타임존 적용 (2026-06-17)
+표시 타임존 기능 직후, **회고만 UTC로 남아** "Busiest around 8:00 UTC" 같은 모순이 보이던 것 해소 —
+회고 전반의 시간 표현을 표시 타임존(`AppSettings.resolvedTimeZone`)으로 통일:
+- **"어제" 경계 + hourly 버킷**: `AppModel.loadRetrospective`가 `displayCalendar`를 `RetrospectiveBuilder.yesterday`에 주입 — 회고의 "어제"와 시간대별 집계가 UTC가 아니라 사용자 벽시계 기준.
+- **"WHEN" / dateLabel / Copy 리포트**: `RetrospectiveSummary.dateLabel`·신규 `busiestHourLabel`·`plainTextReport`가 `timeZone`을 받아 라벨링(기본 UTC 유지 — 테스트 결정성). "8:00 UTC" → "8:00 \<zone\>"(예: GMT+9).
+- **코치 입력**: `RetrospectiveMetrics.build`에 `displayCalendar`, `coachInputText`에 `timeZone` 전달 — 로컬 `claude` CLI에 보내는 "busiest" 시각도 사용자 존.
+- 전수 점검 결과 **reset 카운트다운류(`Formatting.countdown`/`MukbangCopy.reset`/위젯/CLI)는 순수 간격 계산이라 타임존 무관** — 변경 없음. 테스트 +2(회고 hourly 존 버킷팅, plainTextReport 존 라벨).
+
 ### Added — 표시 타임존을 설정 가능하게 (2026-06-17)
 차트·일자 버킷·시각 라벨이 UTC 기준이라 다른 타임존 사용자에게는 "하루"의 경계가 어긋나 보이던 문제 해결:
 - **Settings → 새 General 탭**에 타임존 섹션 — 이 Mac의 감지된 타임존을 표시하고, 기본은 "Follow system
