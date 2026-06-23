@@ -169,6 +169,7 @@ final class AppModel: ObservableObject {
         loop = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refresh()
+                await self?.refreshTokenHistoryIncremental()   // keep Value/History live (B, cheap — ADR-0021)
                 try? await Task.sleep(nanoseconds: (self?.interval ?? 60) * 1_000_000_000)
             }
         }
@@ -221,15 +222,33 @@ final class AppModel: ObservableObject {
     /// True while the first transcript parse is running — lets cards show a "loading" state
     /// instead of vanishing (a heavy user's transcripts take a few seconds even cached).
     @Published private(set) var isLoadingTokens = false
+    /// The last parse result, kept so the 5-min poll can do a cheap **incremental** update
+    /// (re-parse only changed files) instead of a full disk-cache rebuild (ADR-0021 A/B refresh).
+    private var eventSnapshot: EventCache.Snapshot?
 
-    /// Parse all transcripts off the main actor (potentially >1GB of JSONL). Uses `EventCache`
-    /// so only new/changed files are re-parsed after the first launch (ADR-0012 perf).
+    /// **(A) Full, authoritative reload** — disk-cache-backed full rebuild off the main actor
+    /// (potentially >1GB of JSONL; `EventCache` re-parses only changed files). Used on launch and
+    /// the manual ↻ refresh button — a full re-sync that also self-heals any incremental drift.
     func loadTokenHistory() async {
         if tokenEvents.isEmpty { isLoadingTokens = true }   // only show "loading" before we have anything
-        let events = await Task.detached(priority: .utility) { EventCache.allEvents() }.value
-        tokenEvents = events
+        let snap = await Task.detached(priority: .utility) { EventCache.load() }.value
+        eventSnapshot = snap
+        tokenEvents = snap.events
         isLoadingTokens = false
         loadRetrospective()
+        recomputeValueEstimate()
+    }
+
+    /// **(B) Incremental refresh** — re-parse only the files that changed since the last snapshot
+    /// (cheap, history-size-independent) and recompute the Value estimate. Driven by the 5-min poll
+    /// so the Value/History numbers stay live mid-session without the full-cache I/O each tick.
+    /// Falls back to a full `loadTokenHistory()` if there's no snapshot yet. Skips the (unchanged
+    /// "yesterday") retrospective.
+    func refreshTokenHistoryIncremental() async {
+        guard let prev = eventSnapshot else { await loadTokenHistory(); return }
+        let snap = await Task.detached(priority: .utility) { EventCache.update(previous: prev) }.value
+        eventSnapshot = snap
+        tokenEvents = snap.events
         recomputeValueEstimate()
     }
 

@@ -4,6 +4,17 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added — Value/History 5분 폴링 시 라이브 갱신(증분) (2026-06-24, ADR-0021)
+VALUE 카드(와 History)가 이제 **5분 자동 폴링마다 갱신**돼 세션 중에도 숫자가 따라 올라간다.
+풀 재파싱 대신 **증분**으로 — A/B 두 경로:
+- **(B) 폴링·증분**: `EventCache.update(previous:)`가 이전 in-memory 스냅샷 대비 **`(size,mtime)`이
+  바뀐 파일만 재파싱**하고 나머진 메모리에서 재사용 — **디스크 캐시 I/O 없음**. 비용이 히스토리
+  크기와 무관하게 일정(stat + 변경분 파싱뿐)이라 폴링에 붙여도 부담 없음. `AppModel`이 in-memory
+  `eventSnapshot`을 들고 폴링 루프에서 `refreshTokenHistoryIncremental()` 호출.
+- **(A) 수동 ↻ 버튼·런치**: 기존대로 `EventCache.load()` 전체 재빌드(디스크 캐시 재사용+갱신) —
+  권위 있는 전체 재동기화로 증분 드리프트도 self-heal.
+- `EventCache`에 `Snapshot`(파일별 엔트리 + timestamp 정렬 events) 도입. 테스트 +3.
+
 ### Fixed — Value 카드가 아예 안 보이던 버그(잘못된 뷰) + 매 실행 1.1GB 재파싱 (2026-06-24, ADR-0012/0021)
 - **카드가 실제 창에 없던 진짜 버그**: ADR-0021의 Value 카드를 `MenuContentView.dashboardLayout`에
   넣었는데, 실제 메뉴바 창은 `AppShellView`의 **`NowDashboard`** 패인이 렌더한다(둘은 별개 뷰).
