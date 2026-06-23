@@ -70,6 +70,12 @@ final class StatusItemController: NSObject {
             .sink { [weak self] _ in self?.renderLabel() }
             .store(in: &cancellables)
         renderLabel()
+
+        // Catch up immediately after the Mac wakes — the poll loop may have a stale window.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { _ in
+            Task { @MainActor in await AppModel.shared.refresh() }
+        }
     }
 
     private func renderLabel() {
@@ -93,6 +99,7 @@ final class StatusItemController: NSObject {
             if !positioned { positionUnderStatusItem(w); positioned = true }
             NSApp.activate(ignoringOtherApps: true)
             w.makeKeyAndOrderFront(nil)
+            Task { await model.refresh() }   // opening should never show stale numbers
         }
     }
 
@@ -103,6 +110,7 @@ final class StatusItemController: NSObject {
         if !positioned { positionUnderStatusItem(w); positioned = true }
         NSApp.activate(ignoringOtherApps: true)
         w.makeKeyAndOrderFront(nil)
+        Task { await model.refresh() }   // opening should never show stale numbers
     }
 
     /// Build the single glass window — a REAL resizable window (like any app), not a popover. Its

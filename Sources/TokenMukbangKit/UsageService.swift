@@ -45,14 +45,17 @@ public struct UsageService: Sendable {
         }
 
         do {
+            // Session discovery (ps + lsof + transcript reads) runs concurrently with the network
+            // rather than after it, so it no longer adds serially to the refresh time.
             async let usage = client.fetchUsage(token: creds.accessToken)
             async let profile = client.fetchProfile(token: creds.accessToken)
-            let (u, p) = try await (usage, profile)
+            async let sess = detectSessionsAsync()
+            let (u, p, s) = try await (usage, profile, sess)
             return UsageSnapshot(
                 capturedAt: timestamp,
                 planLabel: p.planLabel,
                 windows: windows(from: u, now: timestamp),
-                sessions: detectSessions(),
+                sessions: s,
                 error: nil
             )
         } catch {
@@ -92,6 +95,11 @@ public struct UsageService: Sendable {
                 paceWarningHours: pace
             )
         }
+    }
+
+    /// `detectSessions()` off the cooperative pool so it can overlap the network `async let`s.
+    private func detectSessionsAsync() async -> [UsageSnapshot.Session] {
+        await Task.detached(priority: .utility) { detectSessions() }.value
     }
 
     private func detectSessions() -> [UsageSnapshot.Session] {

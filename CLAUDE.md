@@ -67,8 +67,12 @@ mode — no credentials, expired token, offline, decode error — is captured in
 returns sessions (they're useful without the network).
 
 **App writes the snapshot; the widget only reads it.** (ADR-0003) The widget runs sandboxed and must
-**never touch the Keychain or the network**. The app runs the live pipeline every 60s
-(`AppModel`), writes a `UsageSnapshot` JSON via `SharedStore`, and calls
+**never touch the Keychain or the network**. The app runs the live pipeline every 5 min
+(`AppModel.interval`; 60s was hitting OAuth 429s) — plus on demand when the window opens, on
+system wake, and when Claude Code rewrites its credentials. To keep the background poll loop
+alive against App Nap (this is an `LSUIElement` accessory app), `AppModel` holds a
+`.userInitiatedAllowingIdleSystemSleep` activity. Each refresh writes a `UsageSnapshot` JSON via
+`SharedStore`, and calls
 `WidgetCenter.reloadAllTimelines()`. `SharedStore` prefers the App Group container
 (`group.com.tokenmukbang`) and falls back to Application Support for unsigned/dev
 runs. **If you change the App Group ID, change it in all three places** —

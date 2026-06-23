@@ -37,7 +37,7 @@ flowchart TB
         US["UsageService.snapshot()"]
     end
     CLI["usage-cli<br/>(--print / --json)"] --> US
-    APP["Menu-bar app<br/>AppModel (60s loop)"] --> US
+    APP["Menu-bar app<br/>AppModel (5-min loop + on open/wake)"] --> US
     APP -- "writes UsageSnapshot" --> STORE[("SharedStore<br/>App Group file")]
     WIDGET["WidgetKit widget<br/>(sandboxed)"] -- "reads only" --> STORE
     APP -- "reloadAllTimelines()" --> WIDGET
@@ -161,7 +161,8 @@ substitute a fake:
 The widget extension is **sandboxed** and cannot read the Keychain or reach the network.
 The contract that makes the widget work:
 
-1. `AppModel` runs a 60s loop calling `UsageService.snapshot()`.
+1. `AppModel` runs a 5-min loop calling `UsageService.snapshot()` (also on window-open, on
+   system wake, and on credential change; an App-Nap-opt-out activity keeps the loop alive).
 2. It publishes the snapshot to the SwiftUI menu UI **and** `SharedStore.write(_:)`s it
    as JSON into the App Group container.
 3. It calls `WidgetCenter.shared.reloadAllTimelines()`.

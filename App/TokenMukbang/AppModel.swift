@@ -25,6 +25,12 @@ final class AppModel: ObservableObject {
     private let history: HistoryStore
     private let settingsStore: SettingsStore
     private var loop: Task<Void, Never>?
+    /// Keeps the background poll loop alive. This is an `LSUIElement` accessory app, so when no
+    /// window is open macOS App Nap throttles the `Task.sleep` loop to a near-halt — the symptom
+    /// being usage that only refreshed on a manual click (user 2026-06-23). A held
+    /// `.userInitiatedAllowingIdleSystemSleep` activity disables App Nap so polling keeps running
+    /// while the Mac is awake, yet still lets the machine sleep when idle.
+    private var pollActivity: NSObjectProtocol?
 
     // MARK: - Retrospective (ADR-0020 — "usage meter → reflection mirror")
     private let retroBuilder = RetrospectiveBuilder()
@@ -142,10 +148,16 @@ final class AppModel: ObservableObject {
 
     deinit {
         loop?.cancel()
+        // `pollActivity` is intentionally not ended here: `AppModel.shared` lives for the whole
+        // app lifetime, and a nonisolated deinit can't touch the non-Sendable activity token.
     }
 
     func start() {
         guard loop == nil else { return }
+        // Opt out of App Nap for the lifetime of the loop (see `pollActivity`).
+        pollActivity = ProcessInfo.processInfo.beginActivity(
+            options: .userInitiatedAllowingIdleSystemSleep,
+            reason: "Periodic Claude usage polling")
         loop = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refresh()
@@ -155,6 +167,9 @@ final class AppModel: ObservableObject {
     }
 
     func refresh() async {
+        // The poll loop, the credential watcher, window-open and wake can all fire at once;
+        // coalesce overlapping calls (MainActor serializes this guard before the first await).
+        guard !isRefreshing else { return }
         isRefreshing = true
         defer { isRefreshing = false }
         var snap = await service.snapshot()
@@ -174,7 +189,9 @@ final class AppModel: ObservableObject {
         snapshot = snap
         try? store.write(snap)
         WidgetCenter.shared.reloadAllTimelines()
-        await playChew()   // API 콜 = 한 입
+        // Cosmetic only — fire-and-forget so the UI updates and `isRefreshing` drops the moment
+        // data lands, instead of staying "busy" for the whole chew animation. API 콜 = 한 입
+        Task { [weak self] in await self?.playChew() }
     }
 
     /// Sparkline series for a window kind over the retained history.
@@ -223,7 +240,7 @@ final class AppModel: ObservableObject {
 
     /// **On-demand** content layer (B): send yesterday's conversation digest to the local
     /// `claude` CLI, attach the resulting topics, and cache them app-only. This is the ONLY
-    /// path that spends tokens for the retrospective — it is never wired into the 60s poll
+    /// path that spends tokens for the retrospective — it is never wired into the periodic poll
     /// (`refresh()`), honoring the 먹방 paradox (ADR-0020). Uses the CLI's own auth, never
     /// the OAuth token (ADR-0002); results never touch `SharedStore` (ADR-0003).
     func generateRetrospectiveTopics() async {
