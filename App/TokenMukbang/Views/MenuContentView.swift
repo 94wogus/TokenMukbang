@@ -151,6 +151,9 @@ struct MenuContentView: View {
                 if secondary.count == 1 { Spacer() }   // keep a single card left-sized
             }
         }
+        if let value = model.valueEstimate, value.apiEquivalent > 0 {
+            valueCard(value)   // "what API would charge vs your flat plan" (ADR-0021)
+        }
         if !snapshot.sessions.isEmpty {
             GlassTile(scheme: scheme) {
                 VStack(alignment: .leading, spacing: DS.intra) {
@@ -166,6 +169,68 @@ struct MenuContentView: View {
                 .padding(DS.section)
             }
         }
+    }
+
+    /// Value/Savings card (ADR-0021): what this billing period's tokens would cost at API
+    /// list rates vs the user's flat subscription. Cache reads dominate the full number, so we
+    /// also show the "fresh work" cost (excl. cache reuse) as an honest second figure.
+    @ViewBuilder
+    private func valueCard(_ v: ValueEstimate) -> some View {
+        let sub = model.settings.subscriptionMonthlyCost
+        GlassTile(scheme: scheme) {
+            VStack(alignment: .leading, spacing: DS.intra) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("VALUE").dsEyebrow()
+                    Spacer()
+                    Text(valuePeriodLabel).font(DS.captionFont).foregroundStyle(.tertiary)
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(ValueEstimate.dollars(v.apiEquivalent)).font(.system(size: 24, weight: .bold))
+                    Text("at API rates").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    if sub > 0 {
+                        Text(ValueEstimate.multipleLabel(v.multiple(subscription: sub)))
+                            .font(.caption.weight(.bold))
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(Color.green.opacity(0.18), in: Capsule())
+                            .foregroundStyle(.green)
+                    }
+                }
+                if sub > 0 {
+                    Text("You pay \(ValueEstimate.dollars(sub)) → saving \(ValueEstimate.dollars(v.savings(subscription: sub)))")
+                        .font(.callout).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("Set your plan price in Settings → General to see savings.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text("Fresh work only (excl. cache reuse): \(ValueEstimate.dollars(v.costExclCacheRead))")
+                    .font(.caption2).foregroundStyle(.tertiary)
+                ForEach(v.lines.filter { $0.priced }.prefix(3)) { line in
+                    HStack(spacing: 8) {
+                        Text(line.name).font(DS.captionFont)
+                        Spacer()
+                        Text(ValueEstimate.dollars(line.cost)).font(DS.captionFont.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(DS.section)
+        }
+    }
+
+    /// "since the 15th" / "last 30d" — what window the Value card aggregates.
+    private var valuePeriodLabel: String {
+        if let day = model.settings.billingCycleDay { return "since the \(ordinal(min(max(day, 1), 28)))" }
+        return "last 30d"
+    }
+
+    private func ordinal(_ n: Int) -> String {
+        let suffix: String
+        if (11...13).contains(n % 100) { suffix = "th" }
+        else { switch n % 10 { case 1: suffix = "st"; case 2: suffix = "nd"; case 3: suffix = "rd"; default: suffix = "th" } }
+        return "\(n)\(suffix)"
     }
 
     /// Footer = a thin utility row only (refresh · 관전 · quit). Navigation moved to the TOP

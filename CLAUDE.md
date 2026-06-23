@@ -50,7 +50,8 @@ The rules in this section map to ADRs: core/UI split → ADR-0001, Keychain → 
 app-writes/widget-reads → ADR-0003, never-throws → ADR-0004, XcodeGen → ADR-0005,
 injection seams → ADR-0006. See also: native stack → ADR-0007, terminal focus → ADR-0008,
 product concept → ADR-0009, distribution → ADR-0010, retrospective via local `claude` CLI →
-ADR-0020 (index: `docs/adr/README.md`). Product direction: `docs/VISION.md`.
+ADR-0020, value/savings estimate (API-list-price equivalent) → ADR-0021
+(index: `docs/adr/README.md`). Product direction: `docs/VISION.md`.
 
 ## Architecture — what you must respect
 

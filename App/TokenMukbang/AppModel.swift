@@ -43,9 +43,17 @@ final class AppModel: ObservableObject {
     /// Whether the local `claude` CLI is installed — drives graceful degrade to A-only.
     let claudeAvailable: Bool = ClaudeCLISummarizer.resolvedPath() != nil
 
+    /// API-equivalent value of this billing period's tokens vs the flat subscription — the
+    /// Now-tab Value/Savings card (ADR-0021). Recomputed on token load + settings change, not
+    /// per render (the event set is large; per-render scanning would be wasteful).
+    @Published private(set) var valueEstimate: ValueEstimate?
+
     /// User settings (theme / thresholds / notifications) — persisted on change.
     @Published var settings: AppSettings {
-        didSet { settingsStore.save(settings) }
+        didSet {
+            settingsStore.save(settings)
+            recomputeValueEstimate()   // plan price / billing day / display zone feed the Value card
+        }
     }
 
     /// Persisted 7-day history (for sparklines / graph / browser).
@@ -216,6 +224,17 @@ final class AppModel: ObservableObject {
         let events = await Task.detached(priority: .utility) { JSONLParser.allEvents() }.value
         tokenEvents = events
         loadRetrospective()
+        recomputeValueEstimate()
+    }
+
+    /// Recompute the billing-period Value estimate from local token events (ADR-0021). Cheap
+    /// aggregation in Kit; called on token load and whenever settings (plan price / billing day /
+    /// display zone) change — never per SwiftUI render.
+    func recomputeValueEstimate() {
+        guard !tokenEvents.isEmpty else { valueEstimate = nil; return }
+        let now = Date()
+        let start = settings.billingPeriodStart(now: now, calendar: displayCalendar)
+        valueEstimate = ValueEstimate.build(events: tokenEvents, periodStart: start, periodEnd: now)
     }
 
     /// Build yesterday's **metadata (A)** retrospective from local token events and merge
