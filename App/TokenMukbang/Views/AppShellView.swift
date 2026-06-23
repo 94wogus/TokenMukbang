@@ -174,6 +174,7 @@ struct NowDashboard: View {
                     if secondary.count == 1 { Spacer() }
                 }
             }
+            ValueCardView(model: model)   // API-equivalent vs flat plan — always shown (ADR-0021)
             if !snapshot.sessions.isEmpty {
                 GlassTile(scheme: scheme) {
                     VStack(alignment: .leading, spacing: DS.intra) {
