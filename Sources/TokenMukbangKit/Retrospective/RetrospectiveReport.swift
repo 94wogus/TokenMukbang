@@ -21,7 +21,8 @@ extension RetrospectiveSummary {
         if !projects.isEmpty {
             lines.append("")
             lines.append("Menu (by project)")
-            for p in projects.prefix(8) { lines.append("  \(p.project): \(Self.tokens(p.tokens))") }
+            // Same cap as the coach input so the report never hides a project the coach cites.
+            for p in projects.prefix(RetrospectiveMetrics.maxListedProjects) { lines.append("  \(p.project): \(Self.tokens(p.tokens))") }
         }
         if !casts.isEmpty {
             lines.append("")

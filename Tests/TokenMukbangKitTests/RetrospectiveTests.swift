@@ -391,6 +391,28 @@ final class RetrospectiveTests: XCTestCase {
         XCTAssertFalse(text.contains("cache-read "))     // no "cache-read N%" cost-style metric
     }
 
+    /// The coach must never cite a project the user can't see in the Menu: the coach input,
+    /// the Copy report, and the Menu all cap at `maxListedProjects`. Lock report ↔ coach.
+    func testListedProjectsCapAlignsCoachAndReport() {
+        let n = RetrospectiveMetrics.maxListedProjects
+        let start = Date(timeIntervalSince1970: 10 * 86_400)
+        let end = start.addingTimeInterval(86_400)
+        // More projects than the cap, descending token weight.
+        let events = (1...(n + 3)).map {
+            tev(start.addingTimeInterval(3600), "claude-opus-4-8", "p\($0)", 1000 - $0, 0)
+        }
+        let m = RetrospectiveMetrics.build(events: events, promptCounts: [:],
+                                           periodStart: start, periodEnd: end)
+        XCTAssertEqual(m.coachedProjects.count, n)        // coach sees exactly the cap
+
+        let summary = RetrospectiveSummary(
+            periodStart: start, periodEnd: end, totalConsumed: m.totalConsumed,
+            projects: m.projects.map { .init(project: $0.project, tokens: $0.consumed) },
+            casts: [], hourly: Array(repeating: 0, count: 24), baselineDeltaPercent: nil)
+        let menuRows = summary.plainTextReport().split(separator: "\n").filter { $0.hasPrefix("  p") }.count
+        XCTAssertEqual(menuRows, n)                        // report shows the same cap, not a smaller 8
+    }
+
     func testEmptyStoreReturnsNil() {
         let dir = tempDir()
         defer { try? FileManager.default.removeItem(at: dir) }

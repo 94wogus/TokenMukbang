@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed — 회고 코칭 후속: 메뉴↔코치 프로젝트 컷 불일치 + 데이터에 없는 인과 단정 (2026-06-23, ADR-0020)
+직전 프레이밍 교정 후 실사용에서 드러난 잔여 2건:
+- **컷오프 정합(이슈 1)**: 코치는 top-10, Copy 리포트는 top-8, 인앱 Menu는 top-5를 보여줘 —
+  코치가 9·10위 실토큰 프로젝트(예: `adr-onprem-ip-boundary`)를 언급해도 사용자 Menu엔 안 보이는
+  불일치. 세 표시면의 상한을 단일 상수 `RetrospectiveMetrics.maxListedProjects`(=10)로 통일
+  (`RetrospectiveReport`/`RetrospectiveView`가 이 상수를 참조). 이전 `assemble(limitTo:)` 필터는
+  토큰 0 프롬프트-only 누수만 막았고 이 실토큰 컷 차이는 못 막았던 것.
+- **인과 단정 금지(이슈 2)**: 지표엔 턴-간격 타이밍이 없는데 코치가 "cache-write는 >5분 idle gap
+  때문"처럼 **데이터에 없는 메커니즘을 단정**하던 약한 버릇 — `ClaudeCLISummarizer` 프롬프트에
+  "원인/메커니즘을 데이터 없이 단정 금지(불확실하면 likely/check whether)" hard-rule 추가.
+- 테스트 +1(코치 ↔ 리포트 프로젝트 컷 정합). ADR-0020 §1 in-place 보강.
+
 ### Fixed — 회고 코칭의 "캐시 리드가 한도를 갉아먹는다" 거꾸로 된 프레이밍 + 데이터 누수 (2026-06-23, ADR-0020)
 코치가 비용 인과를 거꾸로 잡던 문제와, 메뉴엔 없는 프로젝트를 인용하던 문제를 함께 교정:
 - **프레이밍 교정(a)**: cache *read* 는 한도에 거의 카운트되지 않는(≈0.1×, ITPM 미카운트) near-free
