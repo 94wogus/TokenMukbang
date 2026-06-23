@@ -81,4 +81,52 @@ final class EventCacheTests: XCTestCase {
         let back = try JSONDecoder().decode(TokenEvent.self, from: JSONEncoder().encode(e))
         XCTAssertEqual(e, back)
     }
+
+    // MARK: incremental update (B) — the 5-min poll path
+
+    private func loadSnap() -> EventCache.Snapshot {
+        EventCache.load(claudeHome: home.path, cacheDirectory: cacheDir)
+    }
+    private func updateSnap(_ prev: EventCache.Snapshot) -> EventCache.Snapshot {
+        EventCache.update(previous: prev, claudeHome: home.path)
+    }
+
+    func testIncrementalPicksUpAppendedAndNewFiles() throws {
+        try write("proj-a/s1.jsonl", line(ts: "2026-06-20T10:00:00.000+00:00", input: 100, output: 50))
+        let snap0 = loadSnap()
+        XCTAssertEqual(snap0.events.count, 1)
+
+        // Append a turn to s1 + add a new file s2 → incremental sees both.
+        try write("proj-a/s1.jsonl",
+                  line(ts: "2026-06-20T10:00:00.000+00:00", input: 100, output: 50)
+                  + "\n" + line(ts: "2026-06-20T11:00:00.000+00:00", input: 70, output: 30))
+        try write("proj-a/s2.jsonl", line(ts: "2026-06-20T12:00:00.000+00:00", input: 300, output: 90))
+        let snap1 = updateSnap(snap0)
+        XCTAssertEqual(snap1.events.count, 3)
+
+        // Delete s2 → incremental drops it.
+        try FileManager.default.removeItem(at: home.appendingPathComponent("projects/proj-a/s2.jsonl"))
+        XCTAssertEqual(updateSnap(snap1).events.count, 2)
+    }
+
+    func testIncrementalDoesNotTouchDiskCache() throws {
+        try write("proj-a/s1.jsonl", line(ts: "2026-06-20T10:00:00.000+00:00", input: 100, output: 50))
+        let snap0 = loadSnap()                       // writes the disk cache
+        let cacheFile = cacheDir.appendingPathComponent(EventCache.fileName)
+        let before = try Data(contentsOf: cacheFile)
+        // An incremental update with a changed file must NOT rewrite the disk cache (no I/O).
+        try write("proj-a/s1.jsonl",
+                  line(ts: "2026-06-20T10:00:00.000+00:00", input: 100, output: 50)
+                  + "\n" + line(ts: "2026-06-20T11:00:00.000+00:00", input: 70, output: 30))
+        _ = updateSnap(snap0)
+        XCTAssertEqual(try Data(contentsOf: cacheFile), before)   // unchanged on disk
+    }
+
+    func testSnapshotEventsSortedByTimestamp() throws {
+        try write("proj-a/s1.jsonl", line(ts: "2026-06-20T12:00:00.000+00:00", input: 1, output: 1))
+        try write("proj-a/s2.jsonl", line(ts: "2026-06-20T08:00:00.000+00:00", input: 1, output: 1))
+        let ev = loadSnap().events
+        XCTAssertEqual(ev.count, 2)
+        XCTAssertLessThan(ev[0].timestamp, ev[1].timestamp)   // sorted regardless of file order
+    }
 }
