@@ -68,7 +68,15 @@ public enum TranscriptDigest {
 
     /// Round-robin across projects (one prompt each per round) until the budget is spent,
     /// so every active project is represented before any project gets a second turn.
-    public static func assemble(byProject: [String: [String]], order: [String], maxChars: Int) -> String {
+    ///
+    /// `limitTo` (when non-nil) restricts the digest to that set of projects. The coach prompt
+    /// only tabulates the heaviest *consumed-token* projects (`RetrospectiveMetrics.coachedProjects`),
+    /// so the sample prompts must be filtered to the same set — otherwise a prompt-only project
+    /// (user typed in it but it ate ~0 tokens, so it's absent from the metrics/Menu) leaks into the
+    /// sample and the coach cites a project the user can't see in their breakdown.
+    public static func assemble(byProject: [String: [String]], order: [String], maxChars: Int,
+                                limitTo allowed: Set<String>? = nil) -> String {
+        let order = allowed.map { a in order.filter { a.contains($0) } } ?? order
         var digest = ""
         var round = 0
         var added = true

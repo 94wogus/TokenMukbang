@@ -4,6 +4,22 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed — 회고 코칭의 "캐시 리드가 한도를 갉아먹는다" 거꾸로 된 프레이밍 + 데이터 누수 (2026-06-23, ADR-0020)
+코치가 비용 인과를 거꾸로 잡던 문제와, 메뉴엔 없는 프로젝트를 인용하던 문제를 함께 교정:
+- **프레이밍 교정(a)**: cache *read* 는 한도에 거의 카운트되지 않는(≈0.1×, ITPM 미카운트) near-free
+  재사용인데, 코치 프롬프트/지표가 `cache-read/turn`을 전면에 내세워 "캐시 리드가 5h/7d 한도를
+  태운다"는 **방향이 반대인** TL;DR을 유발했다. 지표를 **drain = output + fresh-input + cache-write**
+  분해로 바꿔 한도를 실제로 태우는 요인을 전면화하고(`RetrospectiveMetrics.Project`에
+  `output`/`freshInput`/`cacheWrite` 추가), cache-read는 "컨텍스트 크기 proxy(near-free, 한도 미카운트)"
+  로 강등. 프롬프트(`ClaudeCLISummarizer`)에 올바른 드레인 순위(모델 티어→output→uncached input→
+  cache-write)와 **"임의 multiplier 발명 금지 / 데이터에 있는 프로젝트만 인용" hard-rule** 추가
+  ("4540 times"류 환각·존재하지 않는 프로젝트 인용 차단).
+- **데이터 누수 교정(b)**: 코치 입력의 sample prompts가 토큰 거의 0인(프롬프트만 있는) 프로젝트까지
+  포함해, 코치가 지표 테이블/메뉴엔 없는 프로젝트를 언급하던 윈도우 불일치 해소 —
+  `TranscriptDigest.assemble(limitTo:)`로 sample을 코치가 집계하는 프로젝트
+  (`RetrospectiveMetrics.coachedProjects`)로 제한.
+- 테스트 +3(drain 분해, drain-우선/cache-read 미전면화, sample allowlist). ADR-0020 §1 in-place 교정.
+
 ### Changed — 회고(Retrospective) 시간 표현도 표시 타임존 적용 (2026-06-17)
 표시 타임존 기능 직후, **회고만 UTC로 남아** "Busiest around 8:00 UTC" 같은 모순이 보이던 것 해소 —
 회고 전반의 시간 표현을 표시 타임존(`AppSettings.resolvedTimeZone`)으로 통일:

@@ -215,6 +215,24 @@ final class RetrospectiveTests: XCTestCase {
         XCTAssertTrue(digest.contains("[njtransit]"))
     }
 
+    /// Window-mismatch fix: `limitTo` confines the sample to the coached projects, so a
+    /// prompt-only project (present in transcripts but absent from the metrics/Menu) can't
+    /// leak into the coach's input and get cited.
+    func testDigestAssembleLimitsToAllowedProjects() {
+        let byProject = [
+            "njtransit": ["nj 1"],
+            "blog": ["blog 1"],
+            "ts-stack-study": ["prompt-only, ~0 tokens"],   // not in metrics/Menu
+        ]
+        let digest = TranscriptDigest.assemble(byProject: byProject,
+                                               order: ["njtransit", "blog", "ts-stack-study"],
+                                               maxChars: 4_000,
+                                               limitTo: ["njtransit", "blog"])
+        XCTAssertTrue(digest.contains("[njtransit]"))
+        XCTAssertTrue(digest.contains("[blog]"))
+        XCTAssertFalse(digest.contains("[ts-stack-study]"))   // filtered out
+    }
+
     // MARK: S3 — RetrospectiveStore (app-only cache)
 
     private func tempDir() -> URL {
@@ -300,9 +318,10 @@ final class RetrospectiveTests: XCTestCase {
 
     // MARK: RetrospectiveMetrics (coaching signal)
 
-    private func tev(_ ts: Date, _ model: String, _ project: String, _ input: Int, _ cacheRead: Int) -> TokenEvent {
-        TokenEvent(timestamp: ts, model: model, inputTokens: input, outputTokens: 0,
-                   cacheReadTokens: cacheRead, cacheCreationTokens: 0, project: project)
+    private func tev(_ ts: Date, _ model: String, _ project: String, _ input: Int, _ cacheRead: Int,
+                     output: Int = 0, cacheCreate: Int = 0) -> TokenEvent {
+        TokenEvent(timestamp: ts, model: model, inputTokens: input, outputTokens: output,
+                   cacheReadTokens: cacheRead, cacheCreationTokens: cacheCreate, project: project)
     }
 
     func testMetricsBuildPerProjectSignals() {
@@ -318,7 +337,7 @@ final class RetrospectiveTests: XCTestCase {
                                            periodStart: start, periodEnd: end)
         XCTAssertEqual(m.projects.first?.project, "njtransit")     // heaviest first (1000 > 200)
         XCTAssertEqual(m.projects.first?.tokensPerPrompt, 1000)    // 1000 consumed / 1 prompt → low steering
-        XCTAssertEqual(m.projects.first?.cachePerTurn, 5000)       // 5000 cache-read / 1 turn → big context
+        XCTAssertEqual(m.projects.first?.cachePerTurn, 5000)       // context-size proxy only (not a cost)
         let blog = m.projects.first { $0.project == "blog" }
         XCTAssertEqual(blog?.tokensPerPrompt, 50)                  // 200 / 4
         XCTAssertEqual(m.totalConsumed, 1200)
@@ -326,19 +345,50 @@ final class RetrospectiveTests: XCTestCase {
         XCTAssertEqual(m.opusShare, 1.0, accuracy: 0.0001)
     }
 
+    /// "drain" must decompose into output + fresh-input + cache-write, and exclude cache-read.
+    func testMetricsDrainDecomposition() {
+        let start = Date(timeIntervalSince1970: 10 * 86_400)
+        let end = start.addingTimeInterval(86_400)
+        let m = RetrospectiveMetrics.build(
+            events: [tev(start.addingTimeInterval(3600), "claude-opus-4-8", "njtransit",
+                         1000, 9000, output: 500, cacheCreate: 200)],
+            promptCounts: ["njtransit": 1], periodStart: start, periodEnd: end)
+        let p = try! XCTUnwrap(m.projects.first)
+        XCTAssertEqual(p.output, 500)
+        XCTAssertEqual(p.freshInput, 1000)
+        XCTAssertEqual(p.cacheWrite, 200)
+        XCTAssertEqual(p.cacheRead, 9000)                          // huge cache-read…
+        XCTAssertEqual(p.consumed, 1700)                           // …but drain excludes it (500+1000+200)
+    }
+
     func testMetricsCoachInputTextHasKeySignals() {
         let start = Date(timeIntervalSince1970: 10 * 86_400)
         let end = start.addingTimeInterval(86_400)
         let m = RetrospectiveMetrics.build(
-            events: [tev(start.addingTimeInterval(3600), "claude-opus-4-8", "njtransit", 1000, 5000)],
+            events: [tev(start.addingTimeInterval(3600), "claude-opus-4-8", "njtransit",
+                         1000, 9000, output: 500, cacheCreate: 200)],
             promptCounts: ["njtransit": 1], periodStart: start, periodEnd: end)
         let text = m.coachInputText()
         XCTAssertTrue(text.contains("Opus 100%"))
         XCTAssertTrue(text.contains("njtransit"))
-        XCTAssertTrue(text.contains("/turn"))   // cache-read/turn signal present
         XCTAssertFalse(text.contains("Plan:"))  // no plan line when not provided
         // Plan-aware: the plan label is surfaced so the coach can frame cost as window-burn.
         XCTAssertTrue(m.coachInputText(planLabel: "Max").contains("Plan: Max"))
+    }
+
+    /// Framing fix: cache-read/turn must NOT be foregrounded as a cost; "drain" leads instead.
+    func testCoachInputTextForegroundsDrainNotCacheRead() {
+        let start = Date(timeIntervalSince1970: 10 * 86_400)
+        let end = start.addingTimeInterval(86_400)
+        let m = RetrospectiveMetrics.build(
+            events: [tev(start.addingTimeInterval(3600), "claude-opus-4-8", "njtransit",
+                         1000, 9000, output: 500, cacheCreate: 200)],
+            promptCounts: ["njtransit": 1], periodStart: start, periodEnd: end)
+        let text = m.coachInputText()
+        XCTAssertTrue(text.contains("drain"))            // drain decomposition is the headline
+        XCTAssertTrue(text.contains("cache-write"))      // a real drain component is shown
+        XCTAssertFalse(text.contains("/turn"))           // cache-read/turn is no longer foregrounded
+        XCTAssertFalse(text.contains("cache-read "))     // no "cache-read N%" cost-style metric
     }
 
     func testEmptyStoreReturnsNil() {
