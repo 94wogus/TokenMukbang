@@ -87,7 +87,8 @@ struct RetrospectiveView: View {
             VStack(alignment: .leading, spacing: DS.section) {
                 if !retro.projects.isEmpty {
                     section("MENU (by project)") {
-                        ForEach(retro.projects.prefix(5)) { p in
+                        // Same cap as the coach input so the Menu never hides a project the coach cites.
+                        ForEach(retro.projects.prefix(RetrospectiveMetrics.maxListedProjects)) { p in
                             row(p.project, RetrospectiveSummary.tokens(p.tokens),
                                 fraction: frac(p.tokens, retro.totalConsumed))
                         }

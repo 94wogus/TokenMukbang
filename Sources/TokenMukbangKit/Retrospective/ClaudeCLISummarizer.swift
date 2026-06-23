@@ -64,6 +64,10 @@ public struct ClaudeCLISummarizer: RetrospectiveSummarizing {
       NEVER invent a multiplier, an "Nx" figure, or a per-turn tax count that isn't in the data.
     - ONLY reference project names that appear in the "Per project" list below. Never name a project \
       that isn't in the data.
+    - Do NOT assert a CAUSE or mechanism the data doesn't show. The metrics have no timing/turn-gap \
+      info, so you cannot know WHY a number is high (e.g. do not claim cache-write came from ">5-min \
+      idle gaps", or that work was bulk vs reasoning). State the metric and the action; if a cause is \
+      uncertain, say "likely" / "check whether", never assert it as fact.
 
     Respond in English:
     line 1: a one-sentence TL;DR naming the single biggest opportunity to spend the usage window \

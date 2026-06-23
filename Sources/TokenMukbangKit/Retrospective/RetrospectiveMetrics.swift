@@ -32,11 +32,14 @@ public struct RetrospectiveMetrics: Sendable, Equatable {
         public var cachePerTurn: Int { turns > 0 ? cacheRead / turns : 0 }
     }
 
-    /// How many projects the coach prompt enumerates (heaviest first). The sample-prompt
-    /// digest must be filtered to exactly these so the coach can't name an off-table project.
-    public static let maxCoachedProjects = 10
-    /// The heaviest projects shown to the coach (heaviest first), bounded by `maxCoachedProjects`.
-    public var coachedProjects: [Project] { Array(projects.prefix(Self.maxCoachedProjects)) }
+    /// The single cap on how many heaviest projects appear in ANY surface — the coach prompt,
+    /// the Copy report (`RetrospectiveReport`), and the in-app Menu (`RetrospectiveView`). They
+    /// must all use this one number so the coach can never cite a project the user can't see in
+    /// the Menu (the original bug: coach top-10 vs report top-8 vs popover top-5). The
+    /// sample-prompt digest is also filtered to exactly these.
+    public static let maxListedProjects = 10
+    /// The heaviest projects shown to the coach (heaviest first), bounded by `maxListedProjects`.
+    public var coachedProjects: [Project] { Array(projects.prefix(Self.maxListedProjects)) }
 
     public let projects: [Project]       // heaviest first
     public let totalConsumed: Int
