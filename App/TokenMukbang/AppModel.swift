@@ -218,11 +218,17 @@ final class AppModel: ObservableObject {
     // MARK: - Token consumption history (ADR-0012)
 
     @Published private(set) var tokenEvents: [TokenEvent] = []
+    /// True while the first transcript parse is running — lets cards show a "loading" state
+    /// instead of vanishing (a heavy user's transcripts take a few seconds even cached).
+    @Published private(set) var isLoadingTokens = false
 
-    /// Parse all transcripts off the main actor (potentially many MB of JSONL).
+    /// Parse all transcripts off the main actor (potentially >1GB of JSONL). Uses `EventCache`
+    /// so only new/changed files are re-parsed after the first launch (ADR-0012 perf).
     func loadTokenHistory() async {
-        let events = await Task.detached(priority: .utility) { JSONLParser.allEvents() }.value
+        if tokenEvents.isEmpty { isLoadingTokens = true }   // only show "loading" before we have anything
+        let events = await Task.detached(priority: .utility) { EventCache.allEvents() }.value
         tokenEvents = events
+        isLoadingTokens = false
         loadRetrospective()
         recomputeValueEstimate()
     }

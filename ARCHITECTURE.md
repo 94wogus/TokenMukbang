@@ -120,7 +120,9 @@ substitute a fake:
   by ModelCast + timeframe; `Timeframe` 24h/7d/30d/90d + `HistoryFilter.tokenEvents`)
   + `JSONLParser`/`TokenHistory` (절대 토큰 소비량을
   `~/.claude/projects/*.jsonl`에서 파싱·집계 — by day/model/project/**cast**, `byDayCast`(일별 모델
-  세그먼트), `summary`(신선/재가열·캐시적중·전기간 대비 Δ), heaviest day, top project; ADR-0012).
+  세그먼트), `summary`(신선/재가열·캐시적중·전기간 대비 Δ), heaviest day, top project; ADR-0012)
+  + `EventCache` (파일별 `(size, mtime)` 키 파싱 캐시 — 안 바뀐 transcript는 재파싱 안 함; >1GB
+  통째 재파싱 회피, App Support의 파생·삭제가능 `event-cache.json`).
   History는 **CLI 토큰**만 다룬다 — API 사용률%는 계정 전체(웹 포함) 메트릭이라 섞지 않는다.
 - **`Retrospective/`** — "yesterday's you" reflection (ADR-0020): `RetrospectiveBuilder` (layer A
   metadata, reuses `TokenHistory`/`HistoryStore`); `RetrospectiveMetrics` (per-project usage-pattern

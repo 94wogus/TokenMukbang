@@ -4,6 +4,22 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed — Value 카드가 아예 안 보이던 버그(잘못된 뷰) + 매 실행 1.1GB 재파싱 (2026-06-24, ADR-0012/0021)
+- **카드가 실제 창에 없던 진짜 버그**: ADR-0021의 Value 카드를 `MenuContentView.dashboardLayout`에
+  넣었는데, 실제 메뉴바 창은 `AppShellView`의 **`NowDashboard`** 패인이 렌더한다(둘은 별개 뷰).
+  그래서 카드가 도입 이후 줄곧 화면에 안 떴다. 카드를 공용 **`ValueCardView`** 컴포넌트로 빼서
+  `NowDashboard`(진짜 Now 패인)에 꽂고 `MenuContentView`도 같은 컴포넌트를 쓰게 통일.
+- **카드 항상 표시**: 추가로, `valueEstimate != nil`일 때만 렌더하던 조건을 없애 — 카드 프레임은
+  항상 그리고 내부에서 상태를 보여줌(로딩 중 "Reading your usage…", 데이터 없으면 "No priced
+  usage…", 있으면 값). `AppModel.isLoadingTokens` 추가.
+- **파싱 캐시(`EventCache`)**: `JSONLParser.allEvents()`가 매 실행마다 `~/.claude/projects`의
+  모든 `.jsonl`(헤비 유저 >1GB / ~2.2k 파일)을 통째로 재파싱하던 것을, 파일별 `(size, mtime)`
+  키 캐시로 교체 — 안 바뀐 파일(대부분, 완료된 세션)은 캐시에서 읽고 **새/추가된 파일만 재파싱**.
+  첫 실행만 전체 파싱(캐시 생성), 이후엔 빠름. `TokenEvent`에 `Codable` 추가. 캐시는 App Support의
+  파생·삭제가능 산출물(`event-cache.json`). 테스트 +5.
+- (정상 상태 CPU는 별건 — 코드상 busy-loop/연속 타이머/반복 파싱 없음. 창 열림 시 SwiftUI 렌더
+  비용으로 보이며 Instruments 프로파일링이 필요해 이번 변경엔 미포함.)
+
 ### Added — Now 탭 "Value / 세이브" 카드 (2026-06-23, ADR-0021)
 정액 구독으로 **"API 종량제였으면 얼마"** 를 보여줘 세이브액/배수를 가늠하게 한다:
 - **무엇** — Now 탭 미니 윈도우(7D·Sonnet 7D)와 SESSIONS 사이에 카드. 청구주기 토큰을 **모델 정가**로

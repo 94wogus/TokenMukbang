@@ -1,7 +1,8 @@
 import Foundation
 
 /// One assistant turn's token consumption, parsed from a Claude Code transcript.
-public struct TokenEvent: Sendable, Equatable {
+/// `Codable` so `EventCache` can persist parsed events and skip re-parsing unchanged files.
+public struct TokenEvent: Sendable, Equatable, Codable {
     public let timestamp: Date
     public let model: String
     public let inputTokens: Int
