@@ -138,14 +138,27 @@ public struct AppSettings: Codable, Sendable, Equatable {
     /// deterministic tests (`TokenHistory.utcCalendar`).
     public var timeZoneIdentifier: String?
 
+    /// What the user pays per billing cycle, in USD (e.g. 200 for Max 20×). Drives the Now-tab
+    /// Value/Savings card (ADR-0021): API-equivalent cost of the period's tokens vs this flat fee.
+    /// `0` = not set (the card then prompts the user to enter it instead of showing savings).
+    public var subscriptionMonthlyCost: Double
+
+    /// Day-of-month the billing cycle renews (1…28; clamped to avoid month-length gaps). `nil` =
+    /// use a rolling 30-day window. The Value card scopes its token total to this period.
+    public var billingCycleDay: Int?
+
     /// The shipped default blur veil — was a hard-coded constant in `GlassPanel`, now the default
     /// for the user-tunable `glassOpacity` (so existing behavior is unchanged until adjusted).
     public static let defaultGlassOpacity: Double = 0.70
+    /// Default plan price prefilled in Settings — Max 20× ($200). Editable; `0` disables savings.
+    public static let defaultSubscriptionMonthlyCost: Double = 200
 
     public init(theme: Theme, customPalette: ThemePalette, thresholds: RiskThresholds,
                 notifications: NotificationSettings, temperament: Temperament = .balanced,
                 glassOpacity: Double = AppSettings.defaultGlassOpacity,
-                timeZoneIdentifier: String? = nil) {
+                timeZoneIdentifier: String? = nil,
+                subscriptionMonthlyCost: Double = AppSettings.defaultSubscriptionMonthlyCost,
+                billingCycleDay: Int? = nil) {
         self.theme = theme
         self.customPalette = customPalette
         self.thresholds = thresholds
@@ -153,10 +166,13 @@ public struct AppSettings: Codable, Sendable, Equatable {
         self.temperament = temperament
         self.glassOpacity = glassOpacity
         self.timeZoneIdentifier = timeZoneIdentifier
+        self.subscriptionMonthlyCost = subscriptionMonthlyCost
+        self.billingCycleDay = billingCycleDay
     }
 
     private enum CodingKeys: String, CodingKey {
         case theme, customPalette, thresholds, notifications, temperament, glassOpacity, timeZoneIdentifier
+        case subscriptionMonthlyCost, billingCycleDay
     }
 
     /// Forgiving decode: any missing field falls back to its default, so adding a new setting
@@ -171,6 +187,23 @@ public struct AppSettings: Codable, Sendable, Equatable {
         temperament = try c.decodeIfPresent(Temperament.self, forKey: .temperament) ?? .balanced
         glassOpacity = try c.decodeIfPresent(Double.self, forKey: .glassOpacity) ?? AppSettings.defaultGlassOpacity
         timeZoneIdentifier = try c.decodeIfPresent(String.self, forKey: .timeZoneIdentifier)
+        subscriptionMonthlyCost = try c.decodeIfPresent(Double.self, forKey: .subscriptionMonthlyCost)
+            ?? AppSettings.defaultSubscriptionMonthlyCost
+        billingCycleDay = try c.decodeIfPresent(Int.self, forKey: .billingCycleDay)
+    }
+
+    /// Start of the current billing period: the most recent `billingCycleDay` at/before `now`,
+    /// or `now − 30 days` when no cycle day is set. Used to scope the Value card's token total.
+    public func billingPeriodStart(now: Date, calendar: Calendar) -> Date {
+        guard let day = billingCycleDay else {
+            return calendar.date(byAdding: .day, value: -30, to: now) ?? now
+        }
+        let d = min(max(day, 1), 28)   // clamp so every month has the day (no Feb-30 gaps)
+        var comps = calendar.dateComponents([.year, .month], from: now)
+        comps.day = d
+        let thisMonth = calendar.date(from: comps) ?? now
+        if thisMonth <= now { return thisMonth }                       // already past the renewal this month
+        return calendar.date(byAdding: .month, value: -1, to: thisMonth) ?? thisMonth
     }
 
     /// The effective time zone for display — the override if set and valid, else the live

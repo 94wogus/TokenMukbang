@@ -80,7 +80,48 @@ struct SettingsView: View {
                 Text("Charts, day buckets and times use this zone. Reset countdowns are unaffected.")
                     .font(.system(size: 9)).foregroundStyle(.tertiary)
             }
+
+            section("Subscription", icon: "creditcard") {
+                HStack(spacing: 6) {
+                    Text("Monthly plan cost").font(.caption)
+                    Spacer()
+                    Text("$").font(.caption).foregroundStyle(.secondary)
+                    TextField("200", value: $model.settings.subscriptionMonthlyCost, format: .number)
+                        .textFieldStyle(.roundedBorder).controlSize(.small)
+                        .frame(width: 64).multilineTextAlignment(.trailing)
+                }
+
+                Toggle(isOn: billingDayEnabled) {
+                    Text("I have a fixed billing day").font(.caption)
+                }
+                .toggleStyle(.switch).controlSize(.mini).tint(selectedMood.accent)
+
+                if billingDayEnabled.wrappedValue {
+                    Stepper(value: billingDay, in: 1...28) {
+                        Text("Renews on day \(billingDay.wrappedValue) of each month").font(.caption)
+                    }
+                    .controlSize(.small)
+                }
+
+                Text(billingDayEnabled.wrappedValue
+                     ? "The Now tab's Value card totals usage since day \(billingDay.wrappedValue) and compares it to this plan cost at API rates."
+                     : "The Now tab's Value card totals the last 30 days of usage and compares it to this plan cost at API rates.")
+                    .font(.system(size: 9)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
+    }
+
+    /// nil cycle-day ⇄ "fixed billing day" switch (off = rolling 30-day window).
+    private var billingDayEnabled: Binding<Bool> {
+        Binding(get: { model.settings.billingCycleDay != nil },
+                set: { model.settings.billingCycleDay = $0 ? (model.settings.billingCycleDay ?? 1) : nil })
+    }
+
+    /// The billing day-of-month (only read/written while a fixed day is set).
+    private var billingDay: Binding<Int> {
+        Binding(get: { model.settings.billingCycleDay ?? 1 },
+                set: { model.settings.billingCycleDay = $0 })
     }
 
     /// nil identifier ⇄ "follow system" switch.

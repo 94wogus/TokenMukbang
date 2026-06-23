@@ -128,8 +128,13 @@ substitute a fake:
   input; cache-*read* is near-free and excluded from drain, ADR-0020); `RetrospectiveSummarizing`
   seam + `ClaudeCLISummarizer` + `TranscriptDigest` (layer B **coaching** via the local `claude` CLI,
   on-demand); `RetrospectiveStore` (app-only cache, **never** `SharedStore`); `RetrospectiveSummary`/`RetroTopics` DTOs.
+- **`Value/`** — "what would this cost at API rates?" (ADR-0021): `ModelPricing` (raw model id → API
+  list price + cache multipliers — write 1.25×, read 0.1×) + `ValueEstimate` (period `TokenEvent`
+  aggregation → `apiEquivalent` incl. cache-read + `costExclCacheRead` "fresh work" + per-model split).
+  Drives the Now-tab Value/Savings card vs `AppSettings.subscriptionMonthlyCost`. Local-only, app-only.
 - **`Settings/`** — `AppSettings` (Codable: `Theme` 4 presets + custom `ThemePalette`,
-  `RiskThresholds`, `NotificationSettings`) + `SettingsStore` (JSON persistence, injectable dir).
+  `RiskThresholds`, `NotificationSettings`, `subscriptionMonthlyCost`/`billingCycleDay` for the Value
+  card) + `SettingsStore` (JSON persistence, injectable dir).
 - **`Notifications/`** — `NotificationDecider` (edge-triggered: compares previous vs current
   snapshot → escalation/recovery/pacing/reset/expiry alerts, gated by per-surface + per-event
   settings; pure & tested). The app delivers them via `UNUserNotificationCenter`.

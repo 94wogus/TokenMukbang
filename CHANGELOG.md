@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added — Now 탭 "Value / 세이브" 카드 (2026-06-23, ADR-0021)
+정액 구독으로 **"API 종량제였으면 얼마"** 를 보여줘 세이브액/배수를 가늠하게 한다:
+- **무엇** — Now 탭 미니 윈도우(7D·Sonnet 7D)와 SESSIONS 사이에 카드. 청구주기 토큰을 **모델 정가**로
+  환산: input×in + output×out + cache-write×in×1.25 + cache-read×in×0.1. headline은 `apiEquivalent`
+  (cache-read 포함 = API가 실제 청구할 값), 보조로 `costExclCacheRead`("fresh work"). 모델별($) 분해.
+- **가격** — raw 모델 id로 매칭(Opus 버전별 $5/$25 vs 구버전 $15/$75, Sonnet $3/$15, Haiku $1/$5,
+  Fable $10/$50). 가격 모르는 모델(mock/synthetic)은 비용 제외·토큰만 카운트.
+- **설정** — Settings → General에 "Subscription" 섹션: 월 정액($, 기본 $200=Max 20×) + 청구일
+  (1–28, 끄면 rolling 30일). `AppSettings.billingPeriodStart`가 기간 시작을 표시 타임존 기준으로 계산.
+- **로컬·앱 전용** — 추정은 `TokenEvent`(ADR-0012) 로컬 집계뿐. `claude` CLI·네트워크 무관, 위젯
+  `SharedStore`에도 안 들어감. `AppModel.valueEstimate`는 토큰 로드+설정 변경 시에만 재계산(렌더당 X).
+- 신규 `Sources/TokenMukbangKit/Value/`(`ModelPricing`·`ValueEstimate`). 테스트 +9.
+
 ### Fixed — 회고 코칭 후속: 메뉴↔코치 프로젝트 컷 불일치 + 데이터에 없는 인과 단정 (2026-06-23, ADR-0020)
 직전 프레이밍 교정 후 실사용에서 드러난 잔여 2건:
 - **컷오프 정합(이슈 1)**: 코치는 top-10, Copy 리포트는 top-8, 인앱 Menu는 top-5를 보여줘 —
