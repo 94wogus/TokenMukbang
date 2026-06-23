@@ -10,21 +10,33 @@ import Foundation
 public struct RetrospectiveMetrics: Sendable, Equatable {
     public struct Project: Sendable, Equatable {
         public let project: String
-        public let consumed: Int        // input + output + cache-creation
-        public let cacheRead: Int       // reheated context (proxy for context size)
+        public let consumed: Int        // "drain": output + fresh-input + cache-write — what burns the window
+        public let output: Int          // output tokens — full price, biggest per-token cost
+        public let freshInput: Int      // uncached input tokens
+        public let cacheWrite: Int      // cache-creation tokens (re-cache after a >5-min idle gap)
+        public let cacheRead: Int       // reheated context — near-free, does NOT drain the limit (context-size proxy only)
         public let turns: Int           // assistant turns
         public let prompts: Int         // user prompts (steering)
         public let topModel: String     // dominant cast by tokens
 
-        public init(project: String, consumed: Int, cacheRead: Int, turns: Int, prompts: Int, topModel: String) {
-            self.project = project; self.consumed = consumed; self.cacheRead = cacheRead
+        public init(project: String, consumed: Int, output: Int, freshInput: Int, cacheWrite: Int,
+                    cacheRead: Int, turns: Int, prompts: Int, topModel: String) {
+            self.project = project; self.consumed = consumed; self.output = output
+            self.freshInput = freshInput; self.cacheWrite = cacheWrite; self.cacheRead = cacheRead
             self.turns = turns; self.prompts = prompts; self.topModel = topModel
         }
         /// Tokens spent per user prompt — high ⇒ little steering (automation / long context).
         public var tokensPerPrompt: Int { prompts > 0 ? consumed / prompts : consumed }
-        /// Cache-read tokens per turn — high ⇒ ballooned/long-running context.
+        /// Cache-read tokens per turn — a context-size proxy ONLY. Cache reads are near-free
+        /// and don't count toward the limit, so this is never foregrounded as a cost signal.
         public var cachePerTurn: Int { turns > 0 ? cacheRead / turns : 0 }
     }
+
+    /// How many projects the coach prompt enumerates (heaviest first). The sample-prompt
+    /// digest must be filtered to exactly these so the coach can't name an off-table project.
+    public static let maxCoachedProjects = 10
+    /// The heaviest projects shown to the coach (heaviest first), bounded by `maxCoachedProjects`.
+    public var coachedProjects: [Project] { Array(projects.prefix(Self.maxCoachedProjects)) }
 
     public let projects: [Project]       // heaviest first
     public let totalConsumed: Int
@@ -58,11 +70,15 @@ public struct RetrospectiveMetrics: Sendable, Equatable {
         for e in inPeriod { byProj[e.project, default: []].append(e) }
 
         let projects: [Project] = byProj.map { project, evs in
-            let consumed = evs.reduce(0) { $0 + $1.consumedTokens }
+            let output = evs.reduce(0) { $0 + $1.outputTokens }
+            let freshInput = evs.reduce(0) { $0 + $1.inputTokens }
+            let cacheWrite = evs.reduce(0) { $0 + $1.cacheCreationTokens }
+            let consumed = output + freshInput + cacheWrite     // == consumedTokens; the window-drain total
             let cacheRead = evs.reduce(0) { $0 + $1.cacheReadTokens }
             let topModel = TokenHistory.byCast(evs).first?.cast?.modelName ?? "Other"
-            return Project(project: project, consumed: consumed, cacheRead: cacheRead,
-                           turns: evs.count, prompts: promptCounts[project] ?? 0, topModel: topModel)
+            return Project(project: project, consumed: consumed, output: output, freshInput: freshInput,
+                           cacheWrite: cacheWrite, cacheRead: cacheRead, turns: evs.count,
+                           prompts: promptCounts[project] ?? 0, topModel: topModel)
         }
         .filter { $0.consumed > 0 }
         .sorted { $0.consumed > $1.consumed }
@@ -104,19 +120,18 @@ public struct RetrospectiveMetrics: Sendable, Equatable {
         func tk(_ n: Int) -> String { RetrospectiveSummary.tokens(n) }
         var lines: [String] = []
         if let plan = planLabel, !plan.isEmpty { lines.append("Plan: \(plan)") }
-        var head = "Total \(tk(totalConsumed)) tokens · Opus \(Int((opusShare * 100).rounded()))%"
-        if totalConsumed + totalCacheRead > 0 {
-            let hit = Int((Double(totalCacheRead) / Double(totalConsumed + totalCacheRead) * 100).rounded())
-            head += " · cache-read \(hit)%"
-        }
+        var head = "Total \(tk(totalConsumed)) drain tokens · Opus \(Int((opusShare * 100).rounded()))%"
         head += " · \(totalPrompts) user prompts over \(totalTurns) turns"
         if let h = busiestHour { head += " · busiest \(h):00 \(RetrospectiveSummary.zoneAbbrev(timeZone))" }
         if let d = baselineDeltaPercent { head += String(format: " · %@%.0f%% vs usual", d >= 0 ? "↑" : "↓", abs(d)) }
         lines.append(head)
+        // Tell the coach what the "drain" total means and that cache reads are NOT part of it —
+        // the framing fix: cache reuse is near-free and does not count toward the 5h/7d limit.
+        lines.append("(drain = output + fresh-input + cache-write — what burns the limit; cache reuse is near-free and excluded)")
         lines.append("")
-        lines.append("Per project (tokens · user-prompts · tokens/prompt · cache-read/turn · model):")
-        for p in projects.prefix(10) {
-            lines.append("- \(p.project): \(tk(p.consumed)) · \(p.prompts)p · \(tk(p.tokensPerPrompt))/p · \(tk(p.cachePerTurn))/turn · \(p.topModel)")
+        lines.append("Per project (drain · output · fresh-input · cache-write · user-prompts · tokens/prompt · model):")
+        for p in coachedProjects {
+            lines.append("- \(p.project): \(tk(p.consumed)) drain · \(tk(p.output)) out · \(tk(p.freshInput)) in · \(tk(p.cacheWrite)) cache-write · \(p.prompts)p · \(tk(p.tokensPerPrompt))/p · \(p.topModel)")
         }
         return lines.joined(separator: "\n")
     }

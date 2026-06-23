@@ -261,7 +261,11 @@ final class AppModel: ObservableObject {
             let promptCounts = byProject.mapValues(\.count)
             let metrics = RetrospectiveMetrics.build(events: events, promptCounts: promptCounts,
                                                      periodStart: start, periodEnd: end, calendar: cal)
-            let sample = TranscriptDigest.assemble(byProject: byProject, order: order, maxChars: 4_000)
+            // Keep the sample prompts to exactly the projects the coach tabulates, so it can't
+            // cite a prompt-only project that's absent from the metrics/Menu (window-mismatch fix).
+            let coached = Set(metrics.coachedProjects.map(\.project))
+            let sample = TranscriptDigest.assemble(byProject: byProject, order: order,
+                                                   maxChars: 4_000, limitTo: coached)
             return metrics.coachInputText(planLabel: plan, timeZone: tz) + (sample.isEmpty ? "" : "\n\nSample prompts:\n" + sample)
         }.value
 

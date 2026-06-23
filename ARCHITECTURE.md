@@ -124,7 +124,8 @@ substitute a fake:
   History는 **CLI 토큰**만 다룬다 — API 사용률%는 계정 전체(웹 포함) 메트릭이라 섞지 않는다.
 - **`Retrospective/`** — "yesterday's you" reflection (ADR-0020): `RetrospectiveBuilder` (layer A
   metadata, reuses `TokenHistory`/`HistoryStore`); `RetrospectiveMetrics` (per-project usage-pattern
-  signals: tokens·prompts·tokens/prompt·cache-read/turn·model — the coach input); `RetrospectiveSummarizing`
+  signals: per-project **drain = output+fresh-input+cache-write**·prompts·tokens/prompt·model — the coach
+  input; cache-*read* is near-free and excluded from drain, ADR-0020); `RetrospectiveSummarizing`
   seam + `ClaudeCLISummarizer` + `TranscriptDigest` (layer B **coaching** via the local `claude` CLI,
   on-demand); `RetrospectiveStore` (app-only cache, **never** `SharedStore`); `RetrospectiveSummary`/`RetroTopics` DTOs.
 - **`Settings/`** — `AppSettings` (Codable: `Theme` 4 presets + custom `ThemePalette`,
