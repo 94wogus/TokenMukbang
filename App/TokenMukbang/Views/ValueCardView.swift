@@ -47,16 +47,26 @@ struct ValueCardView: View {
             Text("at API rates").font(.caption).foregroundStyle(.secondary)
             Spacer()
             if sub > 0 {
-                Text(ValueEstimate.multipleLabel(v.multiple(subscription: sub)))
-                    .font(.caption.weight(.bold))
-                    .padding(.horizontal, 8).padding(.vertical, 3)
-                    .background(Color.green.opacity(0.18), in: Capsule())
-                    .foregroundStyle(.green)
+                // The "몇 배 썼나" headline — the wow number, sized up and labeled so its
+                // meaning (× your plan's worth) reads at a glance, not just a bare "93×".
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(ValueEstimate.multipleLabel(v.multiple(subscription: sub)))
+                        .font(.system(size: 18, weight: .heavy, design: .rounded).monospacedDigit())
+                    Text("your plan").font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(.green)
+                .padding(.horizontal, 9).padding(.vertical, 4)
+                .background(Color.green.opacity(0.16), in: Capsule())
             }
         }
         if sub > 0 {
-            Text("You pay \(ValueEstimate.dollars(sub)) → saving \(ValueEstimate.dollars(v.savings(subscription: sub)))")
-                .font(.callout).foregroundStyle(.secondary)
+            // You pay / saving — the dollar amounts carry the weight: deep ink for what you
+            // pay, vivid green for what you save (both bold); the connective text stays quiet.
+            (Text("You pay ").foregroundStyle(.secondary)
+             + Text(ValueEstimate.dollars(sub)).fontWeight(.bold).foregroundStyle(.primary)
+             + Text(" → saving ").foregroundStyle(.secondary)
+             + Text(ValueEstimate.dollars(v.savings(subscription: sub))).fontWeight(.bold).foregroundStyle(.green))
+                .font(.callout)
                 .fixedSize(horizontal: false, vertical: true)
         } else {
             Text("Set your plan price in Settings → General to see savings.")

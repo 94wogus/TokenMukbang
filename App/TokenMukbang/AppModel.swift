@@ -139,6 +139,9 @@ final class AppModel: ObservableObject {
         self.settings = settings
         self.snapshot = previewSnapshot
         self.tokenEvents = tokenEvents
+        // Build the Value estimate from the preview events so the render/snapshot harness
+        // actually exercises the Value card (otherwise it always shows the empty state).
+        recomputeValueEstimate()
     }
 
     /// Snapshot from the previous poll — for edge-triggered notifications.
