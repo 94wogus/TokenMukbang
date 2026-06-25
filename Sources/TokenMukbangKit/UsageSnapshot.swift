@@ -78,4 +78,33 @@ public struct UsageSnapshot: Codable, Sendable, Equatable {
     public var headlineWindow: Window? {
         windows.max { $0.utilization < $1.utilization }
     }
+
+    /// Re-derive each window's risk level/color from new warning/critical
+    /// thresholds *without* re-hitting the network (ADR-0013). Used when the user
+    /// drags the Settings sliders so the menu bar, popover cards and widget
+    /// recolor immediately instead of waiting for the next poll. Pacing is
+    /// preserved — only the band breakpoints move (see `RiskScorer.level`).
+    public func recolored(thresholds: RiskThresholds) -> UsageSnapshot {
+        let rewound = windows.map { w -> Window in
+            // Window only stores the level, not the score; reconstruct the pacing
+            // inputs (windowStart from the kind's duration) to re-score it.
+            guard let kind = UsageWindowKind(rawValue: w.kind) else { return w }
+            let start = w.resetsAt.addingTimeInterval(-kind.duration)
+            let level = RiskScorer.level(
+                utilization: w.utilization, windowStart: start, resetsAt: w.resetsAt,
+                now: capturedAt, thresholds: thresholds
+            )
+            return Window(
+                kind: w.kind, label: w.label, utilization: w.utilization, resetsAt: w.resetsAt,
+                riskHex: level.hex, riskLabel: level.label, riskLevel: level.rawValue,
+                isOver: w.isOver, paceWarningHours: w.paceWarningHours
+            )
+        }
+        var copy = UsageSnapshot(
+            capturedAt: capturedAt, planLabel: planLabel, windows: rewound,
+            sessions: sessions, error: error
+        )
+        copy.headlineSparkline = headlineSparkline
+        return copy
+    }
 }

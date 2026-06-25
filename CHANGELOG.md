@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed — Settings의 warning/critical 임계값이 위험도 색에 반영되게 (2026-06-25, ADR-0013)
+Settings → Alerts의 임계값 슬라이더가 알림에만 쓰이고 **Now 화면·메뉴바·위젯의 위험도 색에는
+전혀 반영되지 않던** 문제를 고쳤다. ADR-0013은 "임계값이 위험도 분류에 반영된다"고 선언했으나
+그 경로(`level(percent:thresholds:)`)가 끝내 배선되지 않아, 색은 하드코딩된 score 밴드
+(0.45/0.70/0.90)로만 칠해지고 있었다.
+- pacing은 유지한 채 **score→level 밴드 경계를 사용자 임계값에서 끌어오도록** 변경
+  (`RiskScorer.level(forScore:thresholds:)`, watch = warning×0.6).
+- 임계값을 `UsageService.snapshot(thresholds:)` → `windows(...)`로 주입 → 모든
+  `UsageSnapshot.Window`에 구워져 **메뉴바·팝오버 카드·위젯이 한 레벨로** 색칠된다.
+- 슬라이더 변경 시 네트워크 없이 기존 snapshot을 즉시 재색칠
+  (`UsageSnapshot.recolored(thresholds:)`, `AppModel.settings.didSet`).
+- 테스트 +3 (커스텀 임계값이 밴드를 옮김 / pacing 레벨까지 흐름 / recolor 재분류).
+
 ### Added — Value/History 5분 폴링 시 라이브 갱신(증분) (2026-06-24, ADR-0021)
 VALUE 카드(와 History)가 이제 **5분 자동 폴링마다 갱신**돼 세션 중에도 숫자가 따라 올라간다.
 풀 재파싱 대신 **증분**으로 — A/B 두 경로:

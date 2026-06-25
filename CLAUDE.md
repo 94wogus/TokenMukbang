@@ -117,10 +117,17 @@ deliberately avoid emitting it. `SecurityCLICredentialStore` is read-only — it
   buckets and we decode only these four. `Usage.displayWindows` gives the ordered non-nil set.
 - **Risk** (`RiskScorer`) blends absolute utilization with *pacing* — burning the
   allowance fast relative to time left in the window pulls the score above raw
-  utilization — then maps to a 4-level `RiskLevel` (calm/watch/warning/critical). The
-  level is all Kit emits; **color is resolved app-side, scheme-branched, by `RiskTone`
-  in `App/Shared/DesignSystem.swift`** — Kit stays color-free (ADR-0001, ADR-0015). Risk
-  color rides the gauge fill / dot / glanceable %; popover body/value text stays neutral.
+  utilization — then maps that 0…1 score to a 4-level `RiskLevel`
+  (calm/watch/warning/critical) at band breakpoints driven by the user's
+  **warning/critical thresholds** (Settings → Alerts, ADR-0013): `level(forScore:thresholds:)`.
+  The thresholds are threaded through `UsageService.snapshot(thresholds:)` so the level
+  baked into every `UsageSnapshot.Window` honors them — menu bar, popover cards and the
+  widget all color off that single level. Changing the sliders recolors the *existing*
+  snapshot immediately with no network call (`UsageSnapshot.recolored(thresholds:)`, called
+  from `AppModel.settings.didSet`). The level is all Kit emits; **color is resolved
+  app-side, scheme-branched, by `RiskTone` in `App/Shared/DesignSystem.swift`** — Kit stays
+  color-free (ADR-0001, ADR-0015). Risk color rides the gauge fill / dot / glanceable %;
+  popover body/value text stays neutral.
 - **Context fraction** (`ContextFraction`) reads the *last* assistant `usage` block from a
   session's newest `.jsonl` transcript: resident context = `input + cache_creation +
   cache_read` tokens. Window size is a heuristic — `>200k` tokens (or a `[1m]`/`-1m` model
