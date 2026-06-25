@@ -180,12 +180,12 @@ struct NowDashboard: View {
             }
             // 5h + the model-7d pair (Opus/Sonnet always shown, 0% placeholder when absent).
             if !snapshot.windows.isEmpty {
-                // Equal-height tiles: the 5h card stretches to match the taller two-row model
-                // card. (No `.fixedSize` here — it would pin the row to its ideal height and
-                // cancel the stretch, leaving the 5h tile short.)
+                // Equal-height tiles: the 5h card stretches (fillHeight) to match the taller
+                // two-row model card. The stretch lives inside the tile (GlassTile sizes its
+                // background to content), so the frosted card actually grows — not just its frame.
                 HStack(alignment: .top, spacing: DS.row) {
                     if let w = fiveHour {
-                        MiniWindowCard(window: w, scheme: scheme).frame(maxHeight: .infinity)
+                        MiniWindowCard(window: w, scheme: scheme, fillHeight: true)
                     }
                     ModelWindowsCard(opus: opus, sonnet: sonnet, scheme: scheme)
                 }
