@@ -304,6 +304,10 @@ struct HeroWindowCard: View {
 struct MiniWindowCard: View {
     let window: UsageSnapshot.Window
     let scheme: ColorScheme
+    /// Stretch the tile to fill the row height (so it matches a taller sibling). The fill must
+    /// live on the *content inside* GlassTile — GlassTile sizes its frosted background to its
+    /// content, so an outer `.frame(maxHeight:)` would only pad around a content-sized tile.
+    var fillHeight: Bool = false
     @Environment(\.themeMood) private var mood
 
     var body: some View {
@@ -328,7 +332,7 @@ struct MiniWindowCard: View {
                     .lineLimit(1)
             }
             .padding(DS.section)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil, alignment: .topLeading)
         }
     }
 }
