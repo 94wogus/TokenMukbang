@@ -22,5 +22,8 @@ cache/
 # Browser/MCP tooling artifacts (mockup screenshots land here transiently)
 .playwright-mcp/
 
+# E2E visual-verification renders (tools/snapshot.sh output — regenerate, never commit)
+.snapshots/
+
 # macOS
 .DS_Store

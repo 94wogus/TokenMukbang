@@ -34,10 +34,16 @@ enum PreviewData {
     /// Opus-dominant by volume, with Fable (newly mapped), a little Sonnet, and a
     /// `<synthetic>` turn that lands in the 기타 bucket.
     static var tokenEvents: [TokenEvent] {
+        // Scale the per-turn volumes up to a representative *heavy Max-user billing period*:
+        // cache reads dominate by sheer volume, so a month of heavy use prices to a 2-3 digit
+        // API-equivalent multiple (~90×) — that big "몇 배" number is the point of the Value card,
+        // and the snapshot harness needs it large enough to actually show that emphasis.
+        let scale = 2600
         func ev(_ daysAgo: Double, _ model: String, _ tok: Int, _ proj: String) -> TokenEvent {
-            TokenEvent(timestamp: Date().addingTimeInterval(-daysAgo * 86400), model: model,
-                       inputTokens: tok, outputTokens: tok / 4, cacheReadTokens: tok * 5,
-                       cacheCreationTokens: tok / 2, project: proj)
+            let t = tok * scale
+            return TokenEvent(timestamp: Date().addingTimeInterval(-daysAgo * 86400), model: model,
+                              inputTokens: t, outputTokens: t / 4, cacheReadTokens: t * 5,
+                              cacheCreationTokens: t / 2, project: proj)
         }
         return [
             ev(0.1, "claude-opus-4-8", 90_000, "arkraft"),
