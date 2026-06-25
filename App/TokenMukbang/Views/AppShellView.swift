@@ -157,10 +157,20 @@ struct NowDashboard: View {
     let scheme: ColorScheme
 
     var body: some View {
-        let headline = snapshot.headlineWindow
-        let secondary = snapshot.windows.filter { $0.kind != headline?.kind }.prefix(2)
+        // Deterministic dashboard composition (vs the max-util `headlineWindow` the menu-bar
+        // label uses): the overall 7-day window is the hero on top, with 5h + the model-7d pair
+        // below. Fall back to the max-util headline only when 7d is absent.
+        let hero = snapshot.windows.first { $0.kind == UsageWindowKind.sevenDay.rawValue }
+            ?? snapshot.headlineWindow
+        // A window of a given kind for the secondary row (skip the hero so it never duplicates).
+        let window: (UsageWindowKind) -> UsageSnapshot.Window? = { kind in
+            hero?.kind == kind.rawValue ? nil : snapshot.windows.first { $0.kind == kind.rawValue }
+        }
+        let fiveHour = window(.fiveHour)
+        let opus = window(.sevenDayOpus)
+        let sonnet = window(.sevenDaySonnet)
         VStack(alignment: .leading, spacing: DS.section) {
-            if let w = headline {
+            if let w = hero {
                 HeroWindowCard(window: w, zone: model.headlineZone, now: now, scheme: scheme)
             }
             if let hours = snapshot.windows.compactMap(\.paceWarningHours).min() {
@@ -168,10 +178,16 @@ struct NowDashboard: View {
                     .font(.caption).foregroundStyle(.secondary)
                     .padding(.horizontal, 4).padding(.top, -4)
             }
-            if !secondary.isEmpty {
-                HStack(spacing: DS.row) {
-                    ForEach(Array(secondary), id: \.kind) { w in MiniWindowCard(window: w, scheme: scheme) }
-                    if secondary.count == 1 { Spacer() }
+            // 5h + the model-7d pair (Opus/Sonnet always shown, 0% placeholder when absent).
+            if !snapshot.windows.isEmpty {
+                // Equal-height tiles: the 5h card stretches to match the taller two-row model
+                // card. (No `.fixedSize` here — it would pin the row to its ideal height and
+                // cancel the stretch, leaving the 5h tile short.)
+                HStack(alignment: .top, spacing: DS.row) {
+                    if let w = fiveHour {
+                        MiniWindowCard(window: w, scheme: scheme).frame(maxHeight: .infinity)
+                    }
+                    ModelWindowsCard(opus: opus, sonnet: sonnet, scheme: scheme)
                 }
             }
             ValueCardView(model: model)   // API-equivalent vs flat plan — always shown (ADR-0021)
