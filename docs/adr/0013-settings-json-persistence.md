@@ -15,7 +15,14 @@ Settings space(TokenEater 패리티)는 테마(4프리셋+커스텀), warning/cr
 모델링하고, **`SettingsStore`가 JSON 파일(`settings.json`)로 저장/로드**한다. 디렉터리는 주입 가능(ADR-0006
 seam)해 테스트는 임시 디렉터리로 round-trip 한다. 파일이 없으면 `AppSettings.default`를 돌려준다. 색은
 `TokenMukbangKit`이 UI-free를 유지하도록 **hex 문자열**로 저장하고, App 레이어가 `Color(hex:)`로 매핑한다.
-임계값은 `RiskScorer.level(percent:thresholds:)`로 위험도 분류에 반영된다.
+
+**임계값(warning/critical %)은 위험도 분류의 밴드 경계로 반영된다.** pacing은 유지한 채
+`RiskScorer.score(...)`가 낸 0…1 점수를 `RiskScorer.level(forScore:thresholds:)`가 사용자 임계값으로
+calm/watch/warning/critical에 매핑한다(watch = warning×0.6). 임계값은 `UsageService.snapshot(thresholds:)`로
+주입돼 모든 `UsageSnapshot.Window`에 구워지므로 **메뉴바·팝오버 카드·위젯이 같은 레벨로 색칠**된다. 슬라이더를
+바꾸면 네트워크 없이 기존 snapshot을 `UsageSnapshot.recolored(thresholds:)`로 즉시 재색칠한다
+(`AppModel.settings.didSet`). (초기 ADR은 `level(percent:thresholds:)`(pacing 무시 순수 % 매핑)를 지목했으나
+실제로는 배선되지 않았고, pacing 보존을 위해 score-band 방식으로 정착했다 — 그 순수 % 변형은 보조 API로 잔존.)
 
 ## Consequences
 
@@ -32,6 +39,10 @@ seam)해 테스트는 임시 디렉터리로 round-trip 한다. 파일이 없으
 
 ## Affects
 
-- `Sources/TokenMukbangKit/Settings/AppSettings.swift`, `Risk/RiskScore.swift`(`level(percent:thresholds:)`)
-- `App/TokenMukbang/Views/SettingsView.swift`, `AppModel.swift`(settings + didSet save)
+- `Sources/TokenMukbangKit/Settings/AppSettings.swift`, `Risk/RiskScore.swift`
+  (`level(forScore:thresholds:)` — 위험도 매핑; `level(percent:thresholds:)` — 보조 순수 % 변형)
+- `Sources/TokenMukbangKit/UsageService.swift`(`snapshot(thresholds:)` → `windows(...)`),
+  `UsageSnapshot.swift`(`recolored(thresholds:)`)
+- `App/TokenMukbang/Views/SettingsView.swift`, `AppModel.swift`(settings + didSet save·recolor,
+  `snapshot(thresholds:)` 호출)
 - 같은 영속 패턴: ADR-0011(History), ADR-0003(Shared); seam: ADR-0006

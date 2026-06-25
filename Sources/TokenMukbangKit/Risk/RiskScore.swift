@@ -55,14 +55,25 @@ public enum Temperament: String, Sendable, CaseIterable, Identifiable, Codable {
 }
 
 public enum RiskScorer {
-    /// Map a continuous 0...1 score to a discrete level.
+    /// Map a continuous 0...1 score to a discrete level using the user's custom
+    /// warning/critical thresholds (Settings — ADR-0013). The score already folds
+    /// in pacing (see `score(...)`), so this keeps pacing-aware coloring while
+    /// letting the user move the band breakpoints. `thresholds` are percents
+    /// (0...100); the score is a 0...1 fraction, hence the /100. The `watch`
+    /// breakpoint sits at 60% of the warning threshold (matching
+    /// `level(percent:thresholds:)`).
+    public static func level(forScore score: Double, thresholds: RiskThresholds) -> RiskLevel {
+        if score >= thresholds.critical / 100 { return .critical }
+        if score >= thresholds.warning / 100 { return .warning }
+        if score >= (thresholds.warning * 0.6) / 100 { return .watch }
+        return .calm
+    }
+
+    /// Map a continuous 0...1 score to a discrete level with the default
+    /// thresholds (warning 70 / critical 90). Kept for callers/tests that don't
+    /// thread user settings.
     public static func level(forScore score: Double) -> RiskLevel {
-        switch score {
-        case ..<0.45: return .calm
-        case ..<0.70: return .watch
-        case ..<0.90: return .warning
-        default: return .critical
-        }
+        level(forScore: score, thresholds: .default)
     }
 
     /// Risk score in 0...1 for a window.
@@ -108,9 +119,13 @@ public enum RiskScorer {
         utilization: Double,
         windowStart: Date? = nil,
         resetsAt: Date,
-        now: Date
+        now: Date,
+        thresholds: RiskThresholds = .default
     ) -> RiskLevel {
-        level(forScore: score(utilization: utilization, windowStart: windowStart, resetsAt: resetsAt, now: now))
+        level(
+            forScore: score(utilization: utilization, windowStart: windowStart, resetsAt: resetsAt, now: now),
+            thresholds: thresholds
+        )
     }
 
     /// Temperament-aware score with early-window confidence damping.

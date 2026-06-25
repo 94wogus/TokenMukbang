@@ -23,7 +23,11 @@ public struct UsageService: Sendable {
 
     /// Build the snapshot. Never throws: failures (no creds, expired token,
     /// offline) are captured as `snapshot.error` so the UI degrades gracefully.
-    public func snapshot() async -> UsageSnapshot {
+    ///
+    /// `thresholds` (the user's warning/critical %, ADR-0013) drive the
+    /// per-window risk level baked into the snapshot — so menu bar, popover
+    /// cards and the widget all color off the same threshold-aware level.
+    public func snapshot(thresholds: RiskThresholds = .default) async -> UsageSnapshot {
         let timestamp = now()
 
         let creds: OAuthCredentials
@@ -54,7 +58,7 @@ public struct UsageService: Sendable {
             return UsageSnapshot(
                 capturedAt: timestamp,
                 planLabel: p.planLabel,
-                windows: windows(from: u, now: timestamp),
+                windows: windows(from: u, now: timestamp, thresholds: thresholds),
                 sessions: s,
                 error: nil
             )
@@ -69,16 +73,18 @@ public struct UsageService: Sendable {
         }
     }
 
-    private func windows(from usage: Usage, now: Date) -> [UsageSnapshot.Window] {
+    private func windows(from usage: Usage, now: Date, thresholds: RiskThresholds) -> [UsageSnapshot.Window] {
         usage.displayWindows.compactMap { kind, w in
             // A window with no scheduled reset (resets_at: null — unused window) has nothing to
             // count down and no span to pace against, so skip it rather than fabricate a date.
             guard let resetsAt = w.resetsAt else { return nil }
             // Estimate when this window opened so risk can account for pacing
-            // (smart coloring: absolute usage + projection).
+            // (smart coloring: absolute usage + projection), then map to a level
+            // using the user's warning/critical thresholds (ADR-0013).
             let start = resetsAt.addingTimeInterval(-kind.duration)
             let level = RiskScorer.level(
-                utilization: w.utilization, windowStart: start, resetsAt: resetsAt, now: now
+                utilization: w.utilization, windowStart: start, resetsAt: resetsAt, now: now,
+                thresholds: thresholds
             )
             let pace = PaceForecast.hoursToFull(
                 utilization: w.utilization, windowStart: start, resetsAt: resetsAt, now: now

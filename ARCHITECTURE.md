@@ -95,8 +95,10 @@ substitute a fake:
   windows), `Profile` (plan label), and `ClaudeJSON` (fractional-second ISO-8601 decoder).
 - **`Sessions/`** — `SessionDetector` (running `claude` procs → cwd → newest transcript)
   and `ContextFraction` (last assistant `usage` block → 0…1 window fill).
-- **`Risk/RiskScore.swift`** — pacing-aware 0…1 score → 4-level `RiskLevel`. Kit emits the
-  level only; color is resolved app-side, scheme-branched, by `RiskTone` (ADR-0015).
+- **`Risk/RiskScore.swift`** — pacing-aware 0…1 score → 4-level `RiskLevel`, mapped at band
+  breakpoints set by the user's warning/critical thresholds (`level(forScore:thresholds:)`,
+  ADR-0013; threaded via `UsageService.snapshot(thresholds:)`). Kit emits the level only;
+  color is resolved app-side, scheme-branched, by `RiskTone` (ADR-0015).
 - **`Focus/TerminalFocus.swift`** — TTY → terminal tab, best-effort across Terminal.app/iTerm2
   (AppleScript) + WezTerm (`wezterm cli` pane match) + kitty + tmux; `SupportedTerminal` enum;
   every failure swallowed.

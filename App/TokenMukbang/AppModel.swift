@@ -53,6 +53,9 @@ final class AppModel: ObservableObject {
         didSet {
             settingsStore.save(settings)
             recomputeValueEstimate()   // plan price / billing day / display zone feed the Value card
+            if oldValue.thresholds != settings.thresholds {
+                applyThresholdRecolor() // recolor menu bar + cards + widget now, not next poll (ADR-0013)
+            }
         }
     }
 
@@ -184,7 +187,7 @@ final class AppModel: ObservableObject {
         guard !isRefreshing else { return }
         isRefreshing = true
         defer { isRefreshing = false }
-        var snap = await service.snapshot()
+        var snap = await service.snapshot(thresholds: settings.thresholds)
         history.record(snap)            // append to 7-day history
         historySamples = history.load()
         // Attach the headline sparkline so the widget can draw it offline.
@@ -204,6 +207,18 @@ final class AppModel: ObservableObject {
         // Cosmetic only — fire-and-forget so the UI updates and `isRefreshing` drops the moment
         // data lands, instead of staying "busy" for the whole chew animation. API 콜 = 한 입
         Task { [weak self] in await self?.playChew() }
+    }
+
+    /// Recolor the current snapshot's windows from the just-changed warning/critical
+    /// thresholds without a network round-trip, then push it to the widget so the menu
+    /// bar, popover cards and widget all recolor at once (ADR-0013). Utilization is
+    /// unchanged, so notification baselines (`previousSnapshot`) need no update.
+    private func applyThresholdRecolor() {
+        guard let snap = snapshot else { return }
+        let recolored = snap.recolored(thresholds: settings.thresholds)
+        snapshot = recolored
+        try? store.write(recolored)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     /// Sparkline series for a window kind over the retained history.
