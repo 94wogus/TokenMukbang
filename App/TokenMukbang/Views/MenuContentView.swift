@@ -123,15 +123,28 @@ struct MenuContentView: View {
         }
     }
 
-    /// Dashboard = 김 서림 composition: hero window card · two side-by-side window cards ·
-    /// sessions card (mockup 04-steam). Cards are raised GlassTiles; risk shows as steam.
+    /// Dashboard = 김 서림 composition: hero window card · a 5h mini-card beside a combined
+    /// model-7d card (Opus 7d + Sonnet 7d) · sessions card (mockup 04-steam). Cards are raised
+    /// GlassTiles; risk shows as steam.
     /// MODEL HISTORY intentionally lives ONLY in the History tab now (was duplicated here).
+    /// The model-7d card ALWAYS shows both Opus 7d and Sonnet 7d — absent ones render as a muted
+    /// 0% placeholder rather than vanishing, so its slot never collapses to a lone 5h card.
     @ViewBuilder
     private func dashboardLayout(_ snapshot: UsageSnapshot) -> some View {
-        let headline = snapshot.headlineWindow
-        let secondary = snapshot.windows.filter { $0.kind != headline?.kind }.prefix(2)
+        // Deterministic dashboard composition (vs the max-util `headlineWindow` the menu-bar
+        // label uses): the overall 7-day window is the hero on top, with 5h + the model-7d pair
+        // below. Fall back to the max-util headline only when 7d is absent.
+        let hero = snapshot.windows.first { $0.kind == UsageWindowKind.sevenDay.rawValue }
+            ?? snapshot.headlineWindow
+        // A window of a given kind for the secondary row (skip the hero so it never duplicates).
+        let window: (UsageWindowKind) -> UsageSnapshot.Window? = { kind in
+            hero?.kind == kind.rawValue ? nil : snapshot.windows.first { $0.kind == kind.rawValue }
+        }
+        let fiveHour = window(.fiveHour)
+        let opus = window(.sevenDayOpus)
+        let sonnet = window(.sevenDaySonnet)
 
-        if let w = headline {
+        if let w = hero {
             HeroWindowCard(window: w, zone: model.headlineZone, now: now, scheme: scheme)
         }
         // Pace warning ("이 속도면 N시간 뒤 완식") — unique time-to-full signal, dashboard-only.
@@ -143,12 +156,10 @@ struct MenuContentView: View {
                 .padding(.horizontal, 4)
                 .padding(.top, -4)
         }
-        if !secondary.isEmpty {
-            HStack(spacing: DS.row) {
-                ForEach(Array(secondary), id: \.kind) { w in
-                    MiniWindowCard(window: w, scheme: scheme)
-                }
-                if secondary.count == 1 { Spacer() }   // keep a single card left-sized
+        if !snapshot.windows.isEmpty {
+            HStack(alignment: .top, spacing: DS.row) {
+                if let w = fiveHour { MiniWindowCard(window: w, scheme: scheme) }
+                ModelWindowsCard(opus: opus, sonnet: sonnet, scheme: scheme)
             }
         }
         ValueCardView(model: model)   // shared Value/Savings card — always shown (ADR-0021)
@@ -319,5 +330,58 @@ struct MiniWindowCard: View {
             .padding(DS.section)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+/// 모델별 7일 윈도우 합본 카드 — Opus 7d · Sonnet 7d 를 한 카드에 위아래로.
+/// 두 윈도우는 **항상** 슬롯을 차지한다: API가 안 주면 muted 0% placeholder 로 그린다
+/// (없다고 카드/행이 사라지면 5h 옆이 휑해지므로).
+struct ModelWindowsCard: View {
+    let opus: UsageSnapshot.Window?
+    let sonnet: UsageSnapshot.Window?
+    let scheme: ColorScheme
+
+    var body: some View {
+        GlassTile(scheme: scheme) {
+            VStack(alignment: .leading, spacing: 10) {
+                ModelWindowRow(kind: .sevenDayOpus, window: opus, scheme: scheme)
+                ModelWindowRow(kind: .sevenDaySonnet, window: sonnet, scheme: scheme)
+            }
+            .padding(DS.section)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+/// 합본 카드 안의 한 줄 — 라벨 · % · 작은 게이지. window 가 nil 이면 0% placeholder 를
+/// muted 하게 그려 "이 한도는 아직/별도로 없음"을 0 으로라도 표현한다.
+private struct ModelWindowRow: View {
+    let kind: UsageWindowKind
+    let window: UsageSnapshot.Window?
+    let scheme: ColorScheme
+    @Environment(\.themeMood) private var mood
+
+    var body: some View {
+        // Synthesize a 0% placeholder so GaugeBar/labels reuse the same path as a real window.
+        // resetsAt is a throwaway here (the mini layout never renders a countdown).
+        let w = window ?? UsageSnapshot.Window(
+            kind: kind.rawValue, label: kind.label, utilization: 0,
+            resetsAt: Date(timeIntervalSince1970: 0),
+            riskHex: "", riskLabel: "Calm", riskLevel: "calm", isOver: false
+        )
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(windowTitle(w.label))
+                    .font(.system(size: 10.5, weight: .semibold)).tracking(0.5).textCase(.uppercase)
+                    .foregroundStyle(.secondary).lineLimit(1)
+                Spacer()
+                Text(Formatting.percent(w.utilization))
+                    .font(.system(size: 16, weight: .semibold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(.primary)
+            }
+            GaugeBar(window: w, scheme: scheme)
+        }
+        // Absent windows read as a quiet placeholder, not a live 0% reading.
+        .opacity(window == nil ? 0.5 : 1)
     }
 }
