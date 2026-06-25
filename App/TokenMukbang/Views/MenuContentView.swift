@@ -158,8 +158,8 @@ struct MenuContentView: View {
         }
         if !snapshot.windows.isEmpty {
             HStack(alignment: .top, spacing: DS.row) {
-                if let w = fiveHour { MiniWindowCard(window: w, scheme: scheme) }
-                ModelWindowsCard(opus: opus, sonnet: sonnet, scheme: scheme)
+                if let w = fiveHour { MiniWindowCard(window: w, scheme: scheme, now: now, fillHeight: true) }
+                ModelWindowsCard(opus: opus, sonnet: sonnet, scheme: scheme, now: now)
             }
         }
         ValueCardView(model: model)   // shared Value/Savings card — always shown (ADR-0021)
@@ -304,6 +304,8 @@ struct HeroWindowCard: View {
 struct MiniWindowCard: View {
     let window: UsageSnapshot.Window
     let scheme: ColorScheme
+    /// Now, so the card can show its own reset countdown (like the hero does).
+    var now: Date = Date()
     /// Stretch the tile to fill the row height (so it matches a taller sibling). The fill must
     /// live on the *content inside* GlassTile — GlassTile sizes its frosted background to its
     /// content, so an outer `.frame(maxHeight:)` would only pad around a content-sized tile.
@@ -325,15 +327,36 @@ struct MiniWindowCard: View {
                         .foregroundStyle(.primary)
                 }
                 GaugeBar(window: window, scheme: scheme)
-                // Status word carries its risk chroma at readable weight (was too faint).
-                Text(window.riskLabel)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(mood.risk(window.riskLevel, over: window.isOver))
-                    .lineLimit(1)
+                // Status word (risk chroma) + reset countdown — same "until reset" signal the
+                // hero shows, so a mini window isn't a blind spot for when it refreshes.
+                HStack(alignment: .firstTextBaseline) {
+                    Text(window.riskLabel)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(mood.risk(window.riskLevel, over: window.isOver))
+                        .lineLimit(1)
+                    Spacer()
+                    ResetCountdown(resetsAt: window.resetsAt, now: now)
+                }
             }
             .padding(DS.section)
             .frame(maxWidth: .infinity, maxHeight: fillHeight ? .infinity : nil, alignment: .topLeading)
         }
+    }
+}
+
+/// 작은 리셋 카운트다운 칩 — `🕐 3d 23h`. mini/모델 카드가 "언제 리셋되는지"를
+/// hero 와 동일하게 드러내도록(POV: 다 먹은 접시가 새로 차려질 때까지).
+struct ResetCountdown: View {
+    let resetsAt: Date
+    let now: Date
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "clock").font(.system(size: 8.5, weight: .semibold))
+            Text(Formatting.countdown(to: resetsAt, from: now))
+                .font(.system(size: 10, weight: .medium).monospacedDigit())
+        }
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
     }
 }
 
@@ -344,12 +367,13 @@ struct ModelWindowsCard: View {
     let opus: UsageSnapshot.Window?
     let sonnet: UsageSnapshot.Window?
     let scheme: ColorScheme
+    var now: Date = Date()
 
     var body: some View {
         GlassTile(scheme: scheme) {
             VStack(alignment: .leading, spacing: 10) {
-                ModelWindowRow(kind: .sevenDayOpus, window: opus, scheme: scheme)
-                ModelWindowRow(kind: .sevenDaySonnet, window: sonnet, scheme: scheme)
+                ModelWindowRow(kind: .sevenDayOpus, window: opus, scheme: scheme, now: now)
+                ModelWindowRow(kind: .sevenDaySonnet, window: sonnet, scheme: scheme, now: now)
             }
             .padding(DS.section)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -357,17 +381,18 @@ struct ModelWindowsCard: View {
     }
 }
 
-/// 합본 카드 안의 한 줄 — 라벨 · % · 작은 게이지. window 가 nil 이면 0% placeholder 를
-/// muted 하게 그려 "이 한도는 아직/별도로 없음"을 0 으로라도 표현한다.
+/// 합본 카드 안의 한 줄 — 라벨 · % · 작은 게이지 · 리셋 카운트다운. window 가 nil 이면 0%
+/// placeholder 를 muted 하게 그려 "이 한도는 아직/별도로 없음"을 0 으로라도 표현한다.
 private struct ModelWindowRow: View {
     let kind: UsageWindowKind
     let window: UsageSnapshot.Window?
     let scheme: ColorScheme
+    var now: Date = Date()
     @Environment(\.themeMood) private var mood
 
     var body: some View {
         // Synthesize a 0% placeholder so GaugeBar/labels reuse the same path as a real window.
-        // resetsAt is a throwaway here (the mini layout never renders a countdown).
+        // resetsAt is a throwaway for the placeholder (no real reset to count down to).
         let w = window ?? UsageSnapshot.Window(
             kind: kind.rawValue, label: kind.label, utilization: 0,
             resetsAt: Date(timeIntervalSince1970: 0),
@@ -384,6 +409,10 @@ private struct ModelWindowRow: View {
                     .foregroundStyle(.primary)
             }
             GaugeBar(window: w, scheme: scheme)
+            // Reset countdown only for a real window — a placeholder has no scheduled reset.
+            if window != nil {
+                ResetCountdown(resetsAt: w.resetsAt, now: now)
+            }
         }
         // Absent windows read as a quiet placeholder, not a live 0% reading.
         .opacity(window == nil ? 0.5 : 1)

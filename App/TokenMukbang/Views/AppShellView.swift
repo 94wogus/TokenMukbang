@@ -185,9 +185,9 @@ struct NowDashboard: View {
                 // background to content), so the frosted card actually grows — not just its frame.
                 HStack(alignment: .top, spacing: DS.row) {
                     if let w = fiveHour {
-                        MiniWindowCard(window: w, scheme: scheme, fillHeight: true)
+                        MiniWindowCard(window: w, scheme: scheme, now: now, fillHeight: true)
                     }
-                    ModelWindowsCard(opus: opus, sonnet: sonnet, scheme: scheme)
+                    ModelWindowsCard(opus: opus, sonnet: sonnet, scheme: scheme, now: now)
                 }
             }
             ValueCardView(model: model)   // API-equivalent vs flat plan — always shown (ADR-0021)
