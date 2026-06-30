@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added — 동의 하 회사 OTLP forward (slice 2: relay + enrollment, 2026-06-30, ADR-0024)
+로컬 receiver가 받은 텔레메트리를 **콘텐츠 제거 후 회사 OTLP 엔드포인트로 forward**하는 기능.
+"설치하면 알아서 회사로"를, **무동의가 아니라 명시적 동의/enrollment** 하에 구현했다.
+- **앱이 로컬 스크러버** — Claude Code는 여전히 우리 *로컬* receiver만 바라본다. 앱이 ingest 후
+  `OTLPEncoder`로 **재인코딩**(원 수신 바이트 패스스루 아님)해 회사로 POST하므로, 사용자가
+  `OTEL_LOG_*`로 콘텐츠를 켰어도 **기기에서 제거된 뒤** 나간다.
+- **Settings 수동 enrollment** — 회사 OTLP base URL + bearer 토큰을 직접 입력 + 고지 동의 토글.
+  `forwardActive`(동의 ∧ on ∧ 엔드포인트 있음)일 때만 forward. 기본 off, 사내 전용 positioning.
+- best-effort egress(`OTLPForwarding` seam, 실패는 조용히 무시 — 로컬 ingest를 막지 않음). 토큰은
+  앱 설정 저장(Claude Code가 OTLP 헤더를 settings.json에 두는 것과 동일; OAuth 토큰 무관, ADR-0002).
+- E2E 검증 — `tools/otlp-smoke.sh`에 forward 단계 추가(`nc`로 상위 캡처): `POST /v1/logs` + auth
+  헤더 도달 + **콘텐츠 텍스트 부재** 확인. 테스트 +7(encoder 라운드트립 3 / forwarder 4). 전체 160 green.
+
 ### Added — 설치하면 Claude Code 텔레메트리 자동 설정 (slice 1: 로컬 자동 배선, 2026-06-30, ADR-0024)
 "설치만 하면 알아서"의 첫 단계. 텔레메트리를 켜면 앱이 `~/.claude/settings.json`을 **안전하게
 머지**해 Claude Code를 우리 로컬 receiver로 향하게 한다 — 사용자가 env 블록을 손으로 붙여넣을

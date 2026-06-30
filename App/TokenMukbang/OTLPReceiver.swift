@@ -13,16 +13,21 @@ final class OTLPReceiver: @unchecked Sendable {
     private let port: UInt16
     private let store: TelemetryStore
     private let now: () -> Date
+    /// When set (and consent given upstream), each ingested batch is re-encoded (content-stripped)
+    /// and forwarded to the company endpoint (ADR-0024 Slice 2). nil = local-only.
+    private let forwarder: TelemetryForwarder?
     private let queue = DispatchQueue(label: "com.tokenmukbang.otlp")
     private var listener: NWListener?
 
     /// Optional hook fired after each ingested batch — used by the headless verify branch.
     var onIngest: ((_ kind: String, _ metrics: Int, _ events: Int) -> Void)?
 
-    init(port: UInt16, store: TelemetryStore = TelemetryStore(), now: @escaping () -> Date = { Date() }) {
+    init(port: UInt16, store: TelemetryStore = TelemetryStore(), now: @escaping () -> Date = { Date() },
+         forwarder: TelemetryForwarder? = nil) {
         self.port = port
         self.store = store
         self.now = now
+        self.forwarder = forwarder
     }
 
     func start() {
@@ -79,10 +84,12 @@ final class OTLPReceiver: @unchecked Sendable {
             let metrics = OTLPDecoder.decodeMetrics(request.body)
             store.append(metrics: metrics, events: [], now: now())
             onIngest?("metrics", metrics.count, 0)
+            if let forwarder, !metrics.isEmpty { Task { await forwarder.forward(metrics: metrics) } }
         case .logs:
             let events = OTLPDecoder.decodeLogs(request.body)
             store.append(metrics: [], events: events, now: now())
             onIngest?("logs", 0, events.count)
+            if let forwarder, !events.isEmpty { Task { await forwarder.forward(events: events) } }
         case nil:
             break   // unknown path (e.g. /v1/traces) — accept + 200, store nothing
         }

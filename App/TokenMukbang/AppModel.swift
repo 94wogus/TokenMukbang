@@ -197,7 +197,13 @@ final class AppModel: ObservableObject {
             enabled: settings.telemetry.enabled, port: settings.telemetry.port, settingsPath: path)
         guard settings.telemetry.enabled else { return }
         let port = UInt16(max(1, min(65_535, settings.telemetry.port)))
-        let receiver = OTLPReceiver(port: port)
+        // Consented company forwarding (ADR-0024 Slice 2): only built when the user enrolled an
+        // endpoint AND ticked the consent disclosure. The forwarder re-encodes content-stripped
+        // samples — Claude Code still points at our LOCAL receiver, never the company directly.
+        let forwarder = settings.telemetry.forwardActive
+            ? TelemetryForwarder(endpoint: settings.telemetry.forwardEndpoint, token: settings.telemetry.forwardToken)
+            : nil
+        let receiver = OTLPReceiver(port: port, forwarder: forwarder)
         receiver.start()
         otlpReceiver = receiver
     }

@@ -153,11 +153,35 @@ public struct TelemetrySettings: Codable, Sendable, Equatable {
     /// clashing with another local collector; we wire both sides.
     public var port: Int
 
-    public init(enabled: Bool = false, port: Int = 4318) {
+    // MARK: Consented company forwarding (ADR-0024 Slice 2) — egress, default off.
+    /// Forward (content-stripped) telemetry to `forwardEndpoint`. Requires `consentAcknowledged`
+    /// and a non-empty endpoint to actually take effect (`forwardActive`).
+    public var forwardEnabled: Bool
+    /// Company OTLP base URL the user enrolls manually, e.g. `https://ai-usage.example.com/api/otel`.
+    /// We append `/v1/metrics` and `/v1/logs`.
+    public var forwardEndpoint: String
+    /// Bearer token for the company endpoint (sent as `Authorization`). Stored in app settings,
+    /// matching how Claude Code itself keeps the OTLP header — a company-issued token, not the
+    /// OAuth token (ADR-0002 untouched). Keychain hardening is a possible future step.
+    public var forwardToken: String
+    /// The user ticked the disclosure ("usage metadata, not content, will be sent here"). Forwarding
+    /// never starts without this — explicit consent, not silent on install (ADR-0024).
+    public var consentAcknowledged: Bool
+
+    public init(enabled: Bool = false, port: Int = 4318,
+                forwardEnabled: Bool = false, forwardEndpoint: String = "",
+                forwardToken: String = "", consentAcknowledged: Bool = false) {
         self.enabled = enabled; self.port = port
+        self.forwardEnabled = forwardEnabled; self.forwardEndpoint = forwardEndpoint
+        self.forwardToken = forwardToken; self.consentAcknowledged = consentAcknowledged
     }
 
     public static let `default` = TelemetrySettings()
+
+    /// Forwarding only takes effect with consent + a usable endpoint — the gate the app checks.
+    public var forwardActive: Bool {
+        forwardEnabled && consentAcknowledged && !forwardEndpoint.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     /// Forgiving decode (see `NotificationSettings`): missing fields fall back to default.
     public init(from decoder: Decoder) throws {
@@ -165,6 +189,10 @@ public struct TelemetrySettings: Codable, Sendable, Equatable {
         let d = TelemetrySettings.default
         enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? d.enabled
         port = try c.decodeIfPresent(Int.self, forKey: .port) ?? d.port
+        forwardEnabled = try c.decodeIfPresent(Bool.self, forKey: .forwardEnabled) ?? d.forwardEnabled
+        forwardEndpoint = try c.decodeIfPresent(String.self, forKey: .forwardEndpoint) ?? d.forwardEndpoint
+        forwardToken = try c.decodeIfPresent(String.self, forKey: .forwardToken) ?? d.forwardToken
+        consentAcknowledged = try c.decodeIfPresent(Bool.self, forKey: .consentAcknowledged) ?? d.consentAcknowledged
     }
 }
 

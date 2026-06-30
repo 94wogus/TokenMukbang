@@ -160,9 +160,13 @@ deliberately avoid emitting it. `SecurityCLICredentialStore` is read-only — it
   `ClaudeSettingsConfigurator` (Kit, ADR-0024 Slice 1) — it **merges** the OTLP env block (never
   clobbers; an unparseable file is left untouched and surfaced as `needsManualEdit`), pointing
   Claude Code at the local receiver; disabling removes only the keys it added. **Consented
-  forwarding** of (content-stripped) telemetry to a company OTLP endpoint is internal-only, gated
-  behind explicit enrollment, default off — a follow-up slice (ADR-0024 Slice 2). The invariant is
-  now "no egress **without explicit consent**" (refines ADR-0023's "no egress").
+  forwarding** (ADR-0024 Slice 2) relays ingested telemetry to a company OTLP endpoint, internal-only,
+  **default off** — active only when the user enrolls an endpoint+token in Settings AND ticks the
+  consent disclosure (`TelemetrySettings.forwardActive`). The forwarder **re-encodes** the
+  content-stripped model via `OTLPEncoder` (never the raw received bytes — so content can't leak) and
+  POSTs through the `OTLPForwarding` seam; Claude Code still points only at the *local* receiver, so
+  the strip happens on-device before egress. The invariant is now "no egress **without explicit
+  consent**" (refines ADR-0023's "no egress").
 - **Dates**: the OAuth API sends ISO-8601 *with fractional seconds + offset*
   (`2026-06-11T13:59:59.715802+00:00`). Decode API payloads with `ClaudeJSON.makeDecoder()`,
   not a default `JSONDecoder`. `SharedStore` snapshots use plain `.iso8601`.
