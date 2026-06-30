@@ -191,6 +191,9 @@ struct NowDashboard: View {
                 }
             }
             ValueCardView(model: model)   // API-equivalent vs flat plan — always shown (ADR-0021)
+            if model.settings.telemetry.enabled {
+                TelemetryActivityCard(model: model)   // Claude Code activity from local OTLP (ADR-0023)
+            }
             if !snapshot.sessions.isEmpty {
                 GlassTile(scheme: scheme) {
                     VStack(alignment: .leading, spacing: DS.intra) {

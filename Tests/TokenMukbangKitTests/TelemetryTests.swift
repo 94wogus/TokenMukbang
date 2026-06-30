@@ -249,6 +249,8 @@ final class ClaudeSettingsConfiguratorTests: XCTestCase {
         XCTAssertEqual(env["MY_VAR"] as? String, "keep")                       // preserved
         XCTAssertEqual(env["OTEL_EXPORTER_OTLP_ENDPOINT"] as? String, "http://127.0.0.1:4318")
         XCTAssertEqual(env["OTEL_EXPORTER_OTLP_PROTOCOL"] as? String, "http/json")
+        XCTAssertEqual(env["OTEL_METRIC_EXPORT_INTERVAL"] as? String, "10000")  // near-real-time dashboard
+        XCTAssertEqual(env["OTEL_LOGS_EXPORT_INTERVAL"] as? String, "2000")
         XCTAssertNotNil(merged["permissions"])                                 // top-level preserved
     }
 
@@ -326,5 +328,71 @@ final class TelemetryStoreTests: XCTestCase {
         let fresh = metric(at: now.addingTimeInterval(-10))
         store.append(metrics: [old, fresh], events: [], now: now)
         XCTAssertEqual(store.load().metrics.count, 1)
+    }
+}
+
+/// Aggregation of Claude Code metrics into the activity digest. Fixtures use the exact metric
+/// names + attribute values from Claude Code's monitoring docs (delta temporality → sum points).
+final class TelemetryDigestTests: XCTestCase {
+    private let src = TelemetrySource(serviceName: "claude-code")
+    private let t0 = Date(timeIntervalSince1970: 1_000_000)
+
+    private func m(_ name: String, _ value: Double, _ attrs: [String: TelemetryValue] = [:], at: Date? = nil) -> TelemetryMetricSample {
+        TelemetryMetricSample(name: name, value: .double(value), timestamp: at ?? t0, attributes: attrs, source: src)
+    }
+
+    func testSumsByMetricAndAttribute() {
+        let metrics = [
+            m("claude_code.lines_of_code.count", 40, ["type": .string("added")]),
+            m("claude_code.lines_of_code.count", 10, ["type": .string("added")]),
+            m("claude_code.lines_of_code.count", 15, ["type": .string("removed")]),
+            m("claude_code.commit.count", 2),
+            m("claude_code.pull_request.count", 1),
+            m("claude_code.session.count", 3),
+            m("claude_code.active_time.total", 90),
+            m("claude_code.active_time.total", 30),
+            m("claude_code.code_edit_tool.decision", 7, ["decision": .string("accept")]),
+            m("claude_code.code_edit_tool.decision", 3, ["decision": .string("reject")]),
+            m("claude_code.cost.usage", 0.5),   // unrelated → ignored by the digest
+        ]
+        let d = TelemetryDigest.build(metrics: metrics, periodStart: t0.addingTimeInterval(-1), periodEnd: t0.addingTimeInterval(1))
+        XCTAssertEqual(d.linesAdded, 50)        // 40 + 10 (delta sum)
+        XCTAssertEqual(d.linesRemoved, 15)
+        XCTAssertEqual(d.commits, 2)
+        XCTAssertEqual(d.pullRequests, 1)
+        XCTAssertEqual(d.sessions, 3)
+        XCTAssertEqual(d.activeTimeSeconds, 120, accuracy: 0.001)
+        XCTAssertEqual(d.editsAccepted, 7)
+        XCTAssertEqual(d.editsRejected, 3)
+        XCTAssertEqual(d.acceptanceRate!, 0.7, accuracy: 0.0001)
+        XCTAssertTrue(d.hasData)
+    }
+
+    func testWindowExcludesOutOfRangeSamples() {
+        let metrics = [
+            m("claude_code.commit.count", 5, at: t0.addingTimeInterval(-100)),   // before window
+            m("claude_code.commit.count", 2, at: t0),                            // inside
+            m("claude_code.commit.count", 9, at: t0.addingTimeInterval(100)),    // at/after end (exclusive)
+        ]
+        let d = TelemetryDigest.build(metrics: metrics, periodStart: t0.addingTimeInterval(-1), periodEnd: t0.addingTimeInterval(1))
+        XCTAssertEqual(d.commits, 2)
+    }
+
+    func testEmptyHasNoDataAndNilAcceptance() {
+        let d = TelemetryDigest.build(metrics: [], periodStart: t0, periodEnd: t0.addingTimeInterval(1))
+        XCTAssertFalse(d.hasData)
+        XCTAssertNil(d.acceptanceRate)
+    }
+
+    func testUnknownAttributeValuesAreIgnoredNotCounted() {
+        // A future/typo'd attribute value must not silently fold into a bucket.
+        let metrics = [
+            m("claude_code.lines_of_code.count", 99, ["type": .string("changed")]),     // not added/removed
+            m("claude_code.code_edit_tool.decision", 99, ["decision": .string("defer")]), // not accept/reject
+        ]
+        let d = TelemetryDigest.build(metrics: metrics, periodStart: t0.addingTimeInterval(-1), periodEnd: t0.addingTimeInterval(1))
+        XCTAssertEqual(d.linesAdded, 0)
+        XCTAssertEqual(d.linesRemoved, 0)
+        XCTAssertNil(d.acceptanceRate)
     }
 }
