@@ -17,9 +17,14 @@ public enum ClaudeSettingsConfigurator {
         "OTEL_LOGS_EXPORTER",
         "OTEL_EXPORTER_OTLP_PROTOCOL",
         "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "OTEL_METRIC_EXPORT_INTERVAL",
+        "OTEL_LOGS_EXPORT_INTERVAL",
     ]
 
     /// The env block pointing Claude Code at our loopback receiver (no auth — loopback).
+    /// The export intervals are tightened from Claude Code's defaults (metrics 60s / logs 5s)
+    /// so the local dashboard updates near-real-time — the data flows to our own loopback, so
+    /// the extra frequency costs nothing off-host (verified against monitoring-usage docs).
     public static func envBlock(port: Int) -> [String: String] {
         [
             "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
@@ -27,6 +32,8 @@ public enum ClaudeSettingsConfigurator {
             "OTEL_LOGS_EXPORTER": "otlp",
             "OTEL_EXPORTER_OTLP_PROTOCOL": "http/json",
             "OTEL_EXPORTER_OTLP_ENDPOINT": "http://127.0.0.1:\(port)",
+            "OTEL_METRIC_EXPORT_INTERVAL": "10000",   // 10s (default 60000)
+            "OTEL_LOGS_EXPORT_INTERVAL": "2000",      // 2s  (default 5000)
         ]
     }
 
