@@ -156,7 +156,10 @@ substitute a fake:
   `TelemetryEventSample`, **dropping content keys**), `TelemetryStore` (app-only, rolling retention,
   `HistoryStore` style). The loopback socket itself lives in `App/TokenMukbang/OTLPReceiver.swift`
   (`NWListener`, the app's first **inbound** boundary — bound to `127.0.0.1` only). Opt-in, off by
-  default. Smoke-tested by `tools/otlp-smoke.sh`.
+  default. Smoke-tested by `tools/otlp-smoke.sh`. `ClaudeSettingsConfigurator` safely merges the
+  OTLP env block into `~/.claude/settings.json` to auto-wire Claude Code at enable time (never
+  clobbers an unparseable file — ADR-0024). Consented forwarding to a company endpoint is a
+  follow-up slice (ADR-0024 Slice 2, internal-only, default off).
 - **`Support/`** — `ProcessRunner`, `Formatting` (bars/percents/countdowns), `FileWatcher`
   (`FileWatching` seam + `DispatchSource` reactive refresh on the credential file; ADR-0014 —
   also one per live session transcript to drive session-finished alerts, ADR-0022).

@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-30
+- **Refined by:** ADR-0024 (앱이 settings.json 자동 배선 + 동의 하 회사 forward — "egress 없음"을 "무동의 egress 없음"으로 정밀화)
 
 ## Context
 

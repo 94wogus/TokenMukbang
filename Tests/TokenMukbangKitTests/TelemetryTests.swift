@@ -142,6 +142,72 @@ final class OTLPHTTPTests: XCTestCase {
     }
 }
 
+final class ClaudeSettingsConfiguratorTests: XCTestCase {
+    private func tempFile() -> String {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("tmk-cfg-\(UUID().uuidString)")
+            .appendingPathComponent("settings.json").path
+    }
+
+    func testApplyMergesAndPreservesOtherKeys() {
+        let existing: [String: Any] = [
+            "permissions": ["allow": ["Bash"]],          // unrelated top-level key
+            "env": ["MY_VAR": "keep", "PATH": "/x"],       // unrelated env keys
+        ]
+        let merged = ClaudeSettingsConfigurator.apply(enabled: true, port: 4318, into: existing)
+        let env = merged["env"] as! [String: Any]
+        XCTAssertEqual(env["MY_VAR"] as? String, "keep")                       // preserved
+        XCTAssertEqual(env["OTEL_EXPORTER_OTLP_ENDPOINT"] as? String, "http://127.0.0.1:4318")
+        XCTAssertEqual(env["OTEL_EXPORTER_OTLP_PROTOCOL"] as? String, "http/json")
+        XCTAssertNotNil(merged["permissions"])                                 // top-level preserved
+    }
+
+    func testDisableRemovesOnlyOurKeys() {
+        let existing: [String: Any] = ["env": [
+            "MY_VAR": "keep",
+            "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+            "OTEL_EXPORTER_OTLP_ENDPOINT": "http://127.0.0.1:4318",
+        ]]
+        let off = ClaudeSettingsConfigurator.apply(enabled: false, port: 4318, into: existing)
+        let env = off["env"] as! [String: Any]
+        XCTAssertEqual(env["MY_VAR"] as? String, "keep")            // unrelated key stays
+        XCTAssertNil(env["CLAUDE_CODE_ENABLE_TELEMETRY"])           // ours removed
+        XCTAssertNil(env["OTEL_EXPORTER_OTLP_ENDPOINT"])
+    }
+
+    func testDisableDropsEmptiedEnv() {
+        let existing: [String: Any] = ["env": ["CLAUDE_CODE_ENABLE_TELEMETRY": "1"]]
+        let off = ClaudeSettingsConfigurator.apply(enabled: false, port: 4318, into: existing)
+        XCTAssertNil(off["env"])   // env became empty → dropped entirely
+    }
+
+    func testConfigureWritesAndRoundTrips() throws {
+        let path = tempFile()
+        XCTAssertEqual(ClaudeSettingsConfigurator.configure(enabled: true, port: 4318, settingsPath: path), .wrote)
+        let data = try Data(contentsOf: URL(fileURLWithPath: path))
+        let obj = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let env = obj["env"] as! [String: Any]
+        XCTAssertEqual(env["OTEL_EXPORTER_OTLP_ENDPOINT"] as? String, "http://127.0.0.1:4318")
+        // Idempotent: a second identical configure is a no-op.
+        XCTAssertEqual(ClaudeSettingsConfigurator.configure(enabled: true, port: 4318, settingsPath: path), .unchanged)
+    }
+
+    func testConfigureNeverClobbersUnparseableFile() throws {
+        let path = tempFile()
+        try FileManager.default.createDirectory(
+            at: URL(fileURLWithPath: path).deletingLastPathComponent(), withIntermediateDirectories: true)
+        let original = "{ // a JSONC comment the parser rejects\n  \"env\": {} }"
+        try original.write(toFile: path, atomically: true, encoding: .utf8)
+        XCTAssertEqual(ClaudeSettingsConfigurator.configure(enabled: true, port: 4318, settingsPath: path), .needsManualEdit)
+        // The file must be byte-for-byte untouched — we never destroy a config we can't read.
+        XCTAssertEqual(try String(contentsOfFile: path, encoding: .utf8), original)
+    }
+
+    func testConfigureDisableOnMissingFileIsNoop() {
+        XCTAssertEqual(ClaudeSettingsConfigurator.configure(enabled: false, port: 4318, settingsPath: tempFile()), .unchanged)
+    }
+}
+
 final class TelemetryStoreTests: XCTestCase {
     private func tempDir() -> URL {
         let url = FileManager.default.temporaryDirectory
