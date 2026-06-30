@@ -29,7 +29,7 @@ public enum TelemetryValue: Codable, Sendable, Equatable {
 
 /// The resource (common) attributes Claude Code attaches to every metric/event —
 /// "who/where", never "what". No content fields (ADR-0023).
-public struct TelemetrySource: Codable, Sendable, Equatable {
+public struct TelemetrySource: Codable, Sendable, Equatable, Hashable {
     public var serviceName: String?      // service.name = "claude-code"
     public var sessionID: String?        // session.id
     public var userEmail: String?        // user.email

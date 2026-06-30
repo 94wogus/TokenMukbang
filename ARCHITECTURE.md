@@ -158,8 +158,10 @@ substitute a fake:
   (`NWListener`, the app's first **inbound** boundary — bound to `127.0.0.1` only). Opt-in, off by
   default. Smoke-tested by `tools/otlp-smoke.sh`. `ClaudeSettingsConfigurator` safely merges the
   OTLP env block into `~/.claude/settings.json` to auto-wire Claude Code at enable time (never
-  clobbers an unparseable file — ADR-0024). Consented forwarding to a company endpoint is a
-  follow-up slice (ADR-0024 Slice 2, internal-only, default off).
+  clobbers an unparseable file — ADR-0024). Consented forwarding (ADR-0024 Slice 2): `OTLPEncoder`
+  re-encodes the content-stripped model and `TelemetryForwarder` POSTs it (via the `OTLPForwarding`
+  seam) to a user-enrolled company endpoint — internal-only, default off, gated on explicit consent.
+  Verified end-to-end (ingest + forward + content-strip) by `tools/otlp-smoke.sh`.
 - **`Support/`** — `ProcessRunner`, `Formatting` (bars/percents/countdowns), `FileWatcher`
   (`FileWatching` seam + `DispatchSource` reactive refresh on the credential file; ADR-0014 —
   also one per live session transcript to drive session-finished alerts, ADR-0022).

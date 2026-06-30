@@ -54,7 +54,31 @@ curl -s -X POST --data-binary @"$METRICS" -H 'Content-Type: application/json' "h
 curl -s -X POST --data-binary @"$LOGS"    -H 'Content-Type: application/json' "http://127.0.0.1:$PORT/v1/logs"    >/dev/null
 sleep 0.3
 
-echo "--- receiver stdout ---"; grep INGESTED "$LOG" || true
+echo "--- ingest: receiver stdout ---"; grep INGESTED "$LOG" || true
 grep -q "INGESTED kind=metrics metrics=2 events=0" "$LOG" || { echo "FAIL: metrics not ingested"; exit 1; }
 grep -q "INGESTED kind=logs metrics=0 events=1"    "$LOG" || { echo "FAIL: logs not ingested"; exit 1; }
 echo "PASS: loopback OTLP receiver ingested 2 metrics + 1 event (content dropped in decoder)"
+
+# ── Phase 2: consented forwarding (ADR-0024 Slice 2) ───────────────────────────
+# A fresh receiver forwards (content-stripped, re-encoded) to an upstream we capture with `nc`.
+# The captured bytes must carry the auth header + /v1/logs path, and must NOT contain the
+# secret prompt text — proving the app strips content before egress.
+kill "$APP_PID" 2>/dev/null || true
+PORT2="$((PORT + 1))"; FPORT="$((PORT + 2))"
+CAP="$(mktemp)"
+nc -l 127.0.0.1 "$FPORT" >"$CAP" 2>/dev/null &
+NC_PID=$!
+trap 'kill "$APP_PID" "$NC_PID" 2>/dev/null || true; rm -f "$LOG" "$METRICS" "$LOGS" "$CAP"' EXIT
+TMK_OTLP_TEST="$PORT2" TMK_OTLP_FORWARD="http://127.0.0.1:$FPORT" TMK_OTLP_TOKEN="smoke-tok-123" \
+  "$APP" >"$LOG" 2>&1 &
+APP_PID=$!
+for _ in $(seq 1 50); do grep -q OTLP_TEST_READY "$LOG" && break; sleep 0.1; done
+
+curl -s -X POST --data-binary @"$LOGS" -H 'Content-Type: application/json' "http://127.0.0.1:$PORT2/v1/logs" >/dev/null
+sleep 0.6   # let the forward Task POST to nc
+
+echo "--- forward: captured upstream request (headers) ---"; head -8 "$CAP" 2>/dev/null || true
+grep -q "POST /v1/logs" "$CAP" || { echo "FAIL: upstream didn't receive /v1/logs"; exit 1; }
+grep -qi "Authorization: Bearer smoke-tok-123" "$CAP" || { echo "FAIL: forwarded request missing auth header"; exit 1; }
+grep -q "SHOULD BE DROPPED" "$CAP" && { echo "FAIL: content text LEAKED into forwarded body"; exit 1; }
+echo "PASS: forwarded to upstream with auth + /v1/logs, content text stripped before egress"

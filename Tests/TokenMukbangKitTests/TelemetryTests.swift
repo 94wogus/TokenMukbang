@@ -142,6 +142,96 @@ final class OTLPHTTPTests: XCTestCase {
     }
 }
 
+final class OTLPEncoderTests: XCTestCase {
+    private let source = TelemetrySource(serviceName: "claude-code", sessionID: "s1", userEmail: "me@quantit.io")
+
+    func testMetricsRoundTripThroughEncodeDecode() {
+        let original = [
+            TelemetryMetricSample(name: "claude_code.token.usage", value: .int(1250),
+                timestamp: Date(timeIntervalSince1970: 1_719_753_600),
+                attributes: ["type": .string("input"), "model": .string("claude-sonnet-4-6")], source: source),
+            TelemetryMetricSample(name: "claude_code.cost.usage", value: .double(0.025),
+                timestamp: Date(timeIntervalSince1970: 1_719_753_600), attributes: [:], source: source),
+        ]
+        let reDecoded = OTLPDecoder.decodeMetrics(OTLPEncoder.encodeMetrics(original))
+        XCTAssertEqual(Set(reDecoded.map(\.name)), Set(original.map(\.name)))
+        let token = reDecoded.first { $0.name == "claude_code.token.usage" }!
+        XCTAssertEqual(token.value, .int(1250))                       // int survives the string round-trip
+        XCTAssertEqual(token.attributes["model"]?.stringValue, "claude-sonnet-4-6")
+        XCTAssertEqual(token.source.userEmail, "me@quantit.io")
+        let cost = reDecoded.first { $0.name == "claude_code.cost.usage" }!
+        XCTAssertEqual(cost.value, .double(0.025))
+    }
+
+    func testEventsRoundTrip() {
+        let original = [TelemetryEventSample(name: "claude_code.api_request",
+            timestamp: Date(timeIntervalSince1970: 1_719_753_600),
+            attributes: ["model": .string("claude-sonnet-4-6"), "input_tokens": .int(500)], source: source)]
+        let reDecoded = OTLPDecoder.decodeLogs(OTLPEncoder.encodeLogs(original))
+        XCTAssertEqual(reDecoded.count, 1)
+        XCTAssertEqual(reDecoded[0].name, "claude_code.api_request")
+        XCTAssertEqual(reDecoded[0].attributes["input_tokens"]?.intValue, 500)
+    }
+
+    func testEncodedBytesNeverContainContent() {
+        // Even if somehow a content value sat in the model, it must not appear; here we assert the
+        // encoder emits only what's in the (already-stripped) model — no `prompt` key materializes.
+        let s = TelemetryEventSample(name: "claude_code.user_prompt",
+            timestamp: Date(timeIntervalSince1970: 1), attributes: ["prompt_length": .int(42)], source: source)
+        let bytes = OTLPEncoder.encodeLogs([s])
+        let str = String(data: bytes, encoding: .utf8)!
+        XCTAssertTrue(str.contains("prompt_length"))
+        XCTAssertFalse(str.contains("\"prompt\""))   // no bare content key
+    }
+}
+
+/// Captures forwarded POSTs so we can assert URL, auth header, and body without a network.
+final class FakeForwarding: OTLPForwarding, @unchecked Sendable {
+    struct Call { let url: URL; let headers: [String: String]; let body: Data }
+    private(set) var calls: [Call] = []
+    func post(url: URL, headers: [String: String], body: Data) async -> Int {
+        calls.append(Call(url: url, headers: headers, body: body)); return 200
+    }
+}
+
+final class TelemetryForwarderTests: XCTestCase {
+    private let source = TelemetrySource(serviceName: "claude-code")
+
+    func testForwardsToSignalPathWithBearerAuth() async {
+        let fake = FakeForwarding()
+        let fwd = TelemetryForwarder(endpoint: "https://usage.example.com/api/otel", token: "tok-123", transport: fake)!
+        let m = TelemetryMetricSample(name: "claude_code.token.usage", value: .int(1),
+            timestamp: Date(timeIntervalSince1970: 1), attributes: [:], source: source)
+        _ = await fwd.forward(metrics: [m])
+        XCTAssertEqual(fake.calls.count, 1)
+        XCTAssertEqual(fake.calls[0].url.absoluteString, "https://usage.example.com/api/otel/v1/metrics")
+        XCTAssertEqual(fake.calls[0].headers["Authorization"], "Bearer tok-123")
+        // The forwarded body must be re-encoded OTLP (decodable), proving it isn't raw pass-through.
+        XCTAssertEqual(OTLPDecoder.decodeMetrics(fake.calls[0].body).count, 1)
+    }
+
+    func testEmptyBatchDoesNotPost() async {
+        let fake = FakeForwarding()
+        let fwd = TelemetryForwarder(endpoint: "https://x.example.com", token: "", transport: fake)!
+        _ = await fwd.forward(metrics: [])
+        XCTAssertTrue(fake.calls.isEmpty)
+    }
+
+    func testInvalidEndpointFailsInit() {
+        XCTAssertNil(TelemetryForwarder(endpoint: "", token: "t"))
+        XCTAssertNil(TelemetryForwarder(endpoint: "not a url", token: "t"))
+    }
+
+    func testForwardActiveGate() {
+        var s = TelemetrySettings(enabled: true, forwardEnabled: true, forwardEndpoint: "https://x.example.com", consentAcknowledged: false)
+        XCTAssertFalse(s.forwardActive)                 // no consent
+        s.consentAcknowledged = true
+        XCTAssertTrue(s.forwardActive)
+        s.forwardEndpoint = "   "
+        XCTAssertFalse(s.forwardActive)                 // blank endpoint
+    }
+}
+
 final class ClaudeSettingsConfiguratorTests: XCTestCase {
     private func tempFile() -> String {
         FileManager.default.temporaryDirectory
