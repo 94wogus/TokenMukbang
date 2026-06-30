@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added — 설치하면 Claude Code 텔레메트리 자동 설정 (slice 1: 로컬 자동 배선, 2026-06-30, ADR-0024)
+"설치만 하면 알아서"의 첫 단계. 텔레메트리를 켜면 앱이 `~/.claude/settings.json`을 **안전하게
+머지**해 Claude Code를 우리 로컬 receiver로 향하게 한다 — 사용자가 env 블록을 손으로 붙여넣을
+필요가 없다.
+- **클로버 금지** — `ClaudeSettingsConfigurator`(Kit, 순수+파일)가 우리가 관리하는 OTLP 키만
+  추가/제거하고 다른 env·top-level 키는 보존. 파일이 있으나 **JSON 파싱 실패**(주석/JSONC/손상)면
+  **건드리지 않고** `needsManualEdit`로 안내(사용자 설정을 덮어써 날리지 않음). 끄면 우리 키만 제거.
+- Settings → General에 "Telemetry" 토글 + 무엇이 수집/미수집되는지 고지. `needsManualEdit`면 경고 표시.
+- **회사 forward는 아직 없음** — 명시적 동의/enrollment 하 회사 OTLP egress는 후속 슬라이스
+  (ADR-0024 Slice 2, 사내 전용·기본 off). 이번 PR은 egress 0. ADR-0023의 "egress 없음"을
+  "**무동의 egress 없음**"으로 정밀화(ADR-0024).
+- 테스트 +6(머지/제거/빈 env 드롭/라운드트립·idempotent/언파서블 미수정/missing 파일 noop). 전체 153 green.
+
 ### Fixed — 세션이 트랜스크립트를 회전하면 완료 알림이 영영 안 오던 문제 (2026-06-30, ADR-0022)
 `SessionActivityWatcher`가 세션 watcher를 만들 때 `newestTranscript`를 **딱 한 번** 풀어 그
 파일만 감시했다. 같은 프로세스(pid)가 `/clear` 등으로 **새 세션 `.jsonl`로 회전**하면 옛 파일엔

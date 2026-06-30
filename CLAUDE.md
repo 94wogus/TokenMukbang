@@ -59,7 +59,8 @@ injection seams → ADR-0006. See also: native stack → ADR-0007, terminal focu
 product concept → ADR-0009, distribution → ADR-0010, retrospective via local `claude` CLI →
 ADR-0020, value/savings estimate (API-list-price equivalent) → ADR-0021,
 session-completion notification (reactive `stop_reason` watch + tap-to-focus) → ADR-0022,
-local OTLP telemetry receiver (loopback ingest of Claude Code's OTEL) → ADR-0023
+local OTLP telemetry receiver (loopback ingest of Claude Code's OTEL) → ADR-0023,
+app-managed telemetry config + consented company forwarding (internal-only) → ADR-0024
 (index: `docs/adr/README.md`). Product direction: `docs/VISION.md`.
 
 ## Architecture — what you must respect
@@ -155,6 +156,13 @@ deliberately avoid emitting it. `SecurityCLICredentialStore` is read-only — it
   fields** (`OTLPDecoder.contentKeys`: prompt/body/tool I/O/refusal category) so text never reaches the
   store even if the user enables `OTEL_LOG_*` flags. Verify end-to-end with `tools/otlp-smoke.sh`
   (headless `TMK_OTLP_TEST` branch + curl). Consuming this into UI cards is a follow-up slice.
+  Enabling telemetry also **auto-wires** Claude Code's `~/.claude/settings.json` via
+  `ClaudeSettingsConfigurator` (Kit, ADR-0024 Slice 1) — it **merges** the OTLP env block (never
+  clobbers; an unparseable file is left untouched and surfaced as `needsManualEdit`), pointing
+  Claude Code at the local receiver; disabling removes only the keys it added. **Consented
+  forwarding** of (content-stripped) telemetry to a company OTLP endpoint is internal-only, gated
+  behind explicit enrollment, default off — a follow-up slice (ADR-0024 Slice 2). The invariant is
+  now "no egress **without explicit consent**" (refines ADR-0023's "no egress").
 - **Dates**: the OAuth API sends ISO-8601 *with fractional seconds + offset*
   (`2026-06-11T13:59:59.715802+00:00`). Decode API payloads with `ClaudeJSON.makeDecoder()`,
   not a default `JSONDecoder`. `SharedStore` snapshots use plain `.iso8601`.

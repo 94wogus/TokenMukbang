@@ -181,11 +181,20 @@ final class AppModel: ObservableObject {
         credentialWatcher?.start()
     }
 
-    /// Bring the loopback OTLP receiver up or down to match `settings.telemetry` (ADR-0023).
-    /// Recreated on any change so a port edit rebinds. Off by default — no listener unless opted in.
+    /// Outcome of the last `~/.claude/settings.json` auto-wire — surfaced in Settings so the user
+    /// sees if we couldn't safely edit the file (`.needsManualEdit`) and must paste it themselves.
+    @Published private(set) var telemetryConfigOutcome: ClaudeSettingsConfigurator.Outcome?
+
+    /// Bring the loopback OTLP receiver up or down to match `settings.telemetry` (ADR-0023), and
+    /// auto-wire Claude Code's `settings.json` to point at it (ADR-0024 Slice 1). Recreated on any
+    /// change so a port edit rebinds. Off by default — no listener and no file edit unless opted in.
     private func startTelemetryReceiverIfEnabled() {
         otlpReceiver?.stop()
         otlpReceiver = nil
+        // Auto-wire (or un-wire) Claude Code's telemetry config to/from our local receiver.
+        let path = (NSHomeDirectory() as NSString).appendingPathComponent(".claude/settings.json")
+        telemetryConfigOutcome = ClaudeSettingsConfigurator.configure(
+            enabled: settings.telemetry.enabled, port: settings.telemetry.port, settingsPath: path)
         guard settings.telemetry.enabled else { return }
         let port = UInt16(max(1, min(65_535, settings.telemetry.port)))
         let receiver = OTLPReceiver(port: port)

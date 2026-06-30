@@ -109,6 +109,27 @@ struct SettingsView: View {
                     .font(.system(size: 9)).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            section("Telemetry", icon: "antenna.radiowaves.left.and.right") {
+                Toggle(isOn: $model.settings.telemetry.enabled) {
+                    Text("Collect Claude Code telemetry").font(.caption)
+                }
+                .toggleStyle(.switch).controlSize(.mini).tint(selectedMood.accent)
+
+                Text("Auto-configures Claude Code (~/.claude/settings.json) to export usage to a local receiver on 127.0.0.1 — token counts, cost, durations, tool names. Prompt/response/code text is never collected. Restart Claude Code after enabling.")
+                    .font(.system(size: 9)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if model.telemetryConfigOutcome == .needsManualEdit {
+                    HStack(spacing: 5) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 9)).foregroundStyle(.orange)
+                        Text("Couldn't safely edit settings.json (it may have comments). Add the OTLP env block manually.")
+                            .font(.system(size: 9)).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
         }
     }
 
