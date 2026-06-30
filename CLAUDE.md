@@ -58,7 +58,8 @@ app-writes/widget-reads → ADR-0003, never-throws → ADR-0004, XcodeGen → AD
 injection seams → ADR-0006. See also: native stack → ADR-0007, terminal focus → ADR-0008,
 product concept → ADR-0009, distribution → ADR-0010, retrospective via local `claude` CLI →
 ADR-0020, value/savings estimate (API-list-price equivalent) → ADR-0021,
-session-completion notification (reactive `stop_reason` watch + tap-to-focus) → ADR-0022
+session-completion notification (reactive `stop_reason` watch + tap-to-focus) → ADR-0022,
+local OTLP telemetry receiver (loopback ingest of Claude Code's OTEL) → ADR-0023
 (index: `docs/adr/README.md`). Product direction: `docs/VISION.md`.
 
 ## Architecture — what you must respect
@@ -145,6 +146,15 @@ deliberately avoid emitting it. `SecurityCLICredentialStore` is read-only — it
   `NotificationCoordinator` → `TerminalFocus` (ADR-0008); VS Code/Cursor-hosted sessions only
   get the host app brought forward (best-effort — `TerminalFocus.guiHostAppName` walks the pid's
   ancestry). It reads transcripts locally only — no new egress, and the widget snapshot is unchanged.
+- **Local OTLP telemetry receiver** (ADR-0023): the app's **first inbound network boundary** —
+  everything else is outbound. Opt-in (`AppSettings.telemetry.enabled`, default off); when on,
+  `OTLPReceiver` (App, `Network`/`NWListener`) binds **`127.0.0.1` only** and accepts Claude Code's
+  OTLP/HTTP **JSON** telemetry (`/v1/metrics`, `/v1/logs`, default port 4318). Wire parsing is pure
+  Kit (`OTLPHTTP` framing + `OTLPDecoder` → `TelemetryMetricSample`/`TelemetryEventSample`), persisted
+  app-only via `TelemetryStore` (never the widget `SharedStore`, ADR-0003). The decoder **drops content
+  fields** (`OTLPDecoder.contentKeys`: prompt/body/tool I/O/refusal category) so text never reaches the
+  store even if the user enables `OTEL_LOG_*` flags. Verify end-to-end with `tools/otlp-smoke.sh`
+  (headless `TMK_OTLP_TEST` branch + curl). Consuming this into UI cards is a follow-up slice.
 - **Dates**: the OAuth API sends ISO-8601 *with fractional seconds + offset*
   (`2026-06-11T13:59:59.715802+00:00`). Decode API payloads with `ClaudeJSON.makeDecoder()`,
   not a default `JSONDecoder`. `SharedStore` snapshots use plain `.iso8601`.

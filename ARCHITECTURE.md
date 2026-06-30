@@ -151,6 +151,12 @@ substitute a fake:
   `working→idle` edge; tapping it focuses the terminal (ADR-0008).
 - **`Update/`** — `UpdateChecker` (parse GitHub `/releases/latest` tag + semver compare;
   delivery is ADR-0010). The `Casks/token-mukbang.rb` Homebrew cask ships the release.
+- **`Telemetry/`** — pure OTLP/HTTP **JSON** ingestion of Claude Code's own OpenTelemetry
+  (ADR-0023): `OTLPHTTP` (request framing), `OTLPDecoder` (metrics + logs → `TelemetryMetricSample`/
+  `TelemetryEventSample`, **dropping content keys**), `TelemetryStore` (app-only, rolling retention,
+  `HistoryStore` style). The loopback socket itself lives in `App/TokenMukbang/OTLPReceiver.swift`
+  (`NWListener`, the app's first **inbound** boundary — bound to `127.0.0.1` only). Opt-in, off by
+  default. Smoke-tested by `tools/otlp-smoke.sh`.
 - **`Support/`** — `ProcessRunner`, `Formatting` (bars/percents/countdowns), `FileWatcher`
   (`FileWatching` seam + `DispatchSource` reactive refresh on the credential file; ADR-0014 —
   also one per live session transcript to drive session-finished alerts, ADR-0022).

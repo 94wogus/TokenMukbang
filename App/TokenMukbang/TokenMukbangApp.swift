@@ -6,6 +6,9 @@ import TokenMukbangKit
 /// branches. The popover is a custom borderless NSPanel (ADR-0018) — `MenuBarExtra(.window)`
 /// can't show the desktop behind it (its window is system-managed + opaque).
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Retains the receiver in the headless `TMK_OTLP_TEST` smoke-test branch.
+    private var otlpTestReceiver: OTLPReceiver?
+
     /// Menu-bar accessory app: closing the Settings window (the only SwiftUI window) must NOT
     /// quit the app — the status item keeps it alive. Without MenuBarExtra anchoring the app,
     /// the default "terminate after last window closed" kicked in (user: "setting 끄니깐 꺼짐").
@@ -21,6 +24,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let dir = ProcessInfo.processInfo.environment["TMK_SNAPSHOT"] {
             WindowSnapshot.renderAll(dir: dir)
             exit(0)
+        }
+        // Headless OTLP receiver smoke test (ADR-0023): start a loopback receiver, print each
+        // ingest to stdout, and STAY ALIVE so tools/otlp-smoke.sh can curl a fixture, then kill us.
+        // The env value is the port (e.g. TMK_OTLP_TEST=4319). No status item / UI.
+        if let portStr = ProcessInfo.processInfo.environment["TMK_OTLP_TEST"] {
+            let port = UInt16(portStr) ?? 4318
+            let receiver = OTLPReceiver(port: port)
+            receiver.onIngest = { kind, m, e in
+                FileHandle.standardOutput.write(Data("INGESTED kind=\(kind) metrics=\(m) events=\(e)\n".utf8))
+            }
+            receiver.start()
+            otlpTestReceiver = receiver
+            FileHandle.standardOutput.write(Data("OTLP_TEST_READY port=\(port)\n".utf8))
+            return
         }
         // Track the *menu bar's* light/dark (wallpaper-aware) so the label colors adapt, then
         // build the status item + glass panel.

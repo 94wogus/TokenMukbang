@@ -30,6 +30,8 @@ final class AppModel: ObservableObject {
     private let notificationCoordinator = NotificationCoordinator()
     /// Reactive per-session watcher — fires "session finished" notifications on working→idle (ADR-0022).
     private var sessionActivityWatcher: SessionActivityWatcher?
+    /// Loopback OTLP receiver for Claude Code telemetry — opt-in, off by default (ADR-0023).
+    private var otlpReceiver: OTLPReceiver?
     /// Keeps the background poll loop alive. This is an `LSUIElement` accessory app, so when no
     /// window is open macOS App Nap throttles the `Task.sleep` loop to a near-halt — the symptom
     /// being usage that only refreshed on a manual click (user 2026-06-23). A held
@@ -66,6 +68,9 @@ final class AppModel: ObservableObject {
                 if settings.notifications.sessionFinished, let snap = snapshot {
                     sessionActivityWatcher?.reconcile(sessions: snap.sessions) // start watching now, not next poll
                 }
+            }
+            if oldValue.telemetry != settings.telemetry {
+                startTelemetryReceiverIfEnabled() // bring the loopback OTLP receiver up/down now (ADR-0023)
             }
         }
     }
@@ -141,6 +146,7 @@ final class AppModel: ObservableObject {
         sessionActivityWatcher = SessionActivityWatcher(enabled: settings.notifications.sessionFinished) { session in
             NotificationService.deliverSessionFinished(session)
         }
+        startTelemetryReceiverIfEnabled()
         start()
         startCredentialWatch()
         Task { [weak self] in await self?.loadTokenHistory() }
@@ -173,6 +179,18 @@ final class AppModel: ObservableObject {
             Task { @MainActor in await self?.refresh() }
         }
         credentialWatcher?.start()
+    }
+
+    /// Bring the loopback OTLP receiver up or down to match `settings.telemetry` (ADR-0023).
+    /// Recreated on any change so a port edit rebinds. Off by default — no listener unless opted in.
+    private func startTelemetryReceiverIfEnabled() {
+        otlpReceiver?.stop()
+        otlpReceiver = nil
+        guard settings.telemetry.enabled else { return }
+        let port = UInt16(max(1, min(65_535, settings.telemetry.port)))
+        let receiver = OTLPReceiver(port: port)
+        receiver.start()
+        otlpReceiver = receiver
     }
 
     deinit {

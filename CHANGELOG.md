@@ -4,6 +4,22 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added — Claude Code 텔레메트리 로컬 OTLP 수신 (slice 1: 수신·저장·검증, 2026-06-30, ADR-0023)
+Claude Code 내장 OpenTelemetry를 **로컬에서 직접 받는** 기반을 깔았다. 지금은 트랜스크립트를
+파싱해 사용량을 *추정*하는데, OTEL은 같은 데이터를 더 정확하게 + 트랜스크립트엔 없는 신호(편집
+수락률·작성 라인 수·커밋/PR·active time)까지 구조화된 메트릭으로 준다.
+- **첫 inbound 경계** — `OTLPReceiver`(App, `Network`/`NWListener`)가 **`127.0.0.1` 전용**으로
+  바인딩해 Claude Code의 OTLP/HTTP **JSON**(`/v1/metrics`·`/v1/logs`, 기본 4318)을 ingest. 지금까진
+  전부 outbound였다. 루프백 바인딩이 load-bearing 보안 불변식.
+- **와이어 파싱은 순수 Kit** — `OTLPHTTP`(HTTP framing) + `OTLPDecoder`(metrics/logs → `Telemetry*Sample`,
+  int64 문자열 인코딩 관대 처리) + `TelemetryStore`(앱 전용, 7일 retention, `HistoryStore` 패턴).
+- **콘텐츠는 디코더가 미매핑** — `prompt`/`body`/`tool_input`/`tool_output`/`category`는 모델에 안 담아,
+  사용자가 `OTEL_LOG_*` 플래그를 켜도 저장소엔 텍스트가 한 글자도 안 남는다(서버 강제 redaction).
+- **Opt-in, 기본 off**(`AppSettings.telemetry`). 위젯 스냅샷 스키마 불변(ADR-0003 유지), 신규 egress 없음.
+- E2E 검증 — `tools/otlp-smoke.sh`(헤드리스 `TMK_OTLP_TEST` 브랜치 + 실제 curl)로 루프백 수신·디코딩·
+  콘텐츠 드롭 확인. 테스트 +11(디코더 6 / framing 4 / store 2 ... 픽스처는 실제 OTLP JSON 모양). 전체 147 green.
+- 후속 슬라이스: 받은 데이터를 History/Retro 카드로 + settings.json 자동 배선 UI.
+
 ### Added — 세션 작업 완료 알림 + 탭하면 그 터미널로 점프 (2026-06-26, ADR-0022)
 여러 Claude Code 세션을 돌릴 때 **어떤 세션이 작업을 끝내면 알림**을 받고, **알림을 누르면 그
 세션의 터미널로 포커스**되게 했다. 사용량 5분 폴이 아니라 세션별 트랜스크립트를 `FileWatcher`로
