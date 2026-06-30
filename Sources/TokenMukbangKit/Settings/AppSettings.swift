@@ -144,6 +144,30 @@ public struct NotificationSettings: Codable, Sendable, Equatable {
     }
 }
 
+/// Local OTLP telemetry ingestion (ADR-0023). **Opt-in, off by default** — turning it on
+/// starts a loopback OTLP receiver and (separately) configures Claude Code to export to it.
+public struct TelemetrySettings: Codable, Sendable, Equatable {
+    /// Whether the local receiver runs.
+    public var enabled: Bool
+    /// Loopback port the receiver binds (OTLP/HTTP default 4318). Configurable to avoid
+    /// clashing with another local collector; we wire both sides.
+    public var port: Int
+
+    public init(enabled: Bool = false, port: Int = 4318) {
+        self.enabled = enabled; self.port = port
+    }
+
+    public static let `default` = TelemetrySettings()
+
+    /// Forgiving decode (see `NotificationSettings`): missing fields fall back to default.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = TelemetrySettings.default
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? d.enabled
+        port = try c.decodeIfPresent(Int.self, forKey: .port) ?? d.port
+    }
+}
+
 /// The user's full settings (theme + thresholds + notifications + glass), persisted.
 public struct AppSettings: Codable, Sendable, Equatable {
     public var theme: Theme
@@ -172,6 +196,9 @@ public struct AppSettings: Codable, Sendable, Equatable {
     /// use a rolling 30-day window. The Value card scopes its token total to this period.
     public var billingCycleDay: Int?
 
+    /// Local OTLP telemetry ingestion (ADR-0023). Off by default.
+    public var telemetry: TelemetrySettings
+
     /// The shipped default blur veil — was a hard-coded constant in `GlassPanel`, now the default
     /// for the user-tunable `glassOpacity` (so existing behavior is unchanged until adjusted).
     public static let defaultGlassOpacity: Double = 0.70
@@ -183,7 +210,8 @@ public struct AppSettings: Codable, Sendable, Equatable {
                 glassOpacity: Double = AppSettings.defaultGlassOpacity,
                 timeZoneIdentifier: String? = nil,
                 subscriptionMonthlyCost: Double = AppSettings.defaultSubscriptionMonthlyCost,
-                billingCycleDay: Int? = nil) {
+                billingCycleDay: Int? = nil,
+                telemetry: TelemetrySettings = .default) {
         self.theme = theme
         self.customPalette = customPalette
         self.thresholds = thresholds
@@ -193,11 +221,12 @@ public struct AppSettings: Codable, Sendable, Equatable {
         self.timeZoneIdentifier = timeZoneIdentifier
         self.subscriptionMonthlyCost = subscriptionMonthlyCost
         self.billingCycleDay = billingCycleDay
+        self.telemetry = telemetry
     }
 
     private enum CodingKeys: String, CodingKey {
         case theme, customPalette, thresholds, notifications, temperament, glassOpacity, timeZoneIdentifier
-        case subscriptionMonthlyCost, billingCycleDay
+        case subscriptionMonthlyCost, billingCycleDay, telemetry
     }
 
     /// Forgiving decode: any missing field falls back to its default, so adding a new setting
@@ -215,6 +244,7 @@ public struct AppSettings: Codable, Sendable, Equatable {
         subscriptionMonthlyCost = try c.decodeIfPresent(Double.self, forKey: .subscriptionMonthlyCost)
             ?? AppSettings.defaultSubscriptionMonthlyCost
         billingCycleDay = try c.decodeIfPresent(Int.self, forKey: .billingCycleDay)
+        telemetry = try c.decodeIfPresent(TelemetrySettings.self, forKey: .telemetry) ?? .default
     }
 
     /// Start of the current billing period: the most recent `billingCycleDay` at/before `now`,
