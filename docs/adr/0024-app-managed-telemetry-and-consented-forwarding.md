@@ -50,8 +50,13 @@ flowchart LR
     R -->|콘텐츠 제거·집계 · 동의 시에만| F[회사 OTLP 엔드포인트]
 ```
 
-이 ADR(결정)은 지금 landed 되고, **Slice 1이 함께 구현**된다. Slice 2(forward+enrollment)는
-후속 PR에서 구현한다.
+**구현 상태:** Slice 1(자동 배선)은 #29에서, **Slice 2(forward + 동의)는 이 변경에서 구현**됐다.
+enrollment은 **Settings 수동 입력**(회사 OTLP base URL + bearer 토큰) + 고지 동의 토글로 한다.
+forward는 `forwardActive`(동의 ∧ forwardEnabled ∧ 엔드포인트 있음)일 때만 동작하고, receiver가
+ingest한 샘플을 `OTLPEncoder`로 **재인코딩**(원 수신 바이트 패스스루 아님)해 회사로 POST한다 —
+콘텐츠는 디코드 시점에 이미 제거됐고 재인코딩은 모델만 보므로 텍스트가 새지 않는다. 토큰은 앱
+설정에 저장(Claude Code가 OTLP 헤더를 settings.json에 두는 것과 동일 패턴; OAuth 토큰과 무관,
+ADR-0002 불변). best-effort egress(실패는 조용히 무시, 로컬 ingest를 막지 않음).
 
 ## Consequences
 

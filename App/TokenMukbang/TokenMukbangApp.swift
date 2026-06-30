@@ -30,7 +30,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The env value is the port (e.g. TMK_OTLP_TEST=4319). No status item / UI.
         if let portStr = ProcessInfo.processInfo.environment["TMK_OTLP_TEST"] {
             let port = UInt16(portStr) ?? 4318
-            let receiver = OTLPReceiver(port: port)
+            // Optional forward target for the forward smoke test (TMK_OTLP_FORWARD=base URL).
+            let env = ProcessInfo.processInfo.environment
+            let forwarder = env["TMK_OTLP_FORWARD"].flatMap {
+                TelemetryForwarder(endpoint: $0, token: env["TMK_OTLP_TOKEN"] ?? "smoke-token")
+            }
+            let receiver = OTLPReceiver(port: port, forwarder: forwarder)
             receiver.onIngest = { kind, m, e in
                 FileHandle.standardOutput.write(Data("INGESTED kind=\(kind) metrics=\(m) events=\(e)\n".utf8))
             }

@@ -129,6 +129,30 @@ struct SettingsView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+
+                // Consented company forwarding (ADR-0024 Slice 2) — only when local telemetry is on.
+                if model.settings.telemetry.enabled {
+                    Divider().padding(.vertical, 3)
+                    Text("Share with company (optional)").font(.caption2).foregroundStyle(.tertiary)
+                    TextField("https://usage.example.com/api/otel", text: $model.settings.telemetry.forwardEndpoint)
+                        .textFieldStyle(.roundedBorder).controlSize(.small).font(.system(size: 10))
+                    SecureField("Authorization token", text: $model.settings.telemetry.forwardToken)
+                        .textFieldStyle(.roundedBorder).controlSize(.small).font(.system(size: 10))
+
+                    Toggle(isOn: $model.settings.telemetry.consentAcknowledged) {
+                        Text("I understand my usage metadata (never prompts/code/content) will be sent to this endpoint, tied to my identity.")
+                            .font(.system(size: 9)).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .toggleStyle(.switch).controlSize(.mini).tint(selectedMood.accent)
+
+                    Toggle(isOn: $model.settings.telemetry.forwardEnabled) {
+                        Text("Forward to company endpoint").font(.caption)
+                    }
+                    .toggleStyle(.switch).controlSize(.mini).tint(selectedMood.accent)
+                    .disabled(!model.settings.telemetry.consentAcknowledged
+                              || model.settings.telemetry.forwardEndpoint.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
             }
         }
     }
