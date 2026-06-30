@@ -32,6 +32,12 @@ final class AppModel: ObservableObject {
     private var sessionActivityWatcher: SessionActivityWatcher?
     /// Loopback OTLP receiver for Claude Code telemetry — opt-in, off by default (ADR-0023).
     private var otlpReceiver: OTLPReceiver?
+    /// App-only telemetry store, shared with the receiver so the digest reads what was ingested.
+    private let telemetryStore = TelemetryStore()
+    /// Last-7d aggregate of Claude Code activity (acceptance rate / LoC / commits / active time)
+    /// for the Now-tab telemetry card. Recomputed when the receiver ingests a batch + on poll;
+    /// nil until telemetry is enabled and data has arrived.
+    @Published private(set) var telemetryDigest: TelemetryDigest?
     /// Keeps the background poll loop alive. This is an `LSUIElement` accessory app, so when no
     /// window is open macOS App Nap throttles the `Task.sleep` loop to a near-halt — the symptom
     /// being usage that only refreshed on a manual click (user 2026-06-23). A held
@@ -154,15 +160,21 @@ final class AppModel: ObservableObject {
 
     /// Preview/render model: a fixed snapshot, no polling, no side effects — used by
     /// the headless ImageRenderer design-iteration path.
-    init(previewSnapshot: UsageSnapshot, settings: AppSettings = .default, tokenEvents: [TokenEvent] = []) {
+    init(previewSnapshot: UsageSnapshot, settings: AppSettings = .default, tokenEvents: [TokenEvent] = [],
+         telemetryDigest: TelemetryDigest? = nil) {
         self.service = UsageService()
         self.store = SharedStore()
         self.focus = TerminalFocus()
         self.history = HistoryStore()
         self.settingsStore = SettingsStore()
+        var settings = settings
+        // A preview digest implies telemetry is on — the card gates on the setting, so flip it so
+        // the snapshot harness actually exercises the telemetry card (mirrors the Value-card trick).
+        if telemetryDigest != nil { settings.telemetry.enabled = true }
         self.settings = settings
         self.snapshot = previewSnapshot
         self.tokenEvents = tokenEvents
+        self.telemetryDigest = telemetryDigest
         // Build the Value estimate from the preview events so the render/snapshot harness
         // actually exercises the Value card (otherwise it always shows the empty state).
         recomputeValueEstimate()
@@ -195,7 +207,7 @@ final class AppModel: ObservableObject {
         let path = (NSHomeDirectory() as NSString).appendingPathComponent(".claude/settings.json")
         telemetryConfigOutcome = ClaudeSettingsConfigurator.configure(
             enabled: settings.telemetry.enabled, port: settings.telemetry.port, settingsPath: path)
-        guard settings.telemetry.enabled else { return }
+        guard settings.telemetry.enabled else { telemetryDigest = nil; return }
         let port = UInt16(max(1, min(65_535, settings.telemetry.port)))
         // Consented company forwarding (ADR-0024 Slice 2): only built when the user enrolled an
         // endpoint AND ticked the consent disclosure. The forwarder re-encodes content-stripped
@@ -203,9 +215,24 @@ final class AppModel: ObservableObject {
         let forwarder = settings.telemetry.forwardActive
             ? TelemetryForwarder(endpoint: settings.telemetry.forwardEndpoint, token: settings.telemetry.forwardToken)
             : nil
-        let receiver = OTLPReceiver(port: port, forwarder: forwarder)
+        let receiver = OTLPReceiver(port: port, store: telemetryStore, forwarder: forwarder)
+        // Refresh the Now-tab telemetry card the moment a batch lands (10s/2s intervals) —
+        // hop to the main actor since the receiver ingests on its own queue.
+        receiver.onIngest = { [weak self] _, _, _ in
+            Task { @MainActor in self?.reloadTelemetryDigest() }
+        }
         receiver.start()
         otlpReceiver = receiver
+        reloadTelemetryDigest()   // show what's already on disk (last 7d) right away
+    }
+
+    /// Recompute the Now-tab telemetry digest from the last 7 days of stored samples (ADR-0023).
+    private func reloadTelemetryDigest() {
+        let now = Date()
+        telemetryDigest = TelemetryDigest.build(
+            metrics: telemetryStore.load().metrics,
+            periodStart: now.addingTimeInterval(-TelemetryStore.retention),
+            periodEnd: now)
     }
 
     deinit {

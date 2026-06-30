@@ -59,6 +59,14 @@ enum PreviewData {
             ev(5.0, "<synthetic>", 1_500, "arkraft"),
         ]
     }
+
+    /// A representative week of Claude Code activity so the snapshot harness exercises the
+    /// telemetry card (ADR-0023 follow-up) — otherwise it'd always show the waiting state.
+    static var telemetryDigest: TelemetryDigest {
+        TelemetryDigest(linesAdded: 3120, linesRemoved: 1840, commits: 14, pullRequests: 3,
+                        editsAccepted: 142, editsRejected: 11, activeTimeSeconds: 15_120, sessions: 9,
+                        periodStart: Date().addingTimeInterval(-7 * 86400), periodEnd: Date())
+    }
 }
 
 @MainActor
@@ -206,7 +214,8 @@ enum WindowSnapshot {
     private static func render(to path: String, layout: DashboardLayout, backdrop: Backdrop, theme: Theme = .charcoal) {
         var settings = AppSettings.default
         settings.theme = theme
-        let model = AppModel(previewSnapshot: PreviewData.snapshot, settings: settings, tokenEvents: PreviewData.tokenEvents)
+        let model = AppModel(previewSnapshot: PreviewData.snapshot, settings: settings,
+                             tokenEvents: PreviewData.tokenEvents, telemetryDigest: PreviewData.telemetryDigest)
         model.layout = layout
         model.loadRetrospective()   // token-free A layer so the Retro tab renders content
         #if DEBUG

@@ -4,6 +4,20 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added — Now 탭 "Claude Code 활동" 카드 + 텔레메트리 라이브 export (2026-06-30, ADR-0023 후속)
+로컬 receiver(ADR-0023)가 받기만 하고 **아무 데도 안 보이던** 텔레메트리를 Now 탭 카드로 노출했다.
+"usage meter → reflection mirror"(`docs/VISION.md`)의 보상 — 켰으면 본인 데이터를 로컬에서 돌려받는다.
+- **순수 집계기(Kit)** — `TelemetryDigest`가 `[TelemetryMetricSample]`를 7일 윈도우로 합산해
+  edit 수락률·작성 LoC(±)·커밋/PR·active time·세션을 도출. Claude Code 메트릭은 **delta temporality
+  기본**(monitoring 문서 확인)이라 데이터포인트 합산이 정확(누적 아님). 메트릭 이름·attribute 값
+  (`type: added/removed`, `decision: accept/reject` 등)은 추측이 아니라 공식 문서로 확정. 테스트 +4.
+- **카드(App)** — `TelemetryActivityCard`를 `NowDashboard`의 Value 카드 아래에. **텔레메트리 on일 때만**
+  표시(opt-in 유지), 데이터 없으면 "Claude Code 재시작" 안내의 waiting 상태. `AppModel.telemetryDigest`는
+  receiver의 `onIngest`에서 메인 액터로 갱신 → 배치 도착 즉시 라이브.
+- **라이브 export** — `ClaudeSettingsConfigurator`가 `OTEL_METRIC_EXPORT_INTERVAL=10000`(10s)/
+  `OTEL_LOGS_EXPORT_INTERVAL=2000`(2s)을 managed env에 추가(기본 60s/5s) → 대시보드가 near-real-time.
+  로컬 루프백 전송이라 빈도 비용은 off-host로 안 나간다. 위젯 스냅샷 스키마 불변(ADR-0003 유지).
+
 ### Added — 동의 하 회사 OTLP forward (slice 2: relay + enrollment, 2026-06-30, ADR-0024)
 로컬 receiver가 받은 텔레메트리를 **콘텐츠 제거 후 회사 OTLP 엔드포인트로 forward**하는 기능.
 "설치하면 알아서 회사로"를, **무동의가 아니라 명시적 동의/enrollment** 하에 구현했다.

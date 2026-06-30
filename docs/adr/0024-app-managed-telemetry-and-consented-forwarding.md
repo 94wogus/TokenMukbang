@@ -34,6 +34,9 @@ telemetry.enabled`) 앱이 `~/.claude/settings.json`의 `env`에 OTLP 블록을 
   `needsManualEdit`를 돌려 사용자에게 붙여넣을 블록을 안내한다 — 사용자 설정을 덮어써 날리지 않는다.
 - 머지는 다른 env 키·다른 top-level 키를 보존한다. 우리가 관리하는 키 집합(`managedKeys`)만 추가/제거.
 - 순수 로직(기존 dict + enabled → 새 dict)은 Kit의 순수 함수로 두어 테스트한다(ADR-0001).
+- `managedKeys`엔 export interval(`OTEL_METRIC_EXPORT_INTERVAL=10000`/`OTEL_LOGS_EXPORT_INTERVAL=2000`)도
+  포함된다 — Claude Code 기본(60s/5s)보다 빠르게 보내 Now 탭 활동 카드(ADR-0023 후속)가 near-real-time으로
+  갱신되게 한다. 로컬 루프백 전송이라 빈도는 off-host 비용이 없다.
 
 **Slice 2 — 동의 하 회사 forward (egress).** receiver가 ingest한 텔레메트리를 **콘텐츠 제거 후**
 (ADR-0023의 `contentKeys` 드롭) 설정된 **상위 OTLP 엔드포인트**로 relay 한다.
