@@ -1,5 +1,6 @@
 import SwiftUI
 import WidgetKit
+import UserNotifications
 import TokenMukbangKit
 
 /// Drives the menu-bar app: periodically runs the live pipeline, publishes the
@@ -25,6 +26,10 @@ final class AppModel: ObservableObject {
     private let history: HistoryStore
     private let settingsStore: SettingsStore
     private var loop: Task<Void, Never>?
+    /// Delegate that focuses a session's terminal when its "finished" banner is tapped (ADR-0022).
+    private let notificationCoordinator = NotificationCoordinator()
+    /// Reactive per-session watcher — fires "session finished" notifications on working→idle (ADR-0022).
+    private var sessionActivityWatcher: SessionActivityWatcher?
     /// Keeps the background poll loop alive. This is an `LSUIElement` accessory app, so when no
     /// window is open macOS App Nap throttles the `Task.sleep` loop to a near-halt — the symptom
     /// being usage that only refreshed on a manual click (user 2026-06-23). A held
@@ -55,6 +60,12 @@ final class AppModel: ObservableObject {
             recomputeValueEstimate()   // plan price / billing day / display zone feed the Value card
             if oldValue.thresholds != settings.thresholds {
                 applyThresholdRecolor() // recolor menu bar + cards + widget now, not next poll (ADR-0013)
+            }
+            if oldValue.notifications.sessionFinished != settings.notifications.sessionFinished {
+                sessionActivityWatcher?.setEnabled(settings.notifications.sessionFinished)
+                if settings.notifications.sessionFinished, let snap = snapshot {
+                    sessionActivityWatcher?.reconcile(sessions: snap.sessions) // start watching now, not next poll
+                }
             }
         }
     }
@@ -126,6 +137,10 @@ final class AppModel: ObservableObject {
         self.settings = settingsStore.load()
         self.historySamples = history.load()
         NotificationService.requestAuthorization()
+        UNUserNotificationCenter.current().delegate = notificationCoordinator
+        sessionActivityWatcher = SessionActivityWatcher(enabled: settings.notifications.sessionFinished) { session in
+            NotificationService.deliverSessionFinished(session)
+        }
         start()
         startCredentialWatch()
         Task { [weak self] in await self?.loadTokenHistory() }
@@ -200,6 +215,8 @@ final class AppModel: ObservableObject {
             settings: settings.notifications, thresholds: settings.thresholds)
         for alert in alerts { NotificationService.deliver(alert) }
         previousSnapshot = snap
+        // Reactively watch each live session's transcript for its working→idle turn end (ADR-0022).
+        sessionActivityWatcher?.reconcile(sessions: snap.sessions)
 
         snapshot = snap
         try? store.write(snap)

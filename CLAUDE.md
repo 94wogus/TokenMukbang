@@ -57,7 +57,8 @@ The rules in this section map to ADRs: core/UI split → ADR-0001, Keychain → 
 app-writes/widget-reads → ADR-0003, never-throws → ADR-0004, XcodeGen → ADR-0005,
 injection seams → ADR-0006. See also: native stack → ADR-0007, terminal focus → ADR-0008,
 product concept → ADR-0009, distribution → ADR-0010, retrospective via local `claude` CLI →
-ADR-0020, value/savings estimate (API-list-price equivalent) → ADR-0021
+ADR-0020, value/savings estimate (API-list-price equivalent) → ADR-0021,
+session-completion notification (reactive `stop_reason` watch + tap-to-focus) → ADR-0022
 (index: `docs/adr/README.md`). Product direction: `docs/VISION.md`.
 
 ## Architecture — what you must respect
@@ -135,6 +136,15 @@ deliberately avoid emitting it. `SecurityCLICredentialStore` is read-only — it
 - **Session → transcript mapping**: a cwd like `/A/B.c` encodes to the transcript dir
   name `-A-B-c` (slashes and dots → `-`, leading `-` ensured) under `~/.claude/projects/`.
   See `SessionDetector.encodeProjectDir`.
+- **Session activity / completion notification** (ADR-0022): `SessionActivityReader` (Kit,
+  pure) reads a transcript's *last* assistant `stop_reason` — `end_turn`/`stop_sequence` ⇒
+  `idle` (turn done), anything else (`tool_use`, trailing `user` line, null) ⇒ `working`. The
+  app's `SessionActivityWatcher` keeps a `FileWatcher` per live session and fires a "session
+  finished" notification on the `working→idle` edge (seeded silently so pre-existing idle
+  sessions don't alert). Tapping the banner focuses that session's terminal via
+  `NotificationCoordinator` → `TerminalFocus` (ADR-0008); VS Code/Cursor-hosted sessions only
+  get the host app brought forward (best-effort — `TerminalFocus.guiHostAppName` walks the pid's
+  ancestry). It reads transcripts locally only — no new egress, and the widget snapshot is unchanged.
 - **Dates**: the OAuth API sends ISO-8601 *with fractional seconds + offset*
   (`2026-06-11T13:59:59.715802+00:00`). Decode API payloads with `ClaudeJSON.makeDecoder()`,
   not a default `JSONDecoder`. `SharedStore` snapshots use plain `.iso8601`.

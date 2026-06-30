@@ -105,18 +105,43 @@ public struct NotificationSettings: Codable, Sendable, Equatable {
     public var reset: Bool
     public var extraCredit: Bool
     public var tokenExpiry: Bool
+    /// A Claude Code session finished its turn (ADR-0022). Session-scoped, not
+    /// window-scoped — the surface chips above don't gate it.
+    public var sessionFinished: Bool
 
     public init(fiveHour: Bool, sevenDay: Bool, sonnet: Bool, escalation: Bool, recovery: Bool,
-                pacing: Bool, reset: Bool, extraCredit: Bool, tokenExpiry: Bool) {
+                pacing: Bool, reset: Bool, extraCredit: Bool, tokenExpiry: Bool,
+                sessionFinished: Bool = true) {
         self.fiveHour = fiveHour; self.sevenDay = sevenDay; self.sonnet = sonnet
         self.escalation = escalation; self.recovery = recovery; self.pacing = pacing
         self.reset = reset; self.extraCredit = extraCredit; self.tokenExpiry = tokenExpiry
+        self.sessionFinished = sessionFinished
     }
 
     public static let `default` = NotificationSettings(
         fiveHour: true, sevenDay: true, sonnet: false,
-        escalation: true, recovery: true, pacing: true, reset: true, extraCredit: false, tokenExpiry: true
+        escalation: true, recovery: true, pacing: true, reset: true, extraCredit: false, tokenExpiry: true,
+        sessionFinished: true
     )
+
+    /// Forgiving decode (same rationale as `AppSettings`): a newly-added toggle like
+    /// `sessionFinished` must fall back to its default on older persisted JSON instead
+    /// of throwing and wiping every notification preference (synthesized decode would
+    /// throw on the first missing key).
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = NotificationSettings.default
+        fiveHour = try c.decodeIfPresent(Bool.self, forKey: .fiveHour) ?? d.fiveHour
+        sevenDay = try c.decodeIfPresent(Bool.self, forKey: .sevenDay) ?? d.sevenDay
+        sonnet = try c.decodeIfPresent(Bool.self, forKey: .sonnet) ?? d.sonnet
+        escalation = try c.decodeIfPresent(Bool.self, forKey: .escalation) ?? d.escalation
+        recovery = try c.decodeIfPresent(Bool.self, forKey: .recovery) ?? d.recovery
+        pacing = try c.decodeIfPresent(Bool.self, forKey: .pacing) ?? d.pacing
+        reset = try c.decodeIfPresent(Bool.self, forKey: .reset) ?? d.reset
+        extraCredit = try c.decodeIfPresent(Bool.self, forKey: .extraCredit) ?? d.extraCredit
+        tokenExpiry = try c.decodeIfPresent(Bool.self, forKey: .tokenExpiry) ?? d.tokenExpiry
+        sessionFinished = try c.decodeIfPresent(Bool.self, forKey: .sessionFinished) ?? d.sessionFinished
+    }
 }
 
 /// The user's full settings (theme + thresholds + notifications + glass), persisted.

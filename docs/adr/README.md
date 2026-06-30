@@ -33,6 +33,7 @@
 | [0019](0019-normal-glass-window.md) | 메뉴바 UI를 일반 유리 NSWindow로 | Accepted | 2026-06-15 | NSPanel 우회(깜빡임/stale/앵커링) 누적 → 우리 소유 일반 창은 투명화 가능, 유리 유지하며 교체 + Now/History/Settings 단일 창 통합 |
 | [0020](0020-retrospective-via-local-claude-cli.md) | 회고는 로컬 `claude` CLI로 콘텐츠 분석 | Accepted | 2026-06-17 | "사용량 미터 → 사용 습관 거울" 확장의 첫 기능. A(메타데이터)는 기존 인프라 재사용, B(주제/스타일)는 로컬 `claude` CLI로(토큰 미사용·on-demand·앱전용 저장). 콘텐츠 egress이나 수신자 불변 |
 | [0021](0021-value-savings-estimate.md) | Value/세이브 추정은 API 정가 환산으로 | Accepted | 2026-06-23 | 정액 구독 대비 "API 종량제였으면 얼마"를 보여주는 Now-탭 카드. 모델 정가×토큰(입력/출력/캐시write 1.25×/캐시read 0.1×)로 환산, cache-read 포함 full + 제외 "fresh work" 두 숫자. 로컬 집계뿐, 신규 egress 없음 |
+| [0022](0022-session-completion-notification.md) | 세션 완료 알림은 트랜스크립트 `stop_reason` reactive 감시 | Accepted | 2026-06-26 | 세션별 트랜스크립트를 `FileWatcher`로 감시(ADR-0014), assistant `end_turn`/`stop_sequence`로 `working→idle` 전이 시 완료 알림. 판정은 순수 함수(Kit), 오케스트레이션은 앱. 탭 시 터미널 포커스(ADR-0008), VS Code 등 에디터는 앱만 앞으로(best-effort). 로컬 읽기만 — 신규 egress 없음 |
 
 > 위 표의 "한 줄 요약"만 훑어도 어떤 결정이 어디 있는지 보이게 유지한다 — 결정이 바뀌면 해당 행의
 > ADR을 찾아 supersede/수정하고 이 표를 갱신한다.

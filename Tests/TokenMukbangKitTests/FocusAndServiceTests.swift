@@ -67,6 +67,94 @@ final class FocusTests: XCTestCase {
         XCTAssertNil(TerminalFocus.weztermPaneId(fromListJSON: json, devicePath: "/dev/ttys099"))
         XCTAssertNil(TerminalFocus.weztermPaneId(fromListJSON: "not json", devicePath: "/dev/ttys016"))
     }
+
+    // MARK: - GUI host (VS Code / editor integrated terminal) — ADR-0022
+
+    /// `ps -axo pid=,ppid=,comm=`-style output: claude → shell → VS Code helper → launchd.
+    private let vscodePs = """
+    901 870 /opt/homebrew/bin/node /opt/homebrew/bin/claude
+    870 540 -zsh
+    540 1 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Renderer).app/Contents/MacOS/Code Helper (Renderer)
+    1 0 /sbin/launchd
+    """
+
+    func testGUIHostWalksAncestryToVSCode() {
+        XCTAssertEqual(TerminalFocus.guiHostAppName(fromPsOutput: vscodePs, pid: 901), "Visual Studio Code")
+    }
+
+    func testGUIHostNilForPlainTerminalSession() {
+        // claude → shell → Terminal.app's login → launchd: no editor in the chain.
+        let ps = """
+        901 870 /opt/homebrew/bin/node /opt/homebrew/bin/claude
+        870 540 -zsh
+        540 1 login -fp wogus
+        1 0 /sbin/launchd
+        """
+        XCTAssertNil(TerminalFocus.guiHostAppName(fromPsOutput: ps, pid: 901))
+    }
+
+    func testGUIHostCursorAndStopsAtMissingParent() {
+        let ps = "901 870 /Applications/Cursor.app/Contents/MacOS/Cursor Helper"
+        XCTAssertEqual(TerminalFocus.guiHostAppName(fromPsOutput: ps, pid: 901), "Cursor")
+        XCTAssertNil(TerminalFocus.guiHostAppName(fromPsOutput: ps, pid: 555)) // unknown pid
+    }
+
+    func testFocusActivatesEditorBeforeProbingTerminals() {
+        let runner = FakeRunner()
+        runner.responses = [
+            ("pid=,ppid=,comm=", ProcessResult(exitCode: 0, standardOutput: vscodePs, standardError: "")),
+            ("Visual Studio Code", ProcessResult(exitCode: 0, standardOutput: "ok", standardError: "")),
+        ]
+        let focus = TerminalFocus(runner: runner)
+        let session = ActiveSession(pid: 901, tty: "ttys016", cwd: "/x", contextFraction: nil)
+        XCTAssertEqual(focus.focus(session), .activatedAppOnly(app: "Visual Studio Code"))
+        // It must not have fallen through to the Terminal.app tty-match script.
+        XCTAssertFalse(runner.calls.contains { $0.joined(separator: " ").contains("tabs of w") })
+    }
+}
+
+final class SessionActivityTests: XCTestCase {
+    private func line(role: String, stopReason: String?) -> String {
+        var message: [String: Any] = ["role": role]
+        if role == "assistant" {
+            message["model"] = "claude-opus-4-8"
+            message["stop_reason"] = stopReason as Any  // NSNull-free: omitted when nil below
+            if stopReason == nil { message["stop_reason"] = NSNull() }
+            message["usage"] = ["input_tokens": 10]
+        }
+        let obj: [String: Any] = ["type": role, "message": message]
+        let data = try! JSONSerialization.data(withJSONObject: obj)
+        return String(data: data, encoding: .utf8)!
+    }
+
+    func testEndTurnIsIdle() {
+        let t = [line(role: "user", stopReason: nil),
+                 line(role: "assistant", stopReason: "end_turn")].joined(separator: "\n")
+        XCTAssertEqual(SessionActivityReader.activity(fromTranscript: t), .idle)
+    }
+
+    func testToolUseIsWorking() {
+        let t = [line(role: "user", stopReason: nil),
+                 line(role: "assistant", stopReason: "tool_use")].joined(separator: "\n")
+        XCTAssertEqual(SessionActivityReader.activity(fromTranscript: t), .working)
+    }
+
+    func testTrailingUserLineIsWorking() {
+        // Assistant ended a turn, then a new user/tool_result line landed → working again.
+        let t = [line(role: "assistant", stopReason: "end_turn"),
+                 line(role: "user", stopReason: nil)].joined(separator: "\n")
+        XCTAssertEqual(SessionActivityReader.activity(fromTranscript: t), .working)
+    }
+
+    func testNullStopReasonIsWorking() {
+        let t = line(role: "assistant", stopReason: nil)
+        XCTAssertEqual(SessionActivityReader.activity(fromTranscript: t), .working)
+    }
+
+    func testEmptyTranscriptIsNil() {
+        XCTAssertNil(SessionActivityReader.activity(fromTranscript: ""))
+        XCTAssertNil(SessionActivityReader.activity(fromTranscript: "{\"type\":\"summary\"}"))
+    }
 }
 
 final class ServiceTests: XCTestCase {

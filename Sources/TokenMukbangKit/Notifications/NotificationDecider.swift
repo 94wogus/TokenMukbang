@@ -7,6 +7,7 @@ public enum NotificationEvent: String, Sendable, CaseIterable {
     case reset          // a window reset (new 상 차림)
     case extraCredit    // extra usage credits
     case tokenExpiry    // OAuth token expired
+    case sessionFinished // a Claude Code session finished its turn (ADR-0022)
 }
 
 /// A notification the app should deliver. POV-correct 먹방 copy (ADR-0009).
