@@ -38,14 +38,23 @@ final class SessionActivityWatcher {
     }
 
     /// Reconcile watched sessions against the latest snapshot: start watchers for new
-    /// sessions, drop them for sessions that have exited. Called after every refresh.
+    /// sessions, drop them for sessions that have exited, and re-point a watcher whose
+    /// transcript has rotated. Called after every refresh.
     func reconcile(sessions: [UsageSnapshot.Session]) {
         guard enabled else { stopAll(); return }
         let current = Set(sessions.map(\.pid))
         for pid in Array(watchers.keys) where !current.contains(pid) { remove(pid) }
         for s in sessions {
             meta[s.pid] = s
-            if watchers[s.pid] == nil { addWatcher(for: s) }
+            if watchers[s.pid] == nil {
+                addWatcher(for: s)
+            } else if let latest = detector.newestTranscript(forCwd: s.cwd),
+                      latest != transcriptPath[s.pid] {
+                // The session (same pid) rotated to a NEW transcript file — e.g. `/clear`
+                // starts a fresh session `.jsonl`. The old `FileWatcher` would see no
+                // further writes and never fire again, so re-point onto the new file.
+                startWatcher(for: s, path: latest)
+            }
         }
     }
 
@@ -53,9 +62,16 @@ final class SessionActivityWatcher {
 
     private func addWatcher(for s: UsageSnapshot.Session) {
         guard let path = detector.newestTranscript(forCwd: s.cwd) else { return }
+        startWatcher(for: s, path: path)
+    }
+
+    /// Watch `path` for session `s`, replacing any prior watcher on this pid. Seeds the
+    /// baseline activity WITHOUT notifying — neither a session already idle when first
+    /// seen (resting at app launch) nor a transcript rotation is a `working → idle`
+    /// completion, so neither must fire a spurious "finished".
+    private func startWatcher(for s: UsageSnapshot.Session, path: String) {
+        watchers[s.pid]?.stop()
         transcriptPath[s.pid] = path
-        // Seed the baseline WITHOUT notifying — a session already idle when first seen
-        // (e.g. it was resting at app launch) must not fire a spurious "finished".
         lastActivity[s.pid] = SessionActivityReader.activity(transcriptPath: path)
         let pid = s.pid
         let watcher = FileWatcher(path: path) { [weak self] in
