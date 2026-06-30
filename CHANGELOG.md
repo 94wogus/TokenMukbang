@@ -4,6 +4,15 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed — 세션이 트랜스크립트를 회전하면 완료 알림이 영영 안 오던 문제 (2026-06-30, ADR-0022)
+`SessionActivityWatcher`가 세션 watcher를 만들 때 `newestTranscript`를 **딱 한 번** 풀어 그
+파일만 감시했다. 같은 프로세스(pid)가 `/clear` 등으로 **새 세션 `.jsonl`로 회전**하면 옛 파일엔
+더 이상 write가 안 떨어져 `FileWatcher`가 영영 안 깨고, 그 세션의 완료 알림이 누락됐다.
+- 이제 `reconcile`이 매 refresh마다 watched 세션의 최신 트랜스크립트 경로를 다시 확인해, 바뀌었으면
+  새 파일로 watcher를 **재배선**한다(`startWatcher`). 재배선 시에도 baseline은 **silent seed** —
+  회전은 `working→idle` 완료가 아니므로 헛알림을 내지 않는다(ADR-0022 seed-without-notify 유지).
+- 오버레이(2초 폴)는 매번 `newestTranscript`를 다시 풀어 영향이 없었고, 이 비대칭만 해소한다.
+
 ### Added — Claude Code 텔레메트리 로컬 OTLP 수신 (slice 1: 수신·저장·검증, 2026-06-30, ADR-0023)
 Claude Code 내장 OpenTelemetry를 **로컬에서 직접 받는** 기반을 깔았다. 지금은 트랜스크립트를
 파싱해 사용량을 *추정*하는데, OTEL은 같은 데이터를 더 정확하게 + 트랜스크립트엔 없는 신호(편집
