@@ -269,6 +269,9 @@ struct SettingsView: View {
                               isOn: $model.settings.notifications.extraCredit, disabled: true)
                     notifyRow("key.fill", "#8B7DB8", "Token expiry", "OAuth token expired",
                               isOn: $model.settings.notifications.tokenExpiry)
+                    notifyRow("checkmark.circle.fill", "#5E8FB8", "Session finished",
+                              "A session ended its turn · tap to focus",
+                              isOn: $model.settings.notifications.sessionFinished)
                 }
             }
         }

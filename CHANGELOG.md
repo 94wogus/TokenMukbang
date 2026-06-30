@@ -4,6 +4,21 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added — 세션 작업 완료 알림 + 탭하면 그 터미널로 점프 (2026-06-26, ADR-0022)
+여러 Claude Code 세션을 돌릴 때 **어떤 세션이 작업을 끝내면 알림**을 받고, **알림을 누르면 그
+세션의 터미널로 포커스**되게 했다. 사용량 5분 폴이 아니라 세션별 트랜스크립트를 `FileWatcher`로
+실시간 감시해(ADR-0014) 끝나는 즉시 알린다.
+- **판정은 순수 함수(Kit)** — `SessionActivityReader`가 트랜스크립트 마지막 assistant의
+  `stop_reason`을 본다: `end_turn`/`stop_sequence` ⇒ `idle`(완료), `tool_use`·마지막 줄이
+  `user`·null ⇒ `working`. **`working→idle` edge에서만** 1회 알림(새 세션은 현재 상태로 silent
+  seed → 이미 쉬고 있던 세션 헛알림 방지).
+- **오케스트레이션은 앱** — `SessionActivityWatcher`가 스냅샷 세션 목록에 맞춰 세션별 watcher를
+  reconcile, `NotificationCoordinator`가 알림 탭을 받아 `TerminalFocus`로 포커스.
+- **VS Code/Cursor 내장 터미널 best-effort** — tty 매칭이 안 되므로 pid 부모 체인을 거슬러
+  호스트 에디터를 식별해(`TerminalFocus.guiHostAppName`) 그 앱만 앞으로(ADR-0008 확장).
+- Settings → Alerts에 "Session finished" 토글(기본 on). 트랜스크립트는 로컬 읽기만 — 신규
+  egress 없음, 위젯 스냅샷 스키마 불변(ADR-0003 유지). 테스트 +10(활성 판정 5 / GUI 호스트 5).
+
 ### Fixed — Settings의 warning/critical 임계값이 위험도 색에 반영되게 (2026-06-25, ADR-0013)
 Settings → Alerts의 임계값 슬라이더가 알림에만 쓰이고 **Now 화면·메뉴바·위젯의 위험도 색에는
 전혀 반영되지 않던** 문제를 고쳤다. ADR-0013은 "임계값이 위험도 분류에 반영된다"고 선언했으나

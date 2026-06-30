@@ -101,7 +101,9 @@ substitute a fake:
   color is resolved app-side, scheme-branched, by `RiskTone` (ADR-0015).
 - **`Focus/TerminalFocus.swift`** — TTY → terminal tab, best-effort across Terminal.app/iTerm2
   (AppleScript) + WezTerm (`wezterm cli` pane match) + kitty + tmux; `SupportedTerminal` enum;
-  every failure swallowed.
+  every failure swallowed. Editor-hosted sessions (VS Code/Cursor/Windsurf/VSCodium) have no
+  matchable tty — `guiHostAppName` walks the pid's process ancestry to identify the host app and
+  brings just that app forward, ahead of the tty probes (ADR-0008/ADR-0022).
 
 > The app layer (`App/TokenMukbang/Overlay/`) adds a floating `NSPanel` **Agent Watchers**
 > overlay (`OverlayController`, Frost/Neon styles, 2-second session scan, dock-like hover) that
@@ -142,11 +144,16 @@ substitute a fake:
   card) + `SettingsStore` (JSON persistence, injectable dir).
 - **`Notifications/`** — `NotificationDecider` (edge-triggered: compares previous vs current
   snapshot → escalation/recovery/pacing/reset/expiry alerts, gated by per-surface + per-event
-  settings; pure & tested). The app delivers them via `UNUserNotificationCenter`.
+  settings; pure & tested). The app delivers them via `UNUserNotificationCenter`. The
+  **session-finished** alert (ADR-0022) is decided differently — not from the usage snapshot but
+  from each session's transcript: `SessionActivity`/`SessionActivityReader` (pure) classify the
+  last `stop_reason` as `working`/`idle`, and the app's `SessionActivityWatcher` fires on the
+  `working→idle` edge; tapping it focuses the terminal (ADR-0008).
 - **`Update/`** — `UpdateChecker` (parse GitHub `/releases/latest` tag + semver compare;
   delivery is ADR-0010). The `Casks/token-mukbang.rb` Homebrew cask ships the release.
 - **`Support/`** — `ProcessRunner`, `Formatting` (bars/percents/countdowns), `FileWatcher`
-  (`FileWatching` seam + `DispatchSource` reactive refresh when the credential file changes; ADR-0014).
+  (`FileWatching` seam + `DispatchSource` reactive refresh on the credential file; ADR-0014 —
+  also one per live session transcript to drive session-finished alerts, ADR-0022).
 
 > Decision: [ADR-0011 — local history persistence](docs/adr/0011-local-history-persistence.md)
 > The app calls `history.record(snap)` each poll, then attaches the headline window's
